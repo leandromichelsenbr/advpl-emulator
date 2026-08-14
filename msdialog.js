@@ -50,3 +50,66 @@
   sourceEl.addEventListener("keydown", event => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); document.getElementById("runButton").click(); } });
   document.getElementById("runButton").click();
 })(globalThis.AdvPLCore);
+
+  function parse(source) {
+    const statements = logicalStatements(source);
+    const variables = parseVariables(statements);
+    let dialog = null;
+    const controls = [];
+
+    for (const statement of statements) {
+      let match = statement.match(/^DEFINE\s+MSDIALOG\s+(\w+)/i);
+      if (match) {
+        const from = findClause(statement, "FROM", ["TO", "TITLE", "PIXEL", "STYLE"]);
+        const to = findClause(statement, "TO", ["FROM", "TITLE", "PIXEL", "STYLE"]);
+        const title = findClause(statement, "TITLE", ["FROM", "TO", "PIXEL", "STYLE"]);
+        const fromPair = from ? from.split(",") : [0, 0];
+        const toPair = to ? to.split(",") : [240, 480];
+        dialog = {
+          variable: match[1],
+          title: unquote(title || "MSDialog"),
+          top: number(fromPair[0]),
+          left: number(fromPair[1]),
+          bottom: number(toPair[0], 240),
+          right: number(toPair[1], 480),
+          pixel: /\bPIXELS?\b/i.test(statement),
+          centered: false
+        };
+        continue;
+      }
+
+      match = statement.match(/^ACTIVATE\s+MSDIALOG\s+(\w+)/i);
+      if (match && dialog) {
+        dialog.centered = /\bCENTERED\b/i.test(statement);
+        continue;
+      }
+
+      match = statement.match(/^@\s*([\d.]+)\s*,\s*([\d.]+)\s+(SAY|GET|BUTTON|CHECKBOX)\b\s*(.*)$/i);
+      if (!match) continue;
+
+      const [, row, col, rawType, tail] = match;
+      const type = rawType.toUpperCase();
+      const commonStops = ["SIZE", "OF", "PIXEL", "PROMPT", "VAR", "ACTION", "VALID", "WHEN", "PICTURE"];
+      const size = findClause(tail, "SIZE", commonStops.filter(x => x !== "SIZE"));
+      const sizePair = size ? size.split(",") : [type === "BUTTON" ? 70 : 100, type === "BUTTON" ? 22 : 12];
+      const variableMatch = tail.match(/^(\w+)\b/);
+      const quotedMatch = tail.match(/^["']([^"']*)["']/);
+      const prompt = findClause(tail, "PROMPT", commonStops.filter(x => x !== "PROMPT"));
+      const boundVar = findClause(tail, "VAR", commonStops.filter(x => x !== "VAR"));
+      const action = findClause(tail, "ACTION", commonStops.filter(x => x !== "ACTION"));
+      controls.push({
+        type,
+        row: number(row),
+        col: number(col),
+        width: number(sizePair[0], 100),
+        height: number(sizePair[1], 12),
+        objectVariable: variableMatch && !quotedMatch ? variableMatch[1] : null,
+        text: quotedMatch ? quotedMatch[1] : unquote(prompt || ""),
+        boundVar: boundVar ? boundVar.match(/^\w+/)?.[0] : null,
+        action
+      });
+    }
+
+    if (!dialog) throw new Error("Nenhum comando DEFINE MSDIALOG foi encontrado.");
+    return { dialog, controls, variables };
+  }
