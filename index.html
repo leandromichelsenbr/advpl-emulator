@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Emulador MSDialog</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">AdvPL clássico</span>
+        <h1>Emulador MSDialog</h1>
+      </div>
+      <button id="runButton" class="primary">Executar tela</button>
+    </header>
+
+    <section class="workspace">
+      <div class="editor-pane">
+        <div class="pane-title">Código AdvPL</div>
+        <textarea id="source" spellcheck="false">#Include "Protheus.ch"
+
+User Function MinhaTela()
+    Local oDlg
+    Local oNome
+    Local oAtivo
+    Local cNome := "Maria"
+    Local lAtivo := .T.
+
+    DEFINE MSDIALOG oDlg ;
+        TITLE "Cadastro de cliente" ;
+        FROM 000, 000 ;
+        TO 220, 500 ;
+        PIXEL
+
+    @ 025, 025 SAY "Nome:" ;
+        SIZE 050, 012 ;
+        OF oDlg ;
+        PIXEL
+
+    @ 023, 085 GET oNome ;
+        VAR cNome ;
+        SIZE 140, 012 ;
+        OF oDlg ;
+        PIXEL
+
+    @ 055, 085 CHECKBOX oAtivo ;
+        VAR lAtivo ;
+        PROMPT "Cliente ativo" ;
+        SIZE 100, 012 ;
+        OF oDlg ;
+        PIXEL
+
+    @ 085, 165 BUTTON "Confirmar" ;
+        ACTION MsgInfo("Olá, " + cNome) ;
+        SIZE 070, 022 ;
+        OF oDlg ;
+        PIXEL
+
+    @ 085, 245 BUTTON "Fechar" ;
+        ACTION oDlg:End() ;
+        SIZE 060, 022 ;
+        OF oDlg ;
+        PIXEL
+
+    ACTIVATE MSDIALOG oDlg CENTERED
+Return</textarea>
+        <div id="status" class="status">Pronto para interpretar.</div>
+      </div>
+
+      <div class="preview-pane">
+        <div class="pane-title">SmartClient emulado</div>
+        <div id="desktop" class="desktop">
+          <div class="empty-state">Execute o código para montar a tela.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="messageOverlay" class="message-overlay" hidden>
+    <div class="message-box" role="dialog" aria-modal="true">
+      <div class="message-title">Informação</div>
+      <div id="messageText" class="message-text"></div>
+      <button id="messageOk" class="primary">OK</button>
+    </div>
+  </div>
+
+  <script src="msdialog.js"></script>
+</body>
+</html>

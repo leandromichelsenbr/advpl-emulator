@@ -1,0 +1,132 @@
+:root {
+  font-family: Inter, "Segoe UI", sans-serif;
+  color: #17202a;
+  background: #eef2f6;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-height: 100vh; }
+
+button, textarea, input { font: inherit; }
+
+.app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+.topbar {
+  min-height: 82px;
+  padding: 16px 24px;
+  background: #fff;
+  border-bottom: 1px solid #d9e0e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.eyebrow { color: #5d6d7e; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
+h1 { margin: 2px 0 0; font-size: 24px; }
+
+.primary {
+  border: 1px solid #0969da;
+  border-radius: 6px;
+  padding: 8px 16px;
+  background: #0969da;
+  color: #fff;
+  cursor: pointer;
+}
+.primary:hover { background: #075bbd; }
+
+.workspace { flex: 1; display: grid; grid-template-columns: minmax(420px, 46%) 1fr; min-height: 0; }
+.editor-pane, .preview-pane { min-width: 0; display: flex; flex-direction: column; }
+.editor-pane { background: #141a21; border-right: 1px solid #2d3742; }
+.preview-pane { background: #dce3ea; }
+
+.pane-title {
+  height: 40px;
+  padding: 11px 16px;
+  background: rgba(255,255,255,.96);
+  border-bottom: 1px solid #ccd4dc;
+  color: #425466;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#source {
+  flex: 1;
+  width: 100%;
+  min-height: 560px;
+  resize: none;
+  border: 0;
+  outline: 0;
+  padding: 18px;
+  background: #141a21;
+  color: #d9e3ec;
+  font: 14px/1.55 Consolas, "Courier New", monospace;
+  tab-size: 4;
+}
+
+.status { min-height: 34px; padding: 8px 16px; background: #1e2731; color: #aebdca; font-size: 12px; }
+.status.error { color: #ffb4b4; }
+.status.success { color: #9ee6b1; }
+
+.desktop {
+  flex: 1;
+  min-height: 560px;
+  position: relative;
+  overflow: auto;
+  padding: 32px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.65), transparent 36%),
+    linear-gradient(145deg, #cbd6df, #e9eef2);
+}
+
+.empty-state { color: #6b7885; text-align: center; margin-top: 180px; }
+
+.ms-dialog {
+  position: absolute;
+  min-width: 220px;
+  min-height: 120px;
+  overflow: hidden;
+  border: 1px solid #82909d;
+  border-radius: 7px;
+  background: #f2f2f2;
+  box-shadow: 0 18px 44px rgba(31,45,61,.28), 0 2px 7px rgba(31,45,61,.18);
+}
+
+.ms-titlebar {
+  height: 30px;
+  padding: 6px 10px;
+  color: #fff;
+  background: linear-gradient(#3378b8, #225d95);
+  font-size: 13px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.ms-client { position: relative; background: #f2f2f2; }
+.ms-control { position: absolute; font-family: "Segoe UI", sans-serif; font-size: 12px; }
+.ms-say { display: flex; align-items: center; color: #20262c; white-space: nowrap; }
+.ms-get { border: 1px solid #8e9aa5; background: #fff; padding: 1px 4px; outline: none; }
+.ms-get:focus { border-color: #2576bd; box-shadow: 0 0 0 1px #2576bd; }
+.ms-button { border: 1px solid #8c969f; border-radius: 3px; background: linear-gradient(#fff, #dce1e5); cursor: pointer; }
+.ms-button:hover { background: linear-gradient(#fff, #cfdbe5); border-color: #5d7d98; }
+.ms-checkbox { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.ms-checkbox input { margin: 0; }
+
+.message-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(18, 27, 36, .35);
+}
+.message-overlay[hidden] { display: none; }
+.message-box { width: min(360px, 90vw); padding: 18px; border-radius: 8px; background: #fff; box-shadow: 0 20px 55px rgba(0,0,0,.3); }
+.message-title { font-weight: 700; margin-bottom: 14px; }
+.message-text { min-height: 42px; margin-bottom: 16px; }
+.message-box .primary { float: right; min-width: 72px; }
+
+@media (max-width: 900px) {
+  .workspace { grid-template-columns: 1fr; }
+  .editor-pane { min-height: 520px; }
+}
