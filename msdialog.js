@@ -1,55 +1,69 @@
-(function (core) {
+(function () {
   "use strict";
-  if (!core) throw new Error("AdvPLCore não foi carregado.");
 
   const sourceEl = document.getElementById("source");
   const desktopEl = document.getElementById("desktop");
   const statusEl = document.getElementById("status");
   const overlayEl = document.getElementById("messageOverlay");
   const messageTextEl = document.getElementById("messageText");
-  let messageResolver = null;
 
-  function setStatus(text, kind) { statusEl.textContent = text; statusEl.className = "status" + (kind ? " " + kind : ""); }
-  function showMessage(text) {
-    messageTextEl.textContent = text; overlayEl.hidden = false; document.getElementById("messageOk").focus();
-    return new Promise(resolve => { messageResolver = resolve; });
+  function stripComments(source) {
+    return source
+      .split(/\r?\n/)
+      .map(line => line.replace(/\/\/.*$/, ""))
+      .join("\n");
   }
-  async function executeAction(action, state) {
-    for (const command of core.parseAction(action)) {
-      if (command.type === "message") await showMessage(core.evaluate(command.expression, state.variables));
-      if (command.type === "end") { state.dialogElement.remove(); setStatus("Diálogo encerrado por oDlg:End().", "success"); }
+
+  function logicalStatements(source) {
+    const statements = [];
+    let current = "";
+    for (const rawLine of stripComments(source).split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || /^#/.test(line)) continue;
+      current += (current ? " " : "") + line.replace(/;\s*$/, "");
+      if (!/;\s*$/.test(line)) {
+        statements.push(current.trim());
+        current = "";
+      }
     }
-  }
-  function position(element, control) {
-    element.classList.add("ms-control");
-    Object.assign(element.style, { top: control.row + "px", left: control.col + "px", width: control.width + "px", height: control.height + "px" });
-  }
-  function createControl(control, state) {
-    let element;
-    if (control.type === "SAY") { element = document.createElement("div"); element.className = "ms-say"; element.textContent = control.text; }
-    else if (control.type === "GET") { element = document.createElement("input"); element.className = "ms-get"; element.type = "text"; element.value = state.variables[control.boundVar] ?? ""; element.addEventListener("input", () => { state.variables[control.boundVar] = element.value; }); }
-    else if (control.type === "CHECKBOX") { element = document.createElement("label"); element.className = "ms-checkbox"; const input = document.createElement("input"); input.type = "checkbox"; input.checked = Boolean(state.variables[control.boundVar]); input.addEventListener("change", () => { state.variables[control.boundVar] = input.checked; }); element.append(input, document.createTextNode(control.text)); }
-    else { element = document.createElement("button"); element.className = "ms-button"; element.textContent = control.text || "Button"; element.addEventListener("click", () => { void executeAction(control.action, state); }); }
-    position(element, control); return element;
-  }
-  function render(program) {
-    desktopEl.replaceChildren();
-    const width = Math.max(220, program.dialog.right - program.dialog.left);
-    const height = Math.max(120, program.dialog.bottom - program.dialog.top);
-    const dialogEl = document.createElement("section"); dialogEl.className = "ms-dialog";
-    Object.assign(dialogEl.style, { width: width + "px", height: height + 30 + "px", left: program.dialog.centered ? "50%" : Math.max(0, program.dialog.left) + "px", top: program.dialog.centered ? "50%" : Math.max(0, program.dialog.top) + "px", transform: program.dialog.centered ? "translate(-50%, -50%)" : "none" });
-    const titlebar = document.createElement("div"); titlebar.className = "ms-titlebar"; titlebar.textContent = program.dialog.title;
-    const client = document.createElement("div"); client.className = "ms-client"; client.style.height = height + "px";
-    const state = { variables: { ...program.variables }, dialogElement: dialogEl };
-    for (const control of program.controls) client.append(createControl(control, state));
-    dialogEl.append(titlebar, client); desktopEl.append(dialogEl); setStatus(`Tela montada: ${program.controls.length} controle(s). Núcleo ${core.VERSION}.`, "success");
+    if (current) statements.push(current.trim());
+    return statements;
   }
 
-  document.getElementById("runButton").addEventListener("click", () => { try { render(core.parse(sourceEl.value)); } catch (error) { setStatus(error.message, "error"); } });
-  document.getElementById("messageOk").addEventListener("click", () => { overlayEl.hidden = true; const resolve = messageResolver; messageResolver = null; if (resolve) resolve(); });
-  sourceEl.addEventListener("keydown", event => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); document.getElementById("runButton").click(); } });
-  document.getElementById("runButton").click();
-})(globalThis.AdvPLCore);
+  function unquote(value) {
+    const text = String(value || "").trim();
+    if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
+      return text.slice(1, -1);
+    }
+    return text;
+  }
+
+  function number(value, fallback = 0) {
+    const parsed = Number.parseFloat(String(value).replace(/^0+(?=\d)/, ""));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function findClause(statement, name, stopNames) {
+    const stops = stopNames.join("|");
+    const rx = new RegExp("\\b" + name + "\\s+(.+?)(?=\\s+\\b(?:" + stops + ")\\b|$)", "i");
+    const match = statement.match(rx);
+    return match ? match[1].trim() : null;
+  }
+
+  function parseVariables(statements) {
+    const variables = Object.create(null);
+    for (const statement of statements) {
+      const match = statement.match(/^Local\s+(\w+)(?:\s*:=\s*(.+))?$/i);
+      if (!match) continue;
+      const [, name, rawValue] = match;
+      if (rawValue == null) variables[name] = null;
+      else if (/^\.T\.$/i.test(rawValue)) variables[name] = true;
+      else if (/^\.F\.$/i.test(rawValue)) variables[name] = false;
+      else if (/^["']/.test(rawValue.trim())) variables[name] = unquote(rawValue);
+      else variables[name] = number(rawValue, rawValue);
+    }
+    return variables;
+  }
 
   function parse(source) {
     const statements = logicalStatements(source);
@@ -113,3 +127,120 @@
     if (!dialog) throw new Error("Nenhum comando DEFINE MSDIALOG foi encontrado.");
     return { dialog, controls, variables };
   }
+
+  function expressionValue(expression, state) {
+    return expression
+      .split(/\s*\+\s*/)
+      .map(part => {
+        const token = part.trim();
+        if (/^["']/.test(token)) return unquote(token);
+        return state.variables[token] == null ? "" : String(state.variables[token]);
+      })
+      .join("");
+  }
+
+  function executeAction(action, state) {
+    if (!action) return;
+    if (/\w+\s*:\s*End\s*\(\s*\)/i.test(action)) {
+      state.dialogElement.remove();
+      setStatus("Diálogo encerrado por oDlg:End().", "success");
+      return;
+    }
+    const msg = action.match(/MsgInfo\s*\((.*)\)/i);
+    if (msg) showMessage(expressionValue(msg[1], state));
+  }
+
+  function applyPosition(element, control) {
+    element.classList.add("ms-control");
+    element.style.top = control.row + "px";
+    element.style.left = control.col + "px";
+    element.style.width = control.width + "px";
+    element.style.height = control.height + "px";
+  }
+
+  function createControl(control, state) {
+    let element;
+    if (control.type === "SAY") {
+      element = document.createElement("div");
+      element.className = "ms-say";
+      element.textContent = control.text;
+    } else if (control.type === "GET") {
+      element = document.createElement("input");
+      element.className = "ms-get";
+      element.type = "text";
+      element.value = state.variables[control.boundVar] ?? "";
+      element.addEventListener("input", () => { state.variables[control.boundVar] = element.value; });
+    } else if (control.type === "CHECKBOX") {
+      element = document.createElement("label");
+      element.className = "ms-checkbox";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = Boolean(state.variables[control.boundVar]);
+      input.addEventListener("change", () => { state.variables[control.boundVar] = input.checked; });
+      element.append(input, document.createTextNode(control.text));
+    } else {
+      element = document.createElement("button");
+      element.className = "ms-button";
+      element.textContent = control.text || "Button";
+      element.addEventListener("click", () => executeAction(control.action, state));
+    }
+    applyPosition(element, control);
+    return element;
+  }
+
+  function render(program) {
+    desktopEl.replaceChildren();
+    const { dialog } = program;
+    const width = Math.max(220, dialog.right - dialog.left);
+    const height = Math.max(120, dialog.bottom - dialog.top);
+    const dialogEl = document.createElement("section");
+    dialogEl.className = "ms-dialog";
+    dialogEl.style.width = width + "px";
+    dialogEl.style.height = (height + 30) + "px";
+    if (dialog.centered) {
+      dialogEl.style.left = "50%";
+      dialogEl.style.top = "50%";
+      dialogEl.style.transform = "translate(-50%, -50%)";
+    } else {
+      dialogEl.style.left = Math.max(0, dialog.left) + "px";
+      dialogEl.style.top = Math.max(0, dialog.top) + "px";
+    }
+
+    const titlebar = document.createElement("div");
+    titlebar.className = "ms-titlebar";
+    titlebar.textContent = dialog.title;
+    const client = document.createElement("div");
+    client.className = "ms-client";
+    client.style.height = height + "px";
+    const state = { variables: { ...program.variables }, dialogElement: dialogEl };
+    for (const control of program.controls) client.append(createControl(control, state));
+    dialogEl.append(titlebar, client);
+    desktopEl.append(dialogEl);
+    setStatus(`Tela montada: ${program.controls.length} controle(s).`, "success");
+  }
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function showMessage(text) {
+    messageTextEl.textContent = text;
+    overlayEl.hidden = false;
+    document.getElementById("messageOk").focus();
+  }
+
+  document.getElementById("runButton").addEventListener("click", () => {
+    try { render(parse(sourceEl.value)); }
+    catch (error) { setStatus(error.message, "error"); }
+  });
+  document.getElementById("messageOk").addEventListener("click", () => { overlayEl.hidden = true; });
+  sourceEl.addEventListener("keydown", event => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      document.getElementById("runButton").click();
+    }
+  });
+
+  document.getElementById("runButton").click();
+})();
