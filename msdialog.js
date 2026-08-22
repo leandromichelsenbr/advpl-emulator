@@ -6,6 +6,44 @@
   const statusEl = document.getElementById("status");
   const overlayEl = document.getElementById("messageOverlay");
   const messageTextEl = document.getElementById("messageText");
+  const highlightingEl = document.getElementById("highlighting");
+  const highlightingContentEl = document.getElementById("highlightingContent");
+  const confirmOverlayEl = document.getElementById("confirmOverlay");
+  const printerSetupOverlayEl = document.getElementById("printerSetupOverlay");
+  const legacyPrinterSetupOverlayEl = document.getElementById("legacyPrinterSetupOverlay");
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function highlightAdvPL(source) {
+    const tokens = [];
+    const pattern = /(\/\/[^\r\n]*|^\s*#\s*\w+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\.(?:T|F)\.|\b\d+(?:\.\d+)?\b|\b(?:User\s+Function|Static\s+Function|Function|Return|Local|Private|Public|Static|If|ElseIf|Else|EndIf|For|Next|While|EndDo|Do\s+Case|Case|Otherwise|EndCase|DEFINE|ACTIVATE|DIALOG|MSDIALOG|TITLE|FROM|TO|PIXEL|CENTERED|SIZE|OF|PROMPT|VAR|ACTION|VALID|WHEN|PICTURE)\b|\b(?:MSDialog|TWBrowse|LoadBitmap|GetResources|MsgInfo|MsgStop|Space|AllTrim|If)\b|:\s*\w+)/gim;
+    let lastIndex = 0;
+    source.replace(pattern, (match, _capture, offset) => {
+      tokens.push(escapeHtml(source.slice(lastIndex, offset)));
+      let kind = "plain";
+      if (/^\/\//.test(match)) kind = "comment";
+      else if (/^\s*#/.test(match)) kind = "directive";
+      else if (/^["']/.test(match)) kind = "string";
+      else if (/^\.(?:T|F)\.$/i.test(match)) kind = "boolean";
+      else if (/^\d/.test(match)) kind = "number";
+      else if (/^:/.test(match)) kind = "method";
+      else if (/^(?:MSDialog|TWBrowse|LoadBitmap|GetResources|MsgInfo|MsgStop|Space|AllTrim|If)$/i.test(match)) kind = "function";
+      else kind = "keyword";
+      tokens.push(`<span class="syntax-${kind}">${escapeHtml(match)}</span>`);
+      lastIndex = offset + match.length;
+      return match;
+    });
+    tokens.push(escapeHtml(source.slice(lastIndex)));
+    return tokens.join("") + (source.endsWith("\n") ? " " : "");
+  }
+
+  function updateHighlighting() {
+    highlightingContentEl.innerHTML = highlightAdvPL(sourceEl.value);
+    highlightingEl.scrollTop = sourceEl.scrollTop;
+    highlightingEl.scrollLeft = sourceEl.scrollLeft;
+  }
 
   function stripComments(source) {
     return source
@@ -139,15 +177,24 @@
       .join("");
   }
 
-  function executeAction(action, state) {
-    if (!action) return;
-    if (/\w+\s*:\s*End\s*\(\s*\)/i.test(action)) {
-      state.dialogElement.remove();
-      setStatus("Diálogo encerrado por oDlg:End().", "success");
-      return;
+  function executeAction(action, state, done) {
+    const actions = AdvPLCore.parseAction(action || "");
+    let index = 0;
+    let result = true;
+    function next() {
+      const item = actions[index++];
+      if (!item) { if (done) done(result); return; }
+      if (item.type === "message") {
+        showMessage(AdvPLCore.evaluate(item.expression, state.variables), item.kind, next);
+      } else if (item.type === "end") {
+        state.dialogElement.remove();
+        setStatus("Diálogo encerrado.", "success");
+        next();
+      } else if (item.type === "return") {
+        result = item.value; next();
+      } else next();
     }
-    const msg = action.match(/MsgInfo\s*\((.*)\)/i);
-    if (msg) showMessage(expressionValue(msg[1], state));
+    next();
   }
 
   function applyPosition(element, control) {
@@ -160,7 +207,52 @@
 
   function createControl(control, state) {
     let element;
-    if (control.type === "SAY") {
+    if (control.type === "BROWSE") {
+      element = document.createElement("wa-tcbrowse");
+      element.id = "COMP3001";
+      element.dataset.advpl = "tcbrowse";
+      element.className = "ms-browse dict-twbrowse";
+      element.setAttribute("selection-mode", "row");
+      element.setAttribute("headerheight", "27");
+      element.setAttribute("alternateinterval", "1");
+      element.setAttribute("rowheight", "17");
+      element.setAttribute("scrolltype", "standard");
+      const table = document.createElement("table");
+      const head = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      const headers = control.headers.length ? control.headers : ["", "Código", "Descrição"];
+      headers.forEach(label => { const th = document.createElement("th"); th.textContent = label; headerRow.append(th); });
+      head.append(headerRow);
+      const body = document.createElement("tbody");
+      let selected = 0;
+      function draw() {
+        body.replaceChildren();
+        control.rows.forEach((row, rowIndex) => {
+          const tr = document.createElement("tr");
+          if (rowIndex === selected) tr.className = "selected";
+          const shown = [row[0], ...row.slice(1, headers.length)];
+          shown.forEach((value, columnIndex) => {
+            const td = document.createElement("td");
+            if (columnIndex === 0) {
+              const lamp = document.createElement("span");
+              lamp.className = "browse-lamp " + (value ? "yes" : "no");
+              td.append(lamp);
+            } else td.textContent = value == null ? "" : String(value);
+            tr.append(td);
+          });
+          tr.addEventListener("click", () => { selected = rowIndex; draw(); });
+          tr.addEventListener("dblclick", () => {
+            selected = rowIndex;
+            if (control.toggleOnDoubleClick) control.rows[rowIndex][0] = !control.rows[rowIndex][0];
+            draw();
+          });
+          body.append(tr);
+        });
+      }
+      draw();
+      table.append(head, body);
+      element.append(table);
+    } else if (control.type === "SAY") {
       element = document.createElement("div");
       element.className = "ms-say";
       element.textContent = control.text;
@@ -189,14 +281,26 @@
   }
 
   function render(program) {
+    if (program.kind === "report") {
+      desktopEl.replaceChildren();
+      if (program.setup?.enabled) showPrinterSetup(program);
+      else if (program.confirmation) showReportConfirmation(program);
+      else renderReport(program.report);
+      return;
+    }
     desktopEl.replaceChildren();
     const { dialog } = program;
     const width = Math.max(220, dialog.right - dialog.left);
     const height = Math.max(120, dialog.bottom - dialog.top);
-    const dialogEl = document.createElement("section");
-    dialogEl.className = "ms-dialog";
-    dialogEl.style.width = width + "px";
-    dialogEl.style.height = (height + 30) + "px";
+    const dialogEl = document.createElement("wa-dialog");
+    dialogEl.id = "COMP3000";
+    dialogEl.dataset.advpl = "tdialog";
+    dialogEl.className = "ms-dialog dict-tdialog";
+    dialogEl.setAttribute("opened", "");
+    dialogEl.setAttribute("state", "normal");
+    dialogEl.setAttribute("title", dialog.title);
+    dialogEl.style.width = (width + 6) + "px";
+    dialogEl.style.height = (height + 29) + "px";
     if (dialog.centered) {
       dialogEl.style.left = "50%";
       dialogEl.style.top = "50%";
@@ -208,15 +312,217 @@
 
     const titlebar = document.createElement("div");
     titlebar.className = "ms-titlebar";
-    titlebar.textContent = dialog.title;
+    const caption = document.createElement("span");
+    caption.textContent = dialog.title;
+    const close = document.createElement("button");
+    close.className = "ms-close";
+    close.type = "button";
+    close.setAttribute("aria-label", "Fechar");
+    close.textContent = "×";
+    titlebar.append(caption, close);
     const client = document.createElement("div");
     client.className = "ms-client";
     client.style.height = height + "px";
     const state = { variables: { ...program.variables }, dialogElement: dialogEl };
+    close.addEventListener("click", () => {
+      const finish = allowed => {
+        if (allowed !== false) {
+          dialogEl.remove();
+          setStatus("Diálogo encerrado.", "success");
+        }
+      };
+      if (dialog.validation) executeAction(dialog.validation, state, finish);
+      else finish(true);
+    });
     for (const control of program.controls) client.append(createControl(control, state));
     dialogEl.append(titlebar, client);
     desktopEl.append(dialogEl);
     setStatus(`Tela montada: ${program.controls.length} controle(s).`, "success");
+    if (dialog.initialization) executeAction(dialog.initialization, state);
+  }
+
+  function showPrinterSetup(program) {
+    if (program.setup.variant === "legacy") {
+      document.getElementById(program.report.orientation === "landscape" ? "legacyLandscape" : "legacyPortrait").checked = true;
+      legacyPrinterSetupOverlayEl.hidden = false;
+      document.getElementById("legacyPrinterOk").onclick = () => {
+        program.report.orientation = document.querySelector('input[name="legacyOrientation"]:checked').value;
+        legacyPrinterSetupOverlayEl.hidden = true; renderReport(program.report);
+      };
+      document.getElementById("legacyPrinterCancel").onclick = () => { legacyPrinterSetupOverlayEl.hidden = true; setStatus("Configuração de impressão cancelada.", ""); };
+      document.getElementById("legacyPrinterOk").focus();
+      return;
+    }
+    const orientationSelect = document.getElementById("printerOrientation");
+    orientationSelect.value = program.report.orientation;
+    printerSetupOverlayEl.hidden = false;
+    document.getElementById("printerSetupOk").onclick = () => {
+      program.report.orientation = orientationSelect.value;
+      program.report.orientationSource = "Setup";
+      printerSetupOverlayEl.hidden = true;
+      renderReport(program.report);
+    };
+    document.getElementById("printerSetupCancel").onclick = () => {
+      printerSetupOverlayEl.hidden = true;
+      setStatus("Configuração de impressão cancelada.", "");
+    };
+    document.getElementById("printerSetupOk").focus();
+  }
+
+  function ean13Bits(rawCode) {
+    let code = String(rawCode).replace(/\D/g, "").slice(0, 13);
+    if (code.length === 12) {
+      const sum = [...code].reduce((total, digit, index) => total + Number(digit) * (index % 2 === 0 ? 1 : 3), 0);
+      code += String((10 - (sum % 10)) % 10);
+    }
+    if (code.length !== 13) return null;
+    const L = ["0001101","0011001","0010011","0111101","0100011","0110001","0101111","0111011","0110111","0001011"];
+    const G = ["0100111","0110011","0011011","0100001","0011101","0111001","0000101","0010001","0001001","0010111"];
+    const R = ["1110010","1100110","1101100","1000010","1011100","1001110","1010000","1000100","1001000","1110100"];
+    const parity = ["LLLLLL","LLGLGG","LLGGLG","LLGGGL","LGLLGG","LGGLLG","LGGGLL","LGLGLG","LGLGGL","LGGLGL"][Number(code[0])];
+    let bits = "101";
+    for (let index = 1; index <= 6; index += 1) bits += (parity[index - 1] === "L" ? L : G)[Number(code[index])];
+    bits += "01010";
+    for (let index = 7; index <= 12; index += 1) bits += R[Number(code[index])];
+    return { code, bits: bits + "101" };
+  }
+
+  function createEan13(element) {
+    const encoded = ean13Bits(element.code);
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${element.width} ${element.height}`);
+    svg.setAttribute("aria-label", `EAN13 ${encoded?.code || element.code}`);
+    svg.classList.add("report-barcode");
+    if (!encoded) return svg;
+    const quiet = 9;
+    const moduleWidth = element.width / (95 + quiet * 2);
+    const barsHeight = element.height * .78;
+    for (let index = 0; index < encoded.bits.length; index += 1) {
+      if (encoded.bits[index] !== "1") continue;
+      const rect = document.createElementNS(svg.namespaceURI, "rect");
+      rect.setAttribute("x", (quiet + index) * moduleWidth);
+      rect.setAttribute("y", "0"); rect.setAttribute("width", moduleWidth + .05); rect.setAttribute("height", barsHeight);
+      svg.append(rect);
+    }
+    const text = document.createElementNS(svg.namespaceURI, "text");
+    text.setAttribute("x", element.width / 2); text.setAttribute("y", element.height - 2);
+    text.setAttribute("text-anchor", "middle"); text.setAttribute("font-family", "Arial"); text.setAttribute("font-size", Math.max(8, element.height * .2));
+    text.textContent = `${encoded.code[0]}  ${encoded.code.slice(1,7)}  ${encoded.code.slice(7)}`;
+    svg.append(text);
+    return svg;
+  }
+
+  function createQrCode(element) {
+    const container = document.createElement("div");
+    container.className = "report-qrcode";
+    container.setAttribute("aria-label", `QR Code: ${element.content}`);
+    if (typeof qrcode !== "function") {
+      container.textContent = "Gerador QR indisponível";
+      return container;
+    }
+    const qr = qrcode(0, "M");
+    qr.addData(element.content, "Byte");
+    qr.make();
+    const count = qr.getModuleCount();
+    const quiet = 4;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${count + quiet * 2} ${count + quiet * 2}`);
+    svg.setAttribute("shape-rendering", "crispEdges");
+    const background = document.createElementNS(svg.namespaceURI, "rect");
+    background.setAttribute("width", "100%"); background.setAttribute("height", "100%"); background.setAttribute("fill", "#fff");
+    svg.append(background);
+    for (let row = 0; row < count; row += 1) {
+      for (let col = 0; col < count; col += 1) {
+        if (!qr.isDark(row, col)) continue;
+        const module = document.createElementNS(svg.namespaceURI, "rect");
+        module.setAttribute("x", col + quiet); module.setAttribute("y", row + quiet);
+        module.setAttribute("width", "1"); module.setAttribute("height", "1"); module.setAttribute("fill", "#000");
+        svg.append(module);
+      }
+    }
+    container.append(svg);
+    return container;
+  }
+
+  function showReportConfirmation(program) {
+    document.getElementById("confirmTitle").textContent = program.confirmation.title;
+    document.getElementById("confirmText").textContent = program.confirmation.message;
+    confirmOverlayEl.hidden = false;
+    const yes = document.getElementById("confirmYes");
+    yes.focus();
+    yes.onclick = () => {
+      confirmOverlayEl.hidden = true;
+      setStatus("Processando relatório...", "success");
+      renderReport(program.report);
+    };
+    document.getElementById("confirmNo").onclick = () => {
+      confirmOverlayEl.hidden = true;
+      setStatus("Geração do relatório cancelada.", "");
+    };
+  }
+
+  function renderReport(report) {
+    desktopEl.replaceChildren();
+    const preview = document.createElement("section");
+    preview.className = "report-preview";
+    preview.dataset.advpl = "fwmsprinter-preview";
+    const toolbar = document.createElement("div");
+    toolbar.className = "report-toolbar";
+    const info = document.createElement("span");
+    info.textContent = `${report.engine} · ${report.paper} · ${report.orientation === "portrait" ? "Retrato" : "Paisagem"} · ${report.resolution} DPI`;
+    const printButton = document.createElement("button");
+    printButton.className = "primary";
+    printButton.textContent = "Imprimir / Salvar PDF";
+    printButton.addEventListener("click", () => window.print());
+    toolbar.append(info, printButton);
+    const page = document.createElement("article");
+    page.className = "report-page " + (report.orientation === "landscape" ? "report-landscape" : "report-portrait");
+    page.dataset.advpl = "fwmsprinter-page";
+    page.dataset.orientation = report.orientation;
+    document.getElementById("printPageStyle").textContent = `@page { size: A4 ${report.orientation}; margin: 0; }`;
+    const heading = document.createElement("h2");
+    heading.textContent = report.title;
+    const ruleTop = document.createElement("hr");
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    report.headers.forEach(header => { const th = document.createElement("th"); th.textContent = header; headerRow.append(th); });
+    thead.append(headerRow);
+    const tbody = document.createElement("tbody");
+    report.rows.forEach(row => {
+      const tr = document.createElement("tr");
+      row.forEach(value => { const td = document.createElement("td"); td.textContent = value; tr.append(td); });
+      tbody.append(tr);
+    });
+    table.append(thead, tbody);
+    const footer = document.createElement("footer");
+    const left = document.createElement("span");
+    left.textContent = `${report.footer.date}    ${report.footer.time}    ${report.footer.functionName}    ${report.footer.user}`;
+    const right = document.createElement("span");
+    right.textContent = `Página ${report.footer.page}`;
+    footer.append(left, right);
+    if (report.layout === "absolute") {
+      page.classList.add("absolute-report");
+      report.elements.forEach(element => {
+        const rendered = element.type === "ean13" ? createEan13(element) : element.type === "qrcode" ? createQrCode(element) : document.createElement("div");
+        rendered.classList.add("report-absolute-element");
+        const coordinates = report.coordinateSystem || { scale: 1, offsetX: 0, offsetY: 0 };
+        const x = value => coordinates.offsetX + value * coordinates.scale;
+        const y = value => coordinates.offsetY + value * coordinates.scale;
+        rendered.style.top = y(element.row) + "px"; rendered.style.left = x(element.col) + "px";
+        if (element.type === "text") { rendered.textContent = element.text; rendered.style.color = element.color; if (report.engine === "TMSPrinter") { rendered.style.fontFamily = "Courier New"; rendered.style.fontSize = "13px"; } }
+        else if (element.type === "qrcode") { rendered.style.width = element.size + "px"; rendered.style.height = element.size + "px"; }
+        else if (element.type === "line") { rendered.classList.add("report-line"); rendered.style.width = (x(element.right) - x(element.col)) + "px"; rendered.style.height = "1px"; }
+        else if (element.type === "box" || element.type === "fill") { rendered.classList.add(element.type === "box" ? "report-box" : "report-fill"); rendered.style.width = (x(element.right) - x(element.col)) + "px"; rendered.style.height = (y(element.bottom) - y(element.row)) + "px"; if (element.color) rendered.style.background = element.color; }
+        else if (element.type === "bitmap") { rendered.classList.add("report-missing-bitmap"); rendered.title = `Bitmap não encontrado: ${element.path}`; rendered.style.width = (element.width * coordinates.scale) + "px"; rendered.style.height = (element.height * coordinates.scale) + "px"; }
+        else { rendered.style.width = element.width + "px"; rendered.style.height = element.height + "px"; }
+        page.append(rendered);
+      });
+    } else page.append(heading, ruleTop, table, footer);
+    preview.append(toolbar, page);
+    desktopEl.append(preview);
+    const detail = report.layout === "absolute" ? `${report.elements.length} elemento(s)` : `${report.rows.length} registro(s)`;
+    setStatus(`Relatório montado: ${detail}, 1 página.`, "success");
   }
 
   function setStatus(text, kind) {
@@ -224,23 +530,38 @@
     statusEl.className = "status" + (kind ? " " + kind : "");
   }
 
-  function showMessage(text) {
+  let afterMessage = null;
+  function showMessage(text, kind, done) {
     messageTextEl.textContent = text;
+    overlayEl.classList.toggle("stop", kind === "stop");
+    document.getElementById("messageTitle").textContent = kind === "stop" ? "TOTVS" : "Informação";
     overlayEl.hidden = false;
+    afterMessage = done || null;
     document.getElementById("messageOk").focus();
   }
 
   document.getElementById("runButton").addEventListener("click", () => {
-    try { render(parse(sourceEl.value)); }
+    try { render(AdvPLCore.parse(sourceEl.value)); }
     catch (error) { setStatus(error.message, "error"); }
   });
-  document.getElementById("messageOk").addEventListener("click", () => { overlayEl.hidden = true; });
+  document.getElementById("messageOk").addEventListener("click", () => {
+    overlayEl.hidden = true;
+    const done = afterMessage;
+    afterMessage = null;
+    if (done) done();
+  });
   sourceEl.addEventListener("keydown", event => {
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
       event.preventDefault();
       document.getElementById("runButton").click();
     }
   });
+  sourceEl.addEventListener("input", updateHighlighting);
+  sourceEl.addEventListener("scroll", () => {
+    highlightingEl.scrollTop = sourceEl.scrollTop;
+    highlightingEl.scrollLeft = sourceEl.scrollLeft;
+  });
 
+  updateHighlighting();
   document.getElementById("runButton").click();
 })();

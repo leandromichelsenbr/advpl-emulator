@@ -14,7 +14,7 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("expõe uma versão estável", () => assert.equal(core.VERSION, "0.1.0"));
+test("expõe uma versão estável", () => assert.equal(core.VERSION, "0.2.0"));
 test("interpreta MSDialog e MSGET", () => {
   const program = core.parse(source);
   assert.equal(program.dialog.title, "Cadastro");
@@ -27,3 +27,141 @@ test("interpreta MSDialog e MSGET", () => {
 });
 test("avalia Space, AllTrim e concatenação", () => assert.equal(core.evaluate('"Olá, " + AllTrim(cNome)', { cNome: "  Leandro  " }), "Olá, Leandro"));
 test("preserva a ordem das ações compostas", () => assert.deepEqual(core.parseAction('(MsgInfo("OK"), oDlg:End())').map(action => action.type), ["message", "end"]));
+
+test("interpreta MSDialog():New e os blocos de Activate", () => {
+  const program = core.parse(`#include "TOTVS.CH"
+User Function MSDialog()
+  Local oDlg := MSDialog():New(180,180,550,700,'Exemplo MSDialog',,,,,CLR_BLACK,CLR_WHITE,,,.T.)
+  oDlg:Activate(,,,.T.,{||msgstop('validou!'),.T.},,{||msgstop('iniciando?')} )
+Return`);
+  assert.equal(program.dialog.title, "Exemplo MSDialog");
+  assert.equal(program.dialog.right - program.dialog.left, 520);
+  assert.equal(program.dialog.bottom - program.dialog.top, 370);
+  assert.equal(program.dialog.centered, true);
+  assert.deepEqual(core.parseAction(program.dialog.initialization).map(action => action.type), ["message"]);
+  assert.deepEqual(core.parseAction(program.dialog.validation).map(action => action.type), ["message", "return"]);
+});
+
+test("interpreta TWBrowse com array e duplo clique", () => {
+  const program = core.parse(`User Function TWBrowse()
+DEFINE DIALOG oDlg TITLE "Exemplo TWBrowse" FROM 180,180 TO 550,700 PIXEL
+oBrowse := TWBrowse():New(01,01,260,184,,{'','Codigo','Descrição'},{20,30,30},oDlg)
+aBrowse := {{.T.,'CLIENTE 001','RUA CLIENTE 001','BAIRRO CLIENTE 001'},;
+{.F.,'CLIENTE 002','RUA CLIENTE 002','BAIRRO CLIENTE 002'}}
+oBrowse:SetArray(aBrowse)
+oBrowse:bLDblClick := {|| aBrowse[oBrowse:nAt][1] := !aBrowse[oBrowse:nAt][1], oBrowse:DrawSelect()}
+ACTIVATE DIALOG oDlg CENTERED
+Return`);
+  const browse = program.controls[0];
+  assert.equal(program.dialog.title, "Exemplo TWBrowse");
+  assert.equal(program.dialog.centered, true);
+  assert.equal(browse.type, "BROWSE");
+  assert.equal(browse.row, 2);
+  assert.equal(browse.col, 2);
+  assert.equal(browse.width, 520);
+  assert.equal(browse.height, 368);
+  assert.deepEqual(browse.headers, ["", "Codigo", "Descrição"]);
+  assert.equal(browse.rows.length, 2);
+  assert.equal(browse.rows[0][0], true);
+  assert.equal(browse.toggleOnDoubleClick, true);
+});
+
+test("interpreta fluxo FWMSPrinter e relatório A4", () => {
+  const program = core.parse(`User Function teste()
+If MsgYesNo("Deseja gerar o relatório de grupos de produtos?", "Atenção")
+  Processa({|| fMontaRel()}, "Processando...")
+EndIf
+Static Function fMontaRel()
+oPrintPvt := FWMSPrinter():New("zTstRel", IMP_PDF)
+oPrintPvt:SetResolution(72)
+oPrintPvt:SetPortrait()
+oPrintPvt:SetPaperSize(DMPAPER_A4)
+oPrintPvt:SetMargin(60,60,60,60)
+cTexto := "Relação de Grupos de Produtos"
+oPrintPvt:SayAlign(nLinCab, COL_GRUPO, "Grupo", oFontDetN, 80, 10)
+oPrintPvt:SayAlign(nLinCab, COL_DESCR, "Descrição", oFontDetN, 200, 10)
+oPrintPvt:Preview()
+Return`);
+  assert.equal(program.kind, "report");
+  assert.equal(program.confirmation.title, "Atenção");
+  assert.equal(program.report.engine, "FWMSPrinter");
+  assert.equal(program.report.paper, "A4");
+  assert.equal(program.report.orientation, "portrait");
+  assert.deepEqual(program.report.headers, ["Grupo", "Descrição"]);
+  assert.equal(program.report.rows.length, 7);
+});
+
+test("interpreta Setup, Say e códigos EAN13", () => {
+  const program = core.parse(`User Function teste()
+Local oPrinter
+oPrinter := FWMSPrinter():New("exemplo.rel", IMP_PDF, .F., "\\spool", .T.)
+oPrinter:Say(20,30,"Código de barras EAN13:")
+oPrinter:Ean13(180/*nRow*/,280/*nCol*/,"876543210987"/*cCode*/,100/*nWidth*/,95/*nHeight*/)
+oPrinter:Ean13(300,30,"123456789012",200,95)
+oPrinter:Setup()
+If oPrinter:nModalResult == PD_OK
+  oPrinter:Preview()
+EndIf
+Return`);
+  assert.equal(program.kind, "report");
+  assert.equal(program.setup.enabled, true);
+  assert.equal(program.confirmation, null);
+  assert.equal(program.report.layout, "absolute");
+  assert.deepEqual(program.report.elements[0], { type: "text", row: 20, col: 30, text: "Código de barras EAN13:", font: null, width: 0, color: "#000000" });
+  assert.deepEqual(program.report.elements[1], { type: "ean13", row: 180, col: 280, code: "876543210987", width: 100, height: 95 });
+});
+
+test("interpreta QRCode em relatório com Setup", () => {
+  const program = core.parse(`User Function teste()
+Local oPrinter
+oPrinter := FWMSPrinter():New('teste',6,.F.,,.T.,,,,,.F.)
+oPrinter:Setup()
+oPrinter:setDevice(IMP_PDF)
+oPrinter:QRCode(150,150,"QR Code gerado com sucesso",100)
+oPrinter:EndPage()
+oPrinter:Preview()
+Return`);
+  assert.equal(program.setup.enabled, true);
+  assert.equal(program.report.layout, "absolute");
+  assert.deepEqual(program.report.elements, [{ type: "qrcode", row: 150, col: 150, content: "QR Code gerado com sucesso", size: 100 }]);
+});
+
+test("interpreta TMSPrinter e comandos gráficos legados", () => {
+  const program = core.parse(`User Function teste()
+oPrint := TMSPrinter():New("Exemplo TMSPrinter")
+oPrint:SetPortrait()
+oPrint:Setup()
+oPrint:StartPage()
+oFont1 := TFont():New('Courier new',,-18,.T.)
+oPrint:Say(10,10,"Texto para visualização",oFont1,1400,CLR_HRED)
+oPrint:SayBitmap(100,200,"C:\\Dir\\Totvs.bmp",400,400)
+oPrint:Line(130,10,130,900)
+oPrint:Box(130,10,600,900)
+oBrush1 := TBrush():New(,CLR_YELLOW)
+oPrint:FillRect({100,10,200,200},oBrush1)
+oPrint:EndPage()
+oPrint:Preview()
+Return`);
+  assert.equal(program.report.engine, "TMSPrinter");
+  assert.equal(program.report.title, "Exemplo TMSPrinter");
+  assert.equal(program.report.rows.length, 0);
+  assert.equal(program.report.templateId, null);
+  assert.equal(program.setup.variant, "legacy");
+  assert.deepEqual(program.report.coordinateSystem, { scale: 0.24, offsetX: 8.4, offsetY: 14.16 });
+  assert.deepEqual(program.report.elements.map(element => element.type), ["text", "line", "box", "fill", "bitmap"]);
+  assert.equal(program.report.elements.find(element => element.type === "text").color, "#ff0000");
+  assert.equal(program.report.elements.find(element => element.type === "fill").color, "#ffff00");
+});
+
+test("SetLandscape define página A4 em paisagem", () => {
+  const program = core.parse(`User Function teste()
+oPrinter := FWMSPrinter():New("paisagem.rel", IMP_PDF)
+oPrinter:SetLandscape()
+oPrinter:Setup()
+oPrinter:Say(20,30,"Paisagem")
+oPrinter:Preview()
+Return`);
+  assert.equal(program.report.orientation, "landscape");
+  assert.equal(program.report.orientationSource, "SetLandscape");
+  assert.equal(program.report.paper, "custom");
+});

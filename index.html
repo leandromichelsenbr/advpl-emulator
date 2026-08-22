@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Emulador MSDialog</title>
+  <title>Emulador AdvPL</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <span class="eyebrow">AdvPL clássico</span>
-        <h1>Emulador MSDialog</h1>
+        <h1>Emulador AdvPL</h1>
       </div>
       <button id="runButton" class="primary">Executar tela</button>
     </header>
@@ -19,53 +19,30 @@
     <section class="workspace">
       <div class="editor-pane">
         <div class="pane-title">Código AdvPL</div>
-        <textarea id="source" spellcheck="false">#Include "Protheus.ch"
+        <div class="code-editor">
+          <pre id="highlighting" aria-hidden="true"><code id="highlightingContent"></code></pre>
+          <textarea id="source" spellcheck="false" aria-label="Código AdvPL">#include "TOTVS.CH"
 
-User Function MinhaTela()
-    Local oDlg
-    Local oNome
-    Local oAtivo
-    Local cNome := "Maria"
-    Local lAtivo := .T.
+User Function TWBrowse()
+    Local oOK := LoadBitmap(GetResources(),'br_verde')
+    Local oNO := LoadBitmap(GetResources(),'br_vermelho')
+    DEFINE DIALOG oDlg TITLE "Exemplo TWBrowse" FROM 180,180 TO 550,700 PIXEL
 
-    DEFINE MSDIALOG oDlg ;
-        TITLE "Cadastro de cliente" ;
-        FROM 000, 000 ;
-        TO 220, 500 ;
-        PIXEL
+    oBrowse := TWBrowse():New(01,01,260,184,,{'','Codigo','Descrição'},{20,30,30},;
+        oDlg,,,,,{||},,,,,,,.F.,,.T.,,.F.,,,)
+    aBrowse := {{.T.,'CLIENTE 001','RUA CLIENTE 001','BAIRRO CLIENTE 001'},;
+        {.F.,'CLIENTE 002','RUA CLIENTE 002','BAIRRO CLIENTE 002'},;
+        {.T.,'CLIENTE 003','RUA CLIENTE 003','BAIRRO CLIENTE 003'}}
+    oBrowse:SetArray(aBrowse)
+    oBrowse:bLine := {||{If(aBrowse[oBrowse:nAt,01],oOK,oNO),aBrowse[oBrowse:nAt,02],;
+        aBrowse[oBrowse:nAt,03],aBrowse[oBrowse:nAt,04]}}
+    // Troca a imagem no duplo clique do mouse
+    oBrowse:bLDblClick := {||aBrowse[oBrowse:nAt][1] := !aBrowse[oBrowse:nAt][1],;
+        oBrowse:DrawSelect()}
 
-    @ 025, 025 SAY "Nome:" ;
-        SIZE 050, 012 ;
-        OF oDlg ;
-        PIXEL
-
-    @ 023, 085 GET oNome ;
-        VAR cNome ;
-        SIZE 140, 012 ;
-        OF oDlg ;
-        PIXEL
-
-    @ 055, 085 CHECKBOX oAtivo ;
-        VAR lAtivo ;
-        PROMPT "Cliente ativo" ;
-        SIZE 100, 012 ;
-        OF oDlg ;
-        PIXEL
-
-    @ 085, 165 BUTTON "Confirmar" ;
-        ACTION MsgInfo("Olá, " + cNome) ;
-        SIZE 070, 022 ;
-        OF oDlg ;
-        PIXEL
-
-    @ 085, 245 BUTTON "Fechar" ;
-        ACTION oDlg:End() ;
-        SIZE 060, 022 ;
-        OF oDlg ;
-        PIXEL
-
-    ACTIVATE MSDIALOG oDlg CENTERED
+    ACTIVATE DIALOG oDlg CENTERED
 Return</textarea>
+        </div>
         <div id="status" class="status">Pronto para interpretar.</div>
       </div>
 
@@ -80,13 +57,68 @@ Return</textarea>
 
   <div id="messageOverlay" class="message-overlay" hidden>
     <div class="message-box" role="dialog" aria-modal="true">
-      <div class="message-title">Informação</div>
-      <div id="messageText" class="message-text"></div>
+      <div id="messageTitle" class="message-title">Informação</div>
+      <div class="message-content"><span class="message-icon" aria-hidden="true">×</span><div id="messageText" class="message-text"></div></div>
       <button id="messageOk" class="primary">OK</button>
     </div>
   </div>
 
+  <div id="confirmOverlay" class="confirm-overlay" hidden>
+    <wa-dialog class="confirm-dialog dict-msdialog" data-advpl="tdialog" opened state="normal">
+      <div class="confirm-body">
+        <div class="confirm-icon">i</div>
+        <div><strong id="confirmTitle">Atenção</strong><p id="confirmText"></p></div>
+      </div>
+      <div class="confirm-actions">
+        <button id="confirmNo" class="confirm-secondary"><u>N</u>ão</button>
+        <button id="confirmYes" class="confirm-primary"><u>S</u>im</button>
+      </div>
+    </wa-dialog>
+  </div>
+
+  <div id="printerSetupOverlay" class="printer-setup-overlay" hidden>
+    <wa-dialog class="printer-setup-dialog dict-msdialog" data-advpl="tdialog" opened state="normal" title="TOTVSPrinter">
+      <div class="printer-setup-title">TOTVSPrinter</div>
+      <div class="printer-setup-content">
+        <nav class="printer-setup-nav">
+          <strong>TOTVS</strong>
+          <span class="printer-symbol">▣</span>
+          <strong>Destino</strong>
+          <button class="selected">▣ Servidor</button>
+          <button>▣ Local</button>
+        </nav>
+        <section class="printer-setup-options">
+          <h3>Impressão</h3>
+          <label>Tipo de saída<select><option>PDF</option></select></label>
+          <label>Arquivo<input value="exemplo.rel"></label>
+          <h3>Configurações</h3>
+          <label>Orientação<select id="printerOrientation"><option value="portrait">Retrato</option><option value="landscape">Paisagem</option></select></label>
+          <label>Papel<select><option>A4</option></select></label>
+        </section>
+      </div>
+      <div class="printer-setup-actions">
+        <button disabled>Propriedades</button><button disabled>Parâmetros</button>
+        <span></span><button id="printerSetupOk">Ok</button><button id="printerSetupCancel">Cancelar</button>
+      </div>
+    </wa-dialog>
+  </div>
+
+  <div id="legacyPrinterSetupOverlay" class="legacy-printer-overlay" hidden>
+    <wa-dialog class="legacy-printer-dialog dict-msdialog" data-advpl="tdialog" opened state="normal" title="Configuração de Impressora">
+      <div class="legacy-printer-title">Configuração de Impressora</div>
+      <div class="legacy-printer-body">
+        <h3>Dados da impressão</h3>
+        <fieldset><legend>Local de impressão:</legend><label><input type="radio" checked> Servidor</label><label><input type="radio"> Local</label></fieldset>
+        <fieldset><legend>Orientação:</legend><label><input id="legacyPortrait" type="radio" name="legacyOrientation" value="portrait" checked> Retrato</label><label><input id="legacyLandscape" type="radio" name="legacyOrientation" value="landscape"> Paisagem</label></fieldset>
+        <label class="legacy-printer-select">Impressora:<select><option>Microsoft Print to PDF</option></select></label>
+      </div>
+      <div class="legacy-printer-actions"><button id="legacyPrinterOk">Ok</button><button id="legacyPrinterCancel">Cancelar</button></div>
+    </wa-dialog>
+  </div>
+
   <script src="src/advpl-core.js"></script>
+  <script src="node_modules/qrcode-generator/dist/qrcode.js"></script>
   <script src="msdialog.js"></script>
+  <style id="printPageStyle">@page { size: A4 portrait; margin: 0; }</style>
 </body>
 </html>
