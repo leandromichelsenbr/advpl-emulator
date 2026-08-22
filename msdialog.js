@@ -12,9 +12,12 @@
   const printerSetupOverlayEl = document.getElementById("printerSetupOverlay");
   const legacyPrinterSetupOverlayEl = document.getElementById("legacyPrinterSetupOverlay");
   const messageTitleEl = document.getElementById("messageTitle") || document.querySelector(".message-title");
+  const emulatorConfig = globalThis.ADVPL_EMULATOR_CONFIG || {};
+  const headless = emulatorConfig.headless === true || new URLSearchParams(globalThis.location?.search || "").get("headless") === "1";
 
   // Permite que páginas externas carreguem o arquivo sem adotar o shell completo da demonstração.
   if (!sourceEl || !desktopEl || !statusEl) return;
+  document.documentElement.classList.toggle("headless", headless);
 
   function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -560,9 +563,31 @@
     document.getElementById("messageOk").focus();
   }
 
+  function runSource(source) {
+    if (typeof source === "string") sourceEl.value = source;
+    updateHighlighting();
+    try {
+      const program = AdvPLCore.parse(sourceEl.value, { tables: globalThis.AdvPLSampleData?.tables || {} });
+      render(program);
+      return program;
+    } catch (error) {
+      setStatus(error.message, "error");
+      throw error;
+    }
+  }
+
+  globalThis.AdvPLEmulator = Object.freeze({ run: runSource, headless });
   document.getElementById("runButton").addEventListener("click", () => {
-    try { render(AdvPLCore.parse(sourceEl.value, { tables: globalThis.AdvPLSampleData?.tables || {} })); }
-    catch (error) { setStatus(error.message, "error"); }
+    try { runSource(); } catch (_error) { /* O status apresenta o diagnóstico. */ }
+  });
+  globalThis.addEventListener("message", event => {
+    if (event.origin !== globalThis.location.origin || event.data?.type !== "advpl-emulator:run" || typeof event.data.source !== "string") return;
+    try {
+      runSource(event.data.source);
+      event.source?.postMessage({ type: "advpl-emulator:rendered" }, event.origin);
+    } catch (error) {
+      event.source?.postMessage({ type: "advpl-emulator:error", message: error.message }, event.origin);
+    }
   });
   document.getElementById("messageOk").addEventListener("click", () => {
     overlayEl.hidden = true;
@@ -585,4 +610,5 @@
 
   updateHighlighting();
   document.getElementById("runButton").click();
+  if (globalThis.parent !== globalThis) globalThis.parent.postMessage({ type: "advpl-emulator:ready", headless }, globalThis.location.origin);
 })();
