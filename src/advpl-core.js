@@ -211,7 +211,19 @@
     };
   }
 
-  function parse(source) {
+  function tableRows(tables, alias) {
+    if (!alias || !tables) return [];
+    const key = Object.keys(tables).find(name => name.toLowerCase() === alias.toLowerCase());
+    return key && Array.isArray(tables[key]) ? tables[key] : [];
+  }
+
+  function fieldValue(record, field) {
+    if (!record || !field) return "";
+    const key = Object.keys(record).find(name => name.toLowerCase() === field.toLowerCase());
+    return key ? record[key] : "";
+  }
+
+  function parse(source, options = {}) {
     const reportProgram = parseReport(source);
     if (reportProgram) return reportProgram;
     const lines = statements(source);
@@ -321,6 +333,10 @@
         const browse = controls.find(control => control.type === "GETDADOS" && control.objectVariable.toLowerCase() === deleteAction[1].toLowerCase());
         if (browse) browse.deleteAction = true;
       }
+    }
+    for (const browse of controls.filter(control => control.type === "GETDADOS")) {
+      browse.rows = tableRows(options.tables, browse.dataSource).map(record => browse.columns.map(column => fieldValue(record, column.field)));
+      browse.dataMode = browse.rows.length ? "sample" : "unavailable";
     }
     if (!dialog) throw new Error("Nenhum comando DEFINE MSDIALOG foi encontrado.");
     return { version: VERSION, dialog, controls, variables };
