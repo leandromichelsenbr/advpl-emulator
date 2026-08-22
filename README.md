@@ -32,6 +32,8 @@ Sites de treinamento e plugins podem consumir somente `src/advpl-core.js` e cria
 
 Para incorporar apenas a saída visual em outra página, use o [modo headless](docs/integration.md#modo-headless-para-incorporação).
 
+As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e a versão do pacote em execução.
+
 ## Compatibilidade atual
 
 - `DEFINE MSDIALOG` com `TITLE`, `FROM`, `TO` e `PIXEL`;

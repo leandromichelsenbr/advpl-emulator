@@ -18,6 +18,11 @@
   // Permite que páginas externas carreguem o arquivo sem adotar o shell completo da demonstração.
   if (!sourceEl || !desktopEl || !statusEl) return;
   document.documentElement.classList.toggle("headless", headless);
+  const brandEl = document.createElement("div");
+  brandEl.className = "emulator-brand";
+  brandEl.textContent = `advpl-emulator · powered by Usina.BR · v${AdvPLCore.PACKAGE_VERSION}`;
+  brandEl.setAttribute("aria-label", brandEl.textContent);
+  document.body.append(brandEl);
 
   function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
