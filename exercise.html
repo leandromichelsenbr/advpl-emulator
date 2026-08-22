@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exercício público · Emulador AdvPL</title>
+  <meta name="description" content="Laboratório público para praticar componentes visuais AdvPL no navegador.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">Laboratório público · sem autenticação</span>
+        <h1>Exercício MSDialog</h1>
+      </div>
+      <button id="runButton" class="primary">Executar tela</button>
+    </header>
+
+    <section class="exercise-instructions" aria-labelledby="exerciseTitle">
+      <h2 id="exerciseTitle">Missão</h2>
+      <p>Altere o título para <strong>Cadastro de aluno</strong>, adicione um campo <strong>Curso</strong> e faça o botão Confirmar mostrar o nome e o curso.</p>
+      <ol>
+        <li>Edite o código AdvPL.</li>
+        <li>Pressione <strong>Executar tela</strong> ou <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.</li>
+        <li>Preencha os campos e teste os botões.</li>
+      </ol>
+    </section>
+
+    <section class="workspace">
+      <div class="editor-pane">
+        <div class="pane-title">Código AdvPL</div>
+        <textarea id="source" spellcheck="false" aria-label="Código AdvPL">#Include "Protheus.ch"
+
+User Function MinhaTela()
+    Local oDlg
+    Local oNome
+    Local cNome := Space(40)
+
+    DEFINE MSDIALOG oDlg ;
+        TITLE "Cadastro" ;
+        FROM 000, 000 ;
+        TO 220, 500 ;
+        PIXEL
+
+    @ 025, 025 SAY "Nome:" SIZE 050, 012 OF oDlg PIXEL
+    @ 023, 085 MSGET cNome SIZE 140, 012 OF oDlg PIXEL
+
+    @ 085, 165 BUTTON "Confirmar" ;
+        ACTION MsgInfo("Olá, " + AllTrim(cNome)) ;
+        SIZE 070, 022 ;
+        OF oDlg ;
+        PIXEL
+
+    @ 085, 245 BUTTON "Fechar" ;
+        ACTION oDlg:End() ;
+        SIZE 060, 022 ;
+        OF oDlg ;
+        PIXEL
+
+    ACTIVATE MSDIALOG oDlg CENTERED
+Return</textarea>
+        <div id="status" class="status">Pronto para interpretar.</div>
+      </div>
+
+      <div class="preview-pane">
+        <div class="pane-title">SmartClient emulado</div>
+        <div id="desktop" class="desktop"><div class="empty-state">Execute o código para montar a tela.</div></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="messageOverlay" class="message-overlay" hidden>
+    <div class="message-box" role="dialog" aria-modal="true">
+      <div class="message-title">Informação</div>
+      <div class="message-content"><span class="message-icon" aria-hidden="true">×</span><div id="messageText" class="message-text"></div></div>
+      <button id="messageOk" class="primary">OK</button>
+    </div>
+  </div>
+
+  <script src="src/advpl-core.js"></script>
+  <script src="msdialog.js"></script>
+</body>
+</html>
