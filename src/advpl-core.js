@@ -5,7 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const VERSION = "0.1.0";
+  const VERSION = "0.2.0";
 
   function stripComments(source) {
     return source.split(/\r?\n/).map(line => line.replace(/\/\/.*$/, "")).join("\n");
@@ -54,6 +54,50 @@
     return result.filter(Boolean);
   }
 
+  function splitArguments(expression) {
+    const result = [];
+    let current = "", depth = 0, quote = null, blockDepth = 0;
+    for (let index = 0; index < expression.length; index += 1) {
+      const char = expression[index];
+      if (quote) {
+        current += char;
+        if (char === quote) quote = null;
+      } else if (char === '"' || char === "'") {
+        quote = char; current += char;
+      } else if (char === "{") {
+        blockDepth += 1; current += char;
+      } else if (char === "}") {
+        blockDepth -= 1; current += char;
+      } else if (char === "(") {
+        depth += 1; current += char;
+      } else if (char === ")") {
+        depth -= 1; current += char;
+      } else if (char === "," && depth === 0 && blockDepth === 0) {
+        result.push(current.trim()); current = "";
+      } else current += char;
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  function codeBlockBody(value = "") {
+    const match = value.trim().match(/^\{\s*\|[^|]*\|([\s\S]*)\}$/);
+    return match ? match[1].trim() : null;
+  }
+
+  function parseArray(value) {
+    const text = String(value ?? "").trim();
+    if (!text.startsWith("{") || !text.endsWith("}")) return null;
+    return splitArguments(text.slice(1, -1)).map(item => {
+      const nested = parseArray(item);
+      if (nested) return nested;
+      if (/^\.T\.$/i.test(item)) return true;
+      if (/^\.F\.$/i.test(item)) return false;
+      if (/^-?\d+(?:\.\d+)?$/.test(item)) return Number(item);
+      return unquote(item);
+    });
+  }
+
   function hasOuterParentheses(expression) {
     const text = expression.trim();
     if (!text.startsWith("(") || !text.endsWith(")")) return false;
@@ -91,13 +135,81 @@
     return splitTopLevel(list, ",").map(source => {
       const end = source.match(/^(\w+)\s*:\s*End\s*\(\s*\)$/i);
       if (end) return { type: "end", target: end[1], source };
-      const message = source.match(/^MsgInfo\s*\((.*)\)$/i);
-      if (message) return { type: "message", expression: message[1], source };
+      const message = source.match(/^Msg(Info|Stop)\s*\((.*)\)$/i);
+      if (message) return { type: "message", kind: message[1].toLowerCase(), expression: message[2], source };
+      if (/^\.T\.$/i.test(source)) return { type: "return", value: true, source };
+      if (/^\.F\.$/i.test(source)) return { type: "return", value: false, source };
       return { type: "unknown", source };
     });
   }
 
+  function parseReport(source) {
+    const engineMatch = source.match(/\b(FWMSPrinter|TMSPrinter)\s*\(\s*\)\s*:\s*New/i);
+    if (!engineMatch) return null;
+    const engine = /^TMSPrinter$/i.test(engineMatch[1]) ? "TMSPrinter" : "FWMSPrinter";
+    const cleanSource = source.replace(/\/\*[\s\S]*?\*\//g, "");
+    const question = source.match(/MsgYesNo\s*\(\s*(["'][\s\S]*?["'])\s*,\s*(["'][\s\S]*?["'])\s*\)/i);
+    const title = source.match(/cTexto\s*:=\s*(["']Rela[çc][aã]o[^"']*["'])/i);
+    const documentName = cleanSource.match(/\b(?:FWMSPrinter|TMSPrinter)\s*\(\s*\)\s*:\s*New\s*\(\s*(["'][^"']+["'])/i);
+    const resolution = source.match(/:\s*SetResolution\s*\(\s*(\d+)/i);
+    const margins = source.match(/:\s*SetMargin\s*\(\s*([^)]*)\)/i);
+    const marginValues = margins ? splitArguments(margins[1]).map(value => numeric(value)) : [60, 60, 60, 60];
+    const labels = [...source.matchAll(/:\s*SayAlign\s*\([^\r\n]*?,\s*(["'][^"']+["'])\s*,\s*oFontDetN/gi)].map(match => unquote(match[1]));
+    const sayElements = [...cleanSource.matchAll(/\w+\s*:\s*Say\s*\(([^\r\n]*)\)/gi)].map(match => {
+      const args = splitArguments(match[1]);
+      return { type: "text", row: numeric(args[0]), col: numeric(args[1]), text: unquote(args[2]), font: args[3] || null, width: numeric(args[4]), color: /CLR_HRED/i.test(args[5] || "") ? "#ff0000" : "#000000" };
+    });
+    const barcodeElements = [...cleanSource.matchAll(/\w+\s*:\s*Ean13\s*\(\s*([^,]+),\s*([^,]+),\s*(["'][^"']*["']),\s*([^,]+),\s*([^\)]+)/gi)].map(match => ({
+      type: "ean13", row: numeric(match[1]), col: numeric(match[2]), code: unquote(match[3]), width: numeric(match[4]), height: numeric(match[5])
+    }));
+    const qrElements = [...cleanSource.matchAll(/\w+\s*:\s*QRCode\s*\(\s*([^,]+),\s*([^,]+),\s*(["'][^"']*["']),\s*([^\)]+)/gi)].map(match => ({
+      type: "qrcode", row: numeric(match[1]), col: numeric(match[2]), content: unquote(match[3]), size: numeric(match[4], 100)
+    }));
+    const lineElements = [...cleanSource.matchAll(/\w+\s*:\s*Line\s*\(([^\r\n]*)\)/gi)].map(match => {
+      const args = splitArguments(match[1]); return { type: "line", row: numeric(args[0]), col: numeric(args[1]), bottom: numeric(args[2]), right: numeric(args[3]) };
+    });
+    const boxElements = [...cleanSource.matchAll(/\w+\s*:\s*Box\s*\(([^\r\n]*)\)/gi)].map(match => {
+      const args = splitArguments(match[1]); return { type: "box", row: numeric(args[0]), col: numeric(args[1]), bottom: numeric(args[2]), right: numeric(args[3]) };
+    });
+    const brushColors = Object.create(null);
+    for (const match of cleanSource.matchAll(/(\w+)\s*:=\s*TBrush\s*\(\s*\)\s*:\s*New\s*\([^,]*,\s*(\w+)/gi)) brushColors[match[1].toLowerCase()] = /YELLOW/i.test(match[2]) ? "#ffff00" : "#000000";
+    const fillElements = [...cleanSource.matchAll(/\w+\s*:\s*FillRect\s*\(\s*(\{[^}]+\})\s*,\s*(\w+)\s*\)/gi)].map(match => {
+      const rect = parseArray(match[1]); return { type: "fill", row: numeric(rect?.[0]), col: numeric(rect?.[1]), bottom: numeric(rect?.[2]), right: numeric(rect?.[3]), color: brushColors[match[2].toLowerCase()] || "#000000" };
+    });
+    const bitmapElements = [...cleanSource.matchAll(/\w+\s*:\s*SayBitmap\s*\(([^\r\n]*)\)/gi)].map(match => {
+      const args = splitArguments(match[1]); return { type: "bitmap", row: numeric(args[0]), col: numeric(args[1]), path: unquote(args[2]), width: numeric(args[3]), height: numeric(args[4]) };
+    });
+    const layoutElements = [...sayElements, ...barcodeElements, ...qrElements, ...lineElements, ...boxElements, ...fillElements, ...bitmapElements];
+    const reportTitle = unquote(title?.[1] || documentName?.[1] || "Relatório");
+    const isProductGroupReport = /Rela[çc][aã]o\s+de\s+Grupos\s+de\s+Produtos/i.test(reportTitle) || (/BM_GRUPO/i.test(source) && /BM_DESC/i.test(source));
+    const referenceRows = isProductGroupReport ? [
+      ["0001", "Plastico"], ["0002", "Borracha"], ["0003", "Aluminio"], ["0004", "Eletronicos"],
+      ["0005", "Pneumaticos"], ["0006", "Produtos Quimicos"], ["0007", "Produto de Venda"]
+    ] : [];
+    return {
+      kind: "report", version: VERSION,
+      confirmation: question ? { message: unquote(question[1]), title: unquote(question[2]) } : null,
+      setup: { enabled: /:\s*Setup\s*\(\s*\)/i.test(cleanSource), title: engine === "TMSPrinter" ? "Configuração de Impressora" : "TOTVSPrinter", variant: engine === "TMSPrinter" ? "legacy" : "framework" },
+      report: {
+        engine, format: "PDF", paper: /SetPaperSize\s*\(\s*DMPAPER_A4/i.test(source) || engine === "TMSPrinter" ? "A4" : "custom",
+        orientation: /:\s*SetLandscape\s*\(/i.test(source) ? "landscape" : "portrait",
+        orientationSource: /:\s*SetLandscape\s*\(/i.test(source) ? "SetLandscape" : /:\s*SetPortrait\s*\(/i.test(source) ? "SetPortrait" : "default",
+        resolution: numeric(resolution?.[1], 72), margins: marginValues,
+        title: reportTitle, headers: labels.length ? labels : [],
+        rows: referenceRows,
+        footer: { date: "21/08/2026", time: "23:34:05", functionName: "TESTE", user: "Administrador", page: 1 },
+        sourceDataRequired: isProductGroupReport,
+        templateId: isProductGroupReport ? "product-groups-reference" : null,
+        layout: layoutElements.length ? "absolute" : "table", elements: layoutElements,
+        coordinateSystem: engine === "TMSPrinter" ? { scale: 0.24, offsetX: 8.4, offsetY: 14.16 } : { scale: 1, offsetX: 0, offsetY: 0 }
+      },
+      controls: [], variables: Object.create(null)
+    };
+  }
+
   function parse(source) {
+    const reportProgram = parseReport(source);
+    if (reportProgram) return reportProgram;
     const lines = statements(source);
     const variables = Object.create(null);
     for (const line of lines) {
@@ -107,7 +219,17 @@
     let dialog = null;
     const controls = [];
     for (const line of lines) {
-      let match = line.match(/^DEFINE\s+MSDIALOG\s+(\w+)/i);
+      const constructor = line.match(/^Local\s+(\w+)\s*:=\s*MSDialog\s*\(\s*\)\s*:\s*New\s*\(([\s\S]*)\)$/i);
+      if (constructor) {
+        const args = splitArguments(constructor[2]);
+        dialog = {
+          variable: constructor[1], title: unquote(args[4] || "MSDialog"),
+          top: numeric(args[0]), left: numeric(args[1]), bottom: numeric(args[2], 240), right: numeric(args[3], 480),
+          pixel: true, centered: false, constructor: "MSDialog():New", validation: null, initialization: null
+        };
+        continue;
+      }
+      let match = line.match(/^DEFINE\s+(?:MS)?DIALOG\s+(\w+)/i);
       if (match) {
         const from = clause(line, "FROM", ["TO", "TITLE", "PIXEL", "STYLE"]);
         const to = clause(line, "TO", ["FROM", "TITLE", "PIXEL", "STYLE"]);
@@ -118,6 +240,27 @@
       }
       match = line.match(/^ACTIVATE\s+MSDIALOG\s+(\w+)/i);
       if (match && dialog) { dialog.centered = /\bCENTERED\b/i.test(line); continue; }
+      match = line.match(/^ACTIVATE\s+DIALOG\s+(\w+)/i);
+      if (match && dialog) { dialog.centered = /\bCENTERED\b/i.test(line); continue; }
+      match = line.match(/^(\w+)\s*:\s*Activate\s*\(([\s\S]*)\)$/i);
+      if (match && dialog && match[1].toLowerCase() === dialog.variable.toLowerCase()) {
+        const args = splitArguments(match[2]);
+        dialog.centered = /^\.T\.$/i.test(args[3] || "");
+        dialog.validation = codeBlockBody(args[4]);
+        dialog.initialization = codeBlockBody(args[6]);
+        continue;
+      }
+      match = line.match(/^(\w+)\s*:=\s*TWBrowse\s*\(\s*\)\s*:\s*New\s*\(([\s\S]*)\)$/i);
+      if (match) {
+        const args = splitArguments(match[2]);
+        controls.push({
+          type: "BROWSE", objectVariable: match[1], row: numeric(args[0]) * 2, col: numeric(args[1]) * 2,
+          width: numeric(args[2], 260) * 2, height: numeric(args[3], 184) * 2,
+          headers: parseArray(args[5]) || [], columnWidths: parseArray(args[6]) || [], rows: [], arrayVariable: null,
+          toggleOnDoubleClick: false
+        });
+        continue;
+      }
       match = line.match(/^@\s*([\d.]+)\s*,\s*([\d.]+)\s+(SAY|GET|MSGET|BUTTON|CHECKBOX)\b\s*(.*)$/i);
       if (!match) continue;
       const [, row, col, rawType, tail] = match;
@@ -130,9 +273,23 @@
       const explicitVar = clause(tail, "VAR", stops.filter(item => item !== "VAR"))?.match(/^\w+/)?.[0];
       controls.push({ type: type === "MSGET" ? "GET" : type, sourceType: type, row: numeric(row), col: numeric(col), width: numeric(sizePair[0], 100), height: numeric(sizePair[1], 12), objectVariable: firstWord && !quoted ? firstWord : null, text: quoted ?? unquote(clause(tail, "PROMPT", stops.filter(item => item !== "PROMPT")) || ""), boundVar: explicitVar ?? (type === "MSGET" ? firstWord : null), action: clause(tail, "ACTION", stops.filter(item => item !== "ACTION")) });
     }
+    for (const line of lines) {
+      const assignment = line.match(/^(\w+)\s*:=\s*(\{[\s\S]*\})$/i);
+      if (assignment) variables[assignment[1]] = parseArray(assignment[2]);
+      const setArray = line.match(/^(\w+)\s*:\s*SetArray\s*\(\s*(\w+)\s*\)$/i);
+      if (setArray) {
+        const browse = controls.find(control => control.type === "BROWSE" && control.objectVariable.toLowerCase() === setArray[1].toLowerCase());
+        if (browse) { browse.arrayVariable = setArray[2]; browse.rows = variables[setArray[2]] || []; }
+      }
+      const doubleClick = line.match(/^(\w+)\s*:\s*bLDblClick\s*:=/i);
+      if (doubleClick) {
+        const browse = controls.find(control => control.type === "BROWSE" && control.objectVariable.toLowerCase() === doubleClick[1].toLowerCase());
+        if (browse) browse.toggleOnDoubleClick = /!\s*\w+\s*\[.*?\]\s*\[?\s*1/i.test(line);
+      }
+    }
     if (!dialog) throw new Error("Nenhum comando DEFINE MSDIALOG foi encontrado.");
     return { version: VERSION, dialog, controls, variables };
   }
 
-  return Object.freeze({ VERSION, parse, evaluate, parseAction, statements, splitTopLevel });
+  return Object.freeze({ VERSION, parse, parseReport, evaluate, parseAction, statements, splitTopLevel, splitArguments, parseArray });
 });
