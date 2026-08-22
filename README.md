@@ -10,9 +10,11 @@ Instale a dependência local e abra `index.html` em um navegador:
 npm install
 ```
 
-Pressione **Executar tela** ou `Ctrl+Enter`. Não há etapa de compilação.
+Pressione **Executar código** ou `Ctrl+Enter`. Não há etapa de compilação.
 
 O laboratório público sem autenticação está em [`exercise.html`](exercise.html).
+
+Os próximos componentes, calibrações visuais e evoluções do interpretador estão registrados no [TODO do projeto](TODO.md).
 
 ## Arquitetura atualizável
 
