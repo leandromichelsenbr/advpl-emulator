@@ -113,6 +113,13 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 
 .empty-state { color: #6b7885; text-align: center; margin-top: 180px; }
 
+.headless body { min-height: 100vh; background: transparent; }
+.headless .app-shell { min-height: 100vh; }
+.headless .topbar, .headless .editor-pane, .headless .preview-pane > .pane-title { display: none; }
+.headless .workspace { display: block; min-height: 100vh; }
+.headless .preview-pane, .headless .desktop { width: 100%; min-height: 100vh; }
+.headless .desktop { padding: 0; }
+
 .ms-dialog {
   position: absolute;
   min-width: 220px;

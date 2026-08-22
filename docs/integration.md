@@ -26,3 +26,39 @@ A saída de `parse()` é um modelo neutro. A página pode renderizá-lo com HTML
 O renderizador deve manter as variáveis da sessão, refletir alterações dos campos e executar os comandos retornados por `parseAction()` na ordem apresentada.
 
 O arquivo `msdialog.js` aceita shells legados sem os elementos opcionais de realce de sintaxe e impressão. Para integrações novas, prefira consumir apenas `src/advpl-core.js` e manter um renderizador próprio.
+
+## Modo headless para incorporação
+
+Acrescente `?headless=1` ao endereço do emulador para mostrar somente a saída, sem editor, cabeçalho, botão ou barra de status:
+
+```html
+<iframe id="advplOutput" src="/emulator-frame.php?lang=pt&headless=1"></iframe>
+```
+
+Em páginas da mesma origem, envie o fonte quando o emulador informar que está pronto:
+
+```js
+const frame = document.getElementById("advplOutput");
+
+window.addEventListener("message", event => {
+  if (event.origin !== window.location.origin) return;
+  if (event.data?.type === "advpl-emulator:ready") {
+    frame.contentWindow.postMessage({
+      type: "advpl-emulator:run",
+      source: codigoAdvPL
+    }, window.location.origin);
+  }
+});
+```
+
+O frame responde com `advpl-emulator:rendered` ou `advpl-emulator:error`. Uma integração de mesma origem também pode chamar diretamente:
+
+```js
+frame.contentWindow.AdvPLEmulator.run(codigoAdvPL);
+```
+
+Para ativação programática sem parâmetro de URL, defina antes do carregamento de `msdialog.js`:
+
+```js
+window.ADVPL_EMULATOR_CONFIG = { headless: true };
+```

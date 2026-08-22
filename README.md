@@ -30,6 +30,8 @@ msdialog.js            renderizador HTML/CSS de telas e relatórios
 
 Sites de treinamento e plugins podem consumir somente `src/advpl-core.js` e criar seu próprio renderizador. Consulte [a documentação de integração](docs/integration.md).
 
+Para incorporar apenas a saída visual em outra página, use o [modo headless](docs/integration.md#modo-headless-para-incorporação).
+
 ## Compatibilidade atual
 
 - `DEFINE MSDIALOG` com `TITLE`, `FROM`, `TO` e `PIXEL`;
