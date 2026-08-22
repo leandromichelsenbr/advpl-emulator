@@ -11,6 +11,10 @@
   const confirmOverlayEl = document.getElementById("confirmOverlay");
   const printerSetupOverlayEl = document.getElementById("printerSetupOverlay");
   const legacyPrinterSetupOverlayEl = document.getElementById("legacyPrinterSetupOverlay");
+  const messageTitleEl = document.getElementById("messageTitle") || document.querySelector(".message-title");
+
+  // Permite que páginas externas carreguem o arquivo sem adotar o shell completo da demonstração.
+  if (!sourceEl || !desktopEl || !statusEl) return;
 
   function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -40,6 +44,7 @@
   }
 
   function updateHighlighting() {
+    if (!highlightingEl || !highlightingContentEl) return;
     highlightingContentEl.innerHTML = highlightAdvPL(sourceEl.value);
     highlightingEl.scrollTop = sourceEl.scrollTop;
     highlightingEl.scrollLeft = sourceEl.scrollLeft;
@@ -343,6 +348,7 @@
 
   function showPrinterSetup(program) {
     if (program.setup.variant === "legacy") {
+      if (!legacyPrinterSetupOverlayEl) { renderReport(program.report); return; }
       document.getElementById(program.report.orientation === "landscape" ? "legacyLandscape" : "legacyPortrait").checked = true;
       legacyPrinterSetupOverlayEl.hidden = false;
       document.getElementById("legacyPrinterOk").onclick = () => {
@@ -353,6 +359,7 @@
       document.getElementById("legacyPrinterOk").focus();
       return;
     }
+    if (!printerSetupOverlayEl) { renderReport(program.report); return; }
     const orientationSelect = document.getElementById("printerOrientation");
     orientationSelect.value = program.report.orientation;
     printerSetupOverlayEl.hidden = false;
@@ -445,6 +452,7 @@
   }
 
   function showReportConfirmation(program) {
+    if (!confirmOverlayEl) { renderReport(program.report); return; }
     document.getElementById("confirmTitle").textContent = program.confirmation.title;
     document.getElementById("confirmText").textContent = program.confirmation.message;
     confirmOverlayEl.hidden = false;
@@ -479,7 +487,13 @@
     page.className = "report-page " + (report.orientation === "landscape" ? "report-landscape" : "report-portrait");
     page.dataset.advpl = "fwmsprinter-page";
     page.dataset.orientation = report.orientation;
-    document.getElementById("printPageStyle").textContent = `@page { size: A4 ${report.orientation}; margin: 0; }`;
+    let printPageStyle = document.getElementById("printPageStyle");
+    if (!printPageStyle) {
+      printPageStyle = document.createElement("style");
+      printPageStyle.id = "printPageStyle";
+      document.head.append(printPageStyle);
+    }
+    printPageStyle.textContent = `@page { size: A4 ${report.orientation}; margin: 0; }`;
     const heading = document.createElement("h2");
     heading.textContent = report.title;
     const ruleTop = document.createElement("hr");
@@ -534,7 +548,7 @@
   function showMessage(text, kind, done) {
     messageTextEl.textContent = text;
     overlayEl.classList.toggle("stop", kind === "stop");
-    document.getElementById("messageTitle").textContent = kind === "stop" ? "TOTVS" : "Informação";
+    if (messageTitleEl) messageTitleEl.textContent = kind === "stop" ? "TOTVS" : "Informação";
     overlayEl.hidden = false;
     afterMessage = done || null;
     document.getElementById("messageOk").focus();
@@ -558,6 +572,7 @@
   });
   sourceEl.addEventListener("input", updateHighlighting);
   sourceEl.addEventListener("scroll", () => {
+    if (!highlightingEl) return;
     highlightingEl.scrollTop = sourceEl.scrollTop;
     highlightingEl.scrollLeft = sourceEl.scrollLeft;
   });
