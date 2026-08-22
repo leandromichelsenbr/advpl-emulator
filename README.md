@@ -12,6 +12,8 @@ npm install
 
 Pressione **Executar tela** ou `Ctrl+Enter`. Não há etapa de compilação.
 
+O laboratório público sem autenticação está em [`exercise.html`](exercise.html).
+
 ## Arquitetura atualizável
 
 ```text

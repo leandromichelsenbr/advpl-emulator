@@ -36,6 +36,11 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .primary:hover { background: #075bbd; }
 
 .workspace { flex: 1; display: grid; grid-template-columns: minmax(420px, 46%) 1fr; min-height: 0; }
+.exercise-instructions { padding: 14px 24px; border-bottom: 1px solid #d9e0e7; background: #fff; }
+.exercise-instructions h2 { margin: 0 0 5px; font-size: 16px; }
+.exercise-instructions p { margin: 0 0 7px; color: #425466; }
+.exercise-instructions ol { display: flex; gap: 28px; margin: 0; padding-left: 20px; color: #5d6d7e; font-size: 12px; }
+.exercise-instructions kbd { padding: 1px 4px; border: 1px solid #b7c0c8; border-radius: 3px; background: #f6f8fa; }
 .editor-pane, .preview-pane { min-width: 0; display: flex; flex-direction: column; }
 .editor-pane { background: #141a21; border-right: 1px solid #2d3742; }
 .preview-pane { background: #dce3ea; }
@@ -249,4 +254,5 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; }
   .editor-pane { min-height: 520px; }
+  .exercise-instructions ol { display: block; }
 }
