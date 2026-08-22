@@ -212,20 +212,22 @@
 
   function createControl(control, state) {
     let element;
-    if (control.type === "BROWSE") {
-      element = document.createElement("wa-tcbrowse");
-      element.id = "COMP3001";
-      element.dataset.advpl = "tcbrowse";
-      element.className = "ms-browse dict-twbrowse";
-      element.setAttribute("selection-mode", "row");
-      element.setAttribute("headerheight", "27");
+    if (control.type === "BROWSE" || control.type === "GETDADOS") {
+      const getDados = control.type === "GETDADOS";
+      element = document.createElement(getDados ? "wa-tgetdados" : "wa-tcbrowse");
+      element.id = getDados ? "COMP4501" : "COMP3001";
+      element.dataset.advpl = getDados ? "msbrgetdbase" : "tcbrowse";
+      element.className = "ms-browse " + (getDados ? "ms-getdados dict-brgetddb" : "dict-twbrowse");
+      element.setAttribute("selection-mode", getDados ? "cell" : "row");
+      element.setAttribute("headerheight", getDados ? "22" : "27");
       element.setAttribute("alternateinterval", "1");
       element.setAttribute("rowheight", "17");
-      element.setAttribute("scrolltype", "standard");
+      element.setAttribute("scrolltype", getDados ? "button" : "standard");
+      if (control.dataSource) element.setAttribute("data-alias", control.dataSource);
       const table = document.createElement("table");
       const head = document.createElement("thead");
       const headerRow = document.createElement("tr");
-      const headers = control.headers.length ? control.headers : ["", "Código", "Descrição"];
+      const headers = control.headers.length ? control.headers : (getDados ? [] : ["", "Código", "Descrição"]);
       headers.forEach(label => { const th = document.createElement("th"); th.textContent = label; headerRow.append(th); });
       head.append(headerRow);
       const body = document.createElement("tbody");
@@ -238,7 +240,7 @@
           const shown = [row[0], ...row.slice(1, headers.length)];
           shown.forEach((value, columnIndex) => {
             const td = document.createElement("td");
-            if (columnIndex === 0) {
+            if (!getDados && columnIndex === 0) {
               const lamp = document.createElement("span");
               lamp.className = "browse-lamp " + (value ? "yes" : "no");
               td.append(lamp);
@@ -249,6 +251,7 @@
           tr.addEventListener("dblclick", () => {
             selected = rowIndex;
             if (control.toggleOnDoubleClick) control.rows[rowIndex][0] = !control.rows[rowIndex][0];
+            if (getDados && control.customEdit) showMessage("editLine", "stop");
             draw();
           });
           body.append(tr);

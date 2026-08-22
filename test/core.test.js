@@ -70,6 +70,32 @@ Return`);
   assert.equal(browse.toggleOnDoubleClick, true);
 });
 
+test("interpreta BrGetDDB com TCColumn e callbacks", () => {
+  const program = core.parse(`#include 'totvs.ch'
+User Function teste()
+Local oDlg := Nil
+DEFINE DIALOG oDlg TITLE "Exemplo BrGetDDB" FROM 180,180 TO 550,700 PIXEL
+dbSelectArea('SA1')
+oBrowse := BrGetDDB():New(1,1,260,184,,,,oDlg,,,,,,,,,,,,.F.,'SA1',.T.,,.F.,,,)
+oBrowse:bCustomEditCol := {|x,y,z| u_editLine(x,y,z)}
+oBrowse:bDelete := {|| conOut("bDelete")}
+oBrowse:AddColumn(TCColumn():New('Codigo',{|| SA1->A1_COD},,,,'LEFT',,.F.,.F.,,,,.F.))
+oBrowse:AddColumn(TCColumn():New('Loja',{|| SA1->A1_LOJA},,,,'LEFT',,.F.,.F.,,,,.F.))
+oBrowse:AddColumn(TCColumn():New('Nome',{|| SA1->A1_NOME},,,,'LEFT',,.F.,.F.,,,,.F.))
+ACTIVATE DIALOG oDlg CENTERED
+Return Nil`);
+  const browse = program.controls[0];
+  assert.equal(program.dialog.title, "Exemplo BrGetDDB");
+  assert.equal(browse.type, "GETDADOS");
+  assert.equal(browse.width, 520);
+  assert.equal(browse.height, 368);
+  assert.equal(browse.dataSource, "SA1");
+  assert.deepEqual(browse.headers, ["Codigo", "Loja", "Nome"]);
+  assert.deepEqual(browse.columns.map(column => column.field), ["A1_COD", "A1_LOJA", "A1_NOME"]);
+  assert.equal(browse.customEdit, true);
+  assert.equal(browse.deleteAction, true);
+});
+
 test("interpreta fluxo FWMSPrinter e relatório A4", () => {
   const program = core.parse(`User Function teste()
 If MsgYesNo("Deseja gerar o relatório de grupos de produtos?", "Atenção")

@@ -160,6 +160,11 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .browse-lamp { display: inline-block; width: 13px; height: 13px; border: 1px solid #929292; border-radius: 50%; box-shadow: inset -2px -2px 3px rgba(0,0,0,.25), inset 2px 2px 3px rgba(255,255,255,.75); vertical-align: middle; }
 .browse-lamp.yes { background: #7ee635; }
 .browse-lamp.no { background: #ed343b; }
+.ms-getdados { overflow: scroll; font-family: Arial, sans-serif; }
+.ms-getdados th { height: 22px; }
+.ms-getdados th:first-child, .ms-getdados td:first-child { width: auto; text-align: left; }
+.ms-getdados td { height: 17px; }
+.ms-getdados td.selected-cell { outline: 2px solid #004064; outline-offset: -2px; }
 
 .message-overlay {
   position: fixed;

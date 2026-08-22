@@ -43,6 +43,7 @@ Sites de treinamento e plugins podem consumir somente `src/advpl-core.js` e cria
 - construção orientada a objetos com `MSDialog():New()` e `oDlg:Activate()`;
 - blocos de inicialização e validação com `MsgStop()`;
 - `DEFINE DIALOG` e `TWBrowse():New()` com arrays, seleção e duplo clique;
+- `BrGetDDB():New()` com alias, colunas `TCColumn`, seleção por célula e callbacks de edição/exclusão;
 - realce de sintaxe AdvPL no editor;
 - `FWMSPrinter` com setup, preview, A4 retrato/paisagem e impressão pelo navegador;
 - `TMSPrinter` com coordenadas legadas e tela de configuração própria;

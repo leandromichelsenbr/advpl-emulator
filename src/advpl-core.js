@@ -265,6 +265,18 @@
         });
         continue;
       }
+      match = line.match(/^(\w+)\s*:=\s*BrGetDDB\s*\(\s*\)\s*:\s*New\s*\(([\s\S]*)\)$/i);
+      if (match) {
+        const args = splitArguments(match[2]);
+        const aliases = args.map(unquote).filter(value => /^[A-Z][A-Z0-9_]{1,9}$/i.test(value));
+        controls.push({
+          type: "GETDADOS", objectVariable: match[1], row: numeric(args[0]) * 2, col: numeric(args[1]) * 2,
+          width: numeric(args[2], 260) * 2, height: numeric(args[3], 184) * 2,
+          headers: [], columns: [], rows: [], dataSource: aliases.at(-1) || null,
+          customEdit: false, deleteAction: false
+        });
+        continue;
+      }
       match = line.match(/^@\s*([\d.]+)\s*,\s*([\d.]+)\s+(SAY|GET|MSGET|BUTTON|CHECKBOX)\b\s*(.*)$/i);
       if (!match) continue;
       const [, row, col, rawType, tail] = match;
@@ -289,6 +301,25 @@
       if (doubleClick) {
         const browse = controls.find(control => control.type === "BROWSE" && control.objectVariable.toLowerCase() === doubleClick[1].toLowerCase());
         if (browse) browse.toggleOnDoubleClick = /!\s*\w+\s*\[.*?\]\s*\[?\s*1/i.test(line);
+      }
+      const addColumn = line.match(/^(\w+)\s*:\s*addColumn\s*\(\s*TCColumn\s*\(\s*\)\s*:\s*new\s*\(\s*(['"])(.*?)\2\s*,\s*\{\s*\|\|\s*([\s\S]*?)\s*\}/i);
+      if (addColumn) {
+        const browse = controls.find(control => control.type === "GETDADOS" && control.objectVariable.toLowerCase() === addColumn[1].toLowerCase());
+        if (browse) {
+          const field = addColumn[4].match(/(?:\w+\s*->\s*)?(\w+)\s*$/)?.[1] || null;
+          browse.columns.push({ title: addColumn[3], field, expression: addColumn[4].trim(), alignment: /['"]LEFT['"]/i.test(line) ? "left" : "left" });
+          browse.headers.push(addColumn[3]);
+        }
+      }
+      const customEdit = line.match(/^(\w+)\s*:\s*bCustomEditCol\s*:=/i);
+      if (customEdit) {
+        const browse = controls.find(control => control.type === "GETDADOS" && control.objectVariable.toLowerCase() === customEdit[1].toLowerCase());
+        if (browse) browse.customEdit = true;
+      }
+      const deleteAction = line.match(/^(\w+)\s*:\s*bDelete\s*:=/i);
+      if (deleteAction) {
+        const browse = controls.find(control => control.type === "GETDADOS" && control.objectVariable.toLowerCase() === deleteAction[1].toLowerCase());
+        if (browse) browse.deleteAction = true;
       }
     }
     if (!dialog) throw new Error("Nenhum comando DEFINE MSDIALOG foi encontrado.");
