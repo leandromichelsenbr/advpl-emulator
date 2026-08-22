@@ -232,11 +232,12 @@
       head.append(headerRow);
       const body = document.createElement("tbody");
       let selected = 0;
+      let selectedColumn = 0;
       function draw() {
         body.replaceChildren();
         control.rows.forEach((row, rowIndex) => {
           const tr = document.createElement("tr");
-          if (rowIndex === selected) tr.className = "selected";
+          if (!getDados && rowIndex === selected) tr.className = "selected";
           const shown = [row[0], ...row.slice(1, headers.length)];
           shown.forEach((value, columnIndex) => {
             const td = document.createElement("td");
@@ -245,9 +246,11 @@
               lamp.className = "browse-lamp " + (value ? "yes" : "no");
               td.append(lamp);
             } else td.textContent = value == null ? "" : String(value);
+            if (getDados && rowIndex === selected && columnIndex === selectedColumn) td.classList.add("selected-cell");
+            td.addEventListener("click", () => { selected = rowIndex; selectedColumn = columnIndex; draw(); });
             tr.append(td);
           });
-          tr.addEventListener("click", () => { selected = rowIndex; draw(); });
+          if (!getDados) tr.addEventListener("click", () => { selected = rowIndex; draw(); });
           tr.addEventListener("dblclick", () => {
             selected = rowIndex;
             if (control.toggleOnDoubleClick) control.rows[rowIndex][0] = !control.rows[rowIndex][0];
@@ -558,7 +561,7 @@
   }
 
   document.getElementById("runButton").addEventListener("click", () => {
-    try { render(AdvPLCore.parse(sourceEl.value)); }
+    try { render(AdvPLCore.parse(sourceEl.value, { tables: globalThis.AdvPLSampleData?.tables || {} })); }
     catch (error) { setStatus(error.message, "error"); }
   });
   document.getElementById("messageOk").addEventListener("click", () => {

@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const core = require("../src/advpl-core.js");
+const sampleData = require("../data/sample-data.js");
 
 const source = `User Function MinhaTela()
 Local oDlg
@@ -83,7 +84,7 @@ oBrowse:AddColumn(TCColumn():New('Codigo',{|| SA1->A1_COD},,,,'LEFT',,.F.,.F.,,,
 oBrowse:AddColumn(TCColumn():New('Loja',{|| SA1->A1_LOJA},,,,'LEFT',,.F.,.F.,,,,.F.))
 oBrowse:AddColumn(TCColumn():New('Nome',{|| SA1->A1_NOME},,,,'LEFT',,.F.,.F.,,,,.F.))
 ACTIVATE DIALOG oDlg CENTERED
-Return Nil`);
+Return Nil`, { tables: sampleData.tables });
   const browse = program.controls[0];
   assert.equal(program.dialog.title, "Exemplo BrGetDDB");
   assert.equal(browse.type, "GETDADOS");
@@ -94,6 +95,9 @@ Return Nil`);
   assert.deepEqual(browse.columns.map(column => column.field), ["A1_COD", "A1_LOJA", "A1_NOME"]);
   assert.equal(browse.customEdit, true);
   assert.equal(browse.deleteAction, true);
+  assert.equal(browse.dataMode, "sample");
+  assert.equal(browse.rows.length, 5);
+  assert.deepEqual(browse.rows[0], ["000001", "01", "CLIENTE EXEMPLO 001"]);
 });
 
 test("interpreta fluxo FWMSPrinter e relatório A4", () => {
