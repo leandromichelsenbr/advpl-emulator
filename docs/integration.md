@@ -57,8 +57,52 @@ O frame responde com `advpl-emulator:rendered` ou `advpl-emulator:error`. Uma in
 frame.contentWindow.AdvPLEmulator.run(codigoAdvPL);
 ```
 
+### Dados de exemplo na chamada
+
+O segundo argumento de `run()` pode ser um objeto de tabelas, um objeto `{ tables: ... }` ou uma string JSON. Os aliases fornecidos substituem os conjuntos padrão somente naquela execução:
+
+```js
+const dados = {
+  SA1: [
+    { A1_COD: "900001", A1_LOJA: "01", A1_NOME: "CLIENTE DO EXERCÍCIO" },
+    { A1_COD: "900002", A1_LOJA: "02", A1_NOME: "OUTRO CLIENTE" }
+  ]
+};
+
+frame.contentWindow.AdvPLEmulator.run(codigoAdvPL, dados);
+```
+
+Para definir os dados das próximas execuções do frame:
+
+```js
+frame.contentWindow.AdvPLEmulator.setData(dados);
+frame.contentWindow.AdvPLEmulator.run(codigoAdvPL);
+```
+
+No protocolo `postMessage`, envie a propriedade `data` junto do fonte:
+
+```js
+frame.contentWindow.postMessage({
+  type: "advpl-emulator:run",
+  source: codigoAdvPL,
+  data: dados
+}, window.location.origin);
+```
+
+O formato com uma raiz `tables` também é aceito:
+
+```json
+{
+  "tables": {
+    "SA1": [
+      { "A1_COD": "900001", "A1_LOJA": "01", "A1_NOME": "CLIENTE DO EXERCÍCIO" }
+    ]
+  }
+}
+```
+
 Para ativação programática sem parâmetro de URL, defina antes do carregamento de `msdialog.js`:
 
 ```js
-window.ADVPL_EMULATOR_CONFIG = { headless: true };
+window.ADVPL_EMULATOR_CONFIG = { headless: true, data: dados };
 ```
