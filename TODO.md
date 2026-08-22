@@ -16,6 +16,7 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.
 - [ ] Calibrar `MSDialog`/`TDialog`: título, área útil, coordenadas, centralização, cores, fontes e ciclo de ativação.
 - [ ] Calibrar `TWBrowse`/`TCBrowse`: cabeçalho, linhas alternadas, seleção, imagens, rolagem, navegação e duplo clique.
+- [ ] Completar a calibração de `BrGetDDB`/`TGetDados`: edição por célula, exclusão, navegação e alimentação por dados de referência.
 - [ ] Calibrar mensagens (`MsgInfo`, `MsgStop`, `MsgAlert`, confirmações) e seus fluxos modais.
 - [ ] Unificar a ação principal como **Executar código** em todas as interfaces e integrações.
 - [ ] Criar testes visuais com tolerância definida para impedir regressões de layout.
