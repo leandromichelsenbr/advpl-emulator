@@ -5,7 +5,11 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const VERSION = "0.2.0";
+  // VERSION identifica o contrato público consumido por integrações existentes.
+  // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
+  const VERSION = "0.1.0";
+  const API_VERSION = "0.1";
+  const PACKAGE_VERSION = "0.2.0";
 
   function stripComments(source) {
     return source.split(/\r?\n/).map(line => line.replace(/\/\/.*$/, "")).join("\n");
@@ -291,5 +295,5 @@
     return { version: VERSION, dialog, controls, variables };
   }
 
-  return Object.freeze({ VERSION, parse, parseReport, evaluate, parseAction, statements, splitTopLevel, splitArguments, parseArray });
+  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, evaluate, parseAction, statements, splitTopLevel, splitArguments, parseArray });
 });
