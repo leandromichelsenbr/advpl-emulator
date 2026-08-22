@@ -563,11 +563,37 @@
     document.getElementById("messageOk").focus();
   }
 
-  function runSource(source) {
+  const defaultTables = globalThis.AdvPLSampleData?.tables || {};
+  let runtimeTables = { ...defaultTables };
+
+  function normalizeTables(data) {
+    if (data == null) return {};
+    let parsed = data;
+    if (typeof parsed === "string") {
+      try { parsed = JSON.parse(parsed); }
+      catch (_error) { throw new Error("JSON de dados de exemplo inválido."); }
+    }
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.tables) parsed = parsed.tables;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Os dados de exemplo devem ser um objeto de tabelas.");
+    const tables = {};
+    for (const [alias, rows] of Object.entries(parsed)) {
+      if (!/^[A-Za-z][A-Za-z0-9_]{0,15}$/.test(alias) || !Array.isArray(rows)) throw new Error(`Tabela de exemplo inválida: ${alias}.`);
+      tables[alias.toUpperCase()] = rows;
+    }
+    return tables;
+  }
+
+  function setData(data) {
+    runtimeTables = { ...defaultTables, ...normalizeTables(data) };
+    return runtimeTables;
+  }
+
+  function runSource(source, data) {
     if (typeof source === "string") sourceEl.value = source;
     updateHighlighting();
     try {
-      const program = AdvPLCore.parse(sourceEl.value, { tables: globalThis.AdvPLSampleData?.tables || {} });
+      const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
+      const program = AdvPLCore.parse(sourceEl.value, { tables });
       render(program);
       return program;
     } catch (error) {
@@ -576,14 +602,15 @@
     }
   }
 
-  globalThis.AdvPLEmulator = Object.freeze({ run: runSource, headless });
+  if (emulatorConfig.data !== undefined || emulatorConfig.tables !== undefined) setData(emulatorConfig.data ?? emulatorConfig.tables);
+  globalThis.AdvPLEmulator = Object.freeze({ run: runSource, setData, headless });
   document.getElementById("runButton").addEventListener("click", () => {
     try { runSource(); } catch (_error) { /* O status apresenta o diagnóstico. */ }
   });
   globalThis.addEventListener("message", event => {
     if (event.origin !== globalThis.location.origin || event.data?.type !== "advpl-emulator:run" || typeof event.data.source !== "string") return;
     try {
-      runSource(event.data.source);
+      runSource(event.data.source, event.data.data ?? event.data.tables);
       event.source?.postMessage({ type: "advpl-emulator:rendered" }, event.origin);
     } catch (error) {
       event.source?.postMessage({ type: "advpl-emulator:error", message: error.message }, event.origin);

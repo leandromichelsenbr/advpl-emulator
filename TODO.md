@@ -68,6 +68,7 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 - [ ] Cobrir parser, modelo intermediário, eventos e renderizadores com testes automatizados.
 - [ ] Executar testes de integração do laboratório incorporado, além da versão local.
 - [x] Disponibilizar modo `headless` para incorporar somente a saída e executar fontes dinamicamente.
+- [x] Permitir que cada chamada de teste forneça suas próprias tabelas em JSON.
 - [ ] Versionar o contrato público do núcleo e documentar migrações incompatíveis.
 - [ ] Automatizar publicação e invalidação de cache dos arquivos incorporados.
 - [ ] Manter exemplos sem dependência de AppServer, banco Protheus ou arquivos privados.
