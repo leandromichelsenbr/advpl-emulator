@@ -100,6 +100,34 @@ Return Nil`, { tables: sampleData.tables });
   assert.deepEqual(browse.rows[0], ["000001", "01", "CLIENTE EXEMPLO 001"]);
 });
 
+test("interpreta TCBrowse, eventos e botões de navegação", () => {
+  const program = core.parse(`User Function TCBrowse()
+DEFINE DIALOG oDlg TITLE "Exemplo TCBrowse" FROM 180,180 TO 550,700 PIXEL
+aBrowse := {{.T.,'CLIENTE 001','RUA CLIENTE 001',111.11},{.F.,'CLIENTE 002','RUA CLIENTE 002',222.22},{.T.,'CLIENTE 003','RUA CLIENTE 003',333.33}}
+oBrowse := TCBrowse():New(1,1,260,156,,{'','Codigo','Nome','Valor'},{20,50,50,50},oDlg)
+oBrowse:SetArray(aBrowse)
+oBrowse:bLine := {||{If(aBrowse[oBrowse:nAt,1],oOK,oNO),aBrowse[oBrowse:nAt,2],aBrowse[oBrowse:nAt,3],Transform(aBrowse[oBrowse:nAt,4],'@E 99,999,999,999.99')}}
+oBrowse:bHeaderClick := {|o,nCol| alert('bHeaderClick')}
+oBrowse:bLDblClick := {|| alert('bLDblClick')}
+TButton():New(160,2,"GoUp()",oDlg,{||oBrowse:GoUp(),oBrowse:SetFocus()},40,10)
+TButton():New(160,52,"GoDown()",oDlg,{||oBrowse:GoDown(),oBrowse:SetFocus()},40,10)
+TButton():New(172,2,"Linha atual",oDlg,{||alert(oBrowse:nAt)},40,10)
+TButton():New(172,52,"Nr Linhas",oDlg,{||alert(oBrowse:nLen)},40,10)
+ACTIVATE DIALOG oDlg CENTERED
+Return`);
+  const browse = program.controls[0];
+  const buttons = program.controls.filter(control => control.type === "TBUTTON");
+  assert.equal(browse.sourceClass, "TCBrowse");
+  assert.equal(browse.height, 312);
+  assert.deepEqual(browse.headers, ["", "Codigo", "Nome", "Valor"]);
+  assert.equal(browse.headerClick, true);
+  assert.equal(browse.doubleClickMessage, "bLDblClick");
+  assert.equal(browse.formats[3], "@E 99,999,999,999.99");
+  assert.equal(buttons.length, 4);
+  assert.deepEqual(buttons.map(button => button.browseCommand), ["GoUp", "GoDown", "nAt", "nLen"]);
+  assert.deepEqual([buttons[0].row, buttons[0].col, buttons[0].width, buttons[0].height], [320, 4, 80, 20]);
+});
+
 test("interpreta fluxo FWMSPrinter e relatório A4", () => {
   const program = core.parse(`User Function teste()
 If MsgYesNo("Deseja gerar o relatório de grupos de produtos?", "Atenção")

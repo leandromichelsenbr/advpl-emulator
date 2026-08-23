@@ -169,6 +169,9 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .ms-get:focus { border-color: #2576bd; box-shadow: 0 0 0 1px #2576bd; }
 .ms-button { border: 1px solid #8c969f; border-radius: 3px; background: linear-gradient(#fff, #dce1e5); cursor: pointer; }
 .ms-button:hover { background: linear-gradient(#fff, #cfdbe5); border-color: #5d7d98; }
+.ms-tbutton { display: grid; place-items: center; border: 2px solid #00659a; border-radius: 3px; background: transparent; color: #00659a; cursor: pointer; font: 11px Arial, sans-serif; }
+.ms-tbutton:hover { border-color: #051f31; background: #afd3fa; color: #051f31; }
+.ms-tbutton:focus { outline: 2px solid #00659a; outline-offset: -4px; color: #051f31; font-weight: bold; }
 .ms-checkbox { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .ms-checkbox input { margin: 0; }
 .ms-browse { display: block; overflow: auto; border: 1px none #3dadfa; background: #fbfbfb; color: #000; cursor: pointer; font: 11px Arial, sans-serif; }
