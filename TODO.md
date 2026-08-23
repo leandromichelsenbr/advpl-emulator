@@ -44,6 +44,49 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 - [ ] Exportar e comparar PDF gerado com PDFs de referência.
 - [ ] Simular spool/preview sem depender de caminhos locais do ambiente Protheus.
 
+### Marco DANFEII
+
+O inventário detalhado e a comparação com o suporte atual estão em [`docs/danfeii-print-inventory.md`](docs/danfeii-print-inventory.md).
+
+#### Fase 1 — Modelo de execução e páginas
+
+- [ ] Substituir a coleta global de chamadas por um fluxo ordenado de instruções de impressão.
+- [ ] Modelar documento, páginas e elementos separadamente, preservando cada `StartPage()` e `EndPage()`.
+- [ ] Selecionar a função de entrada e seguir chamadas como `PrtDanfe`, `DanfeCpl`, `SimpDanfe`, `ImpItem` e `RiscaItem`.
+- [ ] Interpretar os condicionais e laços mínimos necessários sem misturar DANFE normal, simplificado, continuação e verso.
+- [ ] Permitir fornecer um JSON fictício de NF-e e transformar seus dados em variáveis/objetos acessíveis ao fonte.
+
+#### Fase 2 — Geometria e tipografia
+
+- [ ] Calibrar a grade DANFE de 603 × 865 unidades para A4 com resolução 78 e margens 60.
+- [ ] Implementar `TFontEx` e a passagem de `oFontEx:oFont` para `Say()`.
+- [ ] Reproduzir `Times New Roman` nos tamanhos 6 a 17, incluindo negrito e demais flags.
+- [ ] Avaliar expressões usadas em coordenadas, dimensões e textos, em vez de convertê-las silenciosamente para zero.
+- [ ] Implementar medição de texto compatível com o cálculo de colunas e alinhamento numérico.
+- [ ] Calibrar `Say()` e `Box()` com sobreposição, bordas, recortes e ordem de desenho.
+
+#### Fase 3 — Recursos e códigos
+
+- [ ] Implementar `Code128C()` com validação, largura e altura equivalentes ao FWMSPrinter.
+- [ ] Resolver `SayBitmap()` por mapa seguro de recursos fornecido pelo exercício, sem acessar caminhos arbitrários.
+- [ ] Suportar os logotipos do emitente e institucionais com fallback visual explícito.
+- [ ] Preservar cores, estilos e propriedades gráficas adicionais quando presentes.
+
+#### Fase 4 — Fluxo de impressão
+
+- [ ] Modelar `lServer`, `nDevice`, `cPathPDF` e `cPrinter` sem realizar escrita arbitrária no servidor.
+- [ ] Completar `Setup()` para destinos PDF, spool e impressora simulada.
+- [ ] Reproduzir `Preview()` com navegação entre todas as páginas.
+- [ ] Gerar PDF multipágina com dimensões e orientação consistentes com o preview.
+
+#### Fase 5 — Fixture e fidelidade
+
+- [ ] Extrair um exemplo DANFE mínimo, sem dados ou regras proprietárias desnecessárias.
+- [ ] Criar dados fiscais inteiramente fictícios para emitente, destinatário, itens, totais, transporte e mensagens.
+- [ ] Registrar PDF e imagens de referência autorizados para DANFE normal, continuação e simplificado.
+- [ ] Adicionar testes unitários por primitiva, testes multipágina e comparação visual automatizada.
+- [ ] Documentar diferenças residuais antes de marcar o marco DANFEII como calibrado.
+
 ## Interpretador
 
 - [ ] Ampliar expressões, operadores, funções, arrays e blocos de código necessários aos exemplos visuais.
