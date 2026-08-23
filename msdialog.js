@@ -225,7 +225,8 @@
       element = document.createElement(getDados ? "wa-tgetdados" : "wa-tcbrowse");
       element.id = getDados ? "COMP4501" : "COMP3001";
       element.dataset.advpl = getDados ? "msbrgetdbase" : "tcbrowse";
-      element.className = "ms-browse " + (getDados ? "ms-getdados dict-brgetddb" : "dict-twbrowse");
+      const browseClass = /^TCBrowse$/i.test(control.sourceClass || "") ? "dict-tcbrowse" : "dict-twbrowse";
+      element.className = "ms-browse " + (getDados ? "ms-getdados dict-brgetddb" : browseClass);
       element.setAttribute("selection-mode", getDados ? "cell" : "row");
       element.setAttribute("headerheight", getDados ? "22" : "27");
       element.setAttribute("alternateinterval", "1");
@@ -236,7 +237,13 @@
       const head = document.createElement("thead");
       const headerRow = document.createElement("tr");
       const headers = control.headers.length ? control.headers : (getDados ? [] : ["", "Código", "Descrição"]);
-      headers.forEach(label => { const th = document.createElement("th"); th.textContent = label; headerRow.append(th); });
+      headers.forEach((label, columnIndex) => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        if (control.headerClick) th.addEventListener("click", () => showMessage("bHeaderClick"));
+        if (control.columnWidths?.[columnIndex]) th.style.width = (control.columnWidths[columnIndex] * 2) + "px";
+        headerRow.append(th);
+      });
       head.append(headerRow);
       const body = document.createElement("tbody");
       let selected = 0;
@@ -253,6 +260,9 @@
               const lamp = document.createElement("span");
               lamp.className = "browse-lamp " + (value ? "yes" : "no");
               td.append(lamp);
+            } else if (control.formats?.[columnIndex] && Number.isFinite(Number(value))) {
+              td.textContent = Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              td.style.textAlign = "right";
             } else td.textContent = value == null ? "" : String(value);
             if (getDados && rowIndex === selected && columnIndex === selectedColumn) td.classList.add("selected-cell");
             td.addEventListener("click", () => { selected = rowIndex; selectedColumn = columnIndex; draw(); });
@@ -263,12 +273,25 @@
             selected = rowIndex;
             if (control.toggleOnDoubleClick) control.rows[rowIndex][0] = !control.rows[rowIndex][0];
             if (getDados && control.customEdit) showMessage("editLine", "stop");
+            if (control.doubleClickMessage) showMessage(control.doubleClickMessage);
             draw();
           });
           body.append(tr);
         });
       }
       draw();
+      if (control.objectVariable) {
+        state.browses[control.objectVariable.toLowerCase()] = {
+          goUp() { selected = Math.max(0, selected - 1); draw(); },
+          goDown() { selected = Math.min(Math.max(0, control.rows.length - 1), selected + 1); draw(); },
+          goTop() { selected = 0; draw(); },
+          goBottom() { selected = Math.max(0, control.rows.length - 1); draw(); },
+          get current() { return control.rows.length ? selected + 1 : 0; },
+          get length() { return control.rows.length; },
+          get visibleCount() { return Math.max(0, Math.floor((control.height - (getDados ? 22 : 27)) / 17)); },
+          alias: control.dataSource || ""
+        };
+      }
       table.append(head, body);
       element.append(table);
     } else if (control.type === "SAY") {
@@ -289,6 +312,25 @@
       input.checked = Boolean(state.variables[control.boundVar]);
       input.addEventListener("change", () => { state.variables[control.boundVar] = input.checked; });
       element.append(input, document.createTextNode(control.text));
+    } else if (control.type === "TBUTTON") {
+      element = document.createElement("wa-button");
+      element.dataset.advpl = "tbutton";
+      element.className = "ms-tbutton dict-tbutton";
+      element.setAttribute("caption", control.text || "Button");
+      element.textContent = control.text || "Button";
+      element.addEventListener("click", () => {
+        const browse = state.browses[String(control.browseTarget || "").toLowerCase()];
+        if (!browse) return;
+        const command = String(control.browseCommand || "").toLowerCase();
+        if (command === "goup") browse.goUp();
+        else if (command === "godown") browse.goDown();
+        else if (command === "gotop") browse.goTop();
+        else if (command === "gobottom") browse.goBottom();
+        else if (command === "nat") showMessage(String(browse.current));
+        else if (command === "nlen") showMessage(String(browse.length));
+        else if (command === "nrowcount") showMessage(String(browse.visibleCount));
+        else if (command === "calias") showMessage(browse.alias);
+      });
     } else {
       element = document.createElement("button");
       element.className = "ms-button";
@@ -342,7 +384,7 @@
     const client = document.createElement("div");
     client.className = "ms-client";
     client.style.height = height + "px";
-    const state = { variables: { ...program.variables }, dialogElement: dialogEl };
+    const state = { variables: { ...program.variables }, dialogElement: dialogEl, browses: Object.create(null) };
     close.addEventListener("click", () => {
       const finish = allowed => {
         if (allowed !== false) {

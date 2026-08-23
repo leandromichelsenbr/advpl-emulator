@@ -266,14 +266,14 @@
         dialog.initialization = codeBlockBody(args[6]);
         continue;
       }
-      match = line.match(/^(\w+)\s*:=\s*TWBrowse\s*\(\s*\)\s*:\s*New\s*\(([\s\S]*)\)$/i);
+      match = line.match(/^(\w+)\s*:=\s*(TWBrowse|TCBrowse)\s*\(\s*\)\s*:\s*New\s*\(([\s\S]*)\)$/i);
       if (match) {
-        const args = splitArguments(match[2]);
+        const args = splitArguments(match[3]);
         controls.push({
           type: "BROWSE", objectVariable: match[1], row: numeric(args[0]) * 2, col: numeric(args[1]) * 2,
           width: numeric(args[2], 260) * 2, height: numeric(args[3], 184) * 2,
           headers: parseArray(args[5]) || [], columnWidths: parseArray(args[6]) || [], rows: [], arrayVariable: null,
-          toggleOnDoubleClick: false
+          sourceClass: match[2], toggleOnDoubleClick: false, doubleClickMessage: null, headerClick: false, formats: {}
         });
         continue;
       }
@@ -290,7 +290,23 @@
         continue;
       }
       match = line.match(/^@\s*([\d.]+)\s*,\s*([\d.]+)\s+(SAY|GET|MSGET|BUTTON|CHECKBOX)\b\s*(.*)$/i);
-      if (!match) continue;
+      if (!match) {
+        const buttonConstructor = line.match(/^TButton\s*\(\s*\)\s*:\s*New\s*\(([\s\S]*)\)$/i);
+        if (buttonConstructor) {
+          const args = splitArguments(buttonConstructor[1]);
+          const action = codeBlockBody(args[4]) || args[4] || "";
+          const browseTarget = action.match(/(\w+)\s*:\s*(GoUp|GoDown|GoTop|GoBottom|nRowCount)\s*\(/i);
+          const browseProperty = action.match(/(\w+)\s*:\s*(nAt|nLen|cAlias)\b/i);
+          controls.push({
+            type: "TBUTTON", row: numeric(args[0]) * 2, col: numeric(args[1]) * 2,
+            width: numeric(args[5], 40) * 2, height: numeric(args[6], 10) * 2,
+            text: unquote(args[2]), action,
+            browseTarget: browseTarget?.[1] || browseProperty?.[1] || null,
+            browseCommand: browseTarget?.[2] || browseProperty?.[2] || null
+          });
+        }
+        continue;
+      }
       const [, row, col, rawType, tail] = match;
       const type = rawType.toUpperCase();
       const stops = ["SIZE", "OF", "PIXEL", "PROMPT", "VAR", "ACTION", "VALID", "WHEN", "PICTURE"];
@@ -312,7 +328,20 @@
       const doubleClick = line.match(/^(\w+)\s*:\s*bLDblClick\s*:=/i);
       if (doubleClick) {
         const browse = controls.find(control => control.type === "BROWSE" && control.objectVariable.toLowerCase() === doubleClick[1].toLowerCase());
-        if (browse) browse.toggleOnDoubleClick = /!\s*\w+\s*\[.*?\]\s*\[?\s*1/i.test(line);
+        if (browse) {
+          browse.toggleOnDoubleClick = /!\s*\w+\s*\[.*?\]\s*\[?\s*1/i.test(line);
+          browse.doubleClickMessage = /alert\s*\(\s*['"]bLDblClick['"]\s*\)/i.test(line) ? "bLDblClick" : null;
+        }
+      }
+      const headerClick = line.match(/^(\w+)\s*:\s*bHeaderClick\s*:=/i);
+      if (headerClick) {
+        const browse = controls.find(control => control.type === "BROWSE" && control.objectVariable.toLowerCase() === headerClick[1].toLowerCase());
+        if (browse) browse.headerClick = true;
+      }
+      const browseLine = line.match(/^(\w+)\s*:\s*bLine\s*:=/i);
+      if (browseLine) {
+        const browse = controls.find(control => control.type === "BROWSE" && control.objectVariable.toLowerCase() === browseLine[1].toLowerCase());
+        if (browse && /Transform\s*\([\s\S]*?['"]@E\s+99,999,999,999\.99['"]\s*\)/i.test(line)) browse.formats[3] = "@E 99,999,999,999.99";
       }
       const addColumn = line.match(/^(\w+)\s*:\s*addColumn\s*\(\s*TCColumn\s*\(\s*\)\s*:\s*new\s*\(\s*(['"])(.*?)\2\s*,\s*\{\s*\|\|\s*([\s\S]*?)\s*\}/i);
       if (addColumn) {
