@@ -90,7 +90,8 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 ## Interpretador
 
 - [x] Criar um fluxo ordenado de eventos para combinar console e mensagens em uma mesma execução.
-- [ ] Estender o fluxo unificado para abertura de diálogos, callbacks, relatórios e chamadas entre funções.
+- [x] Incorporar abertura/fechamento de diálogos e callbacks ao fluxo unificado.
+- [ ] Estender o fluxo unificado para relatórios e chamadas entre funções.
 - [ ] Adotar `@totvs/tds-parsers` como camada opcional de AST e diagnósticos sintáticos, após validar tamanho, licença e uso no navegador.
 - [x] Iniciar um catálogo de assinaturas AdvPL para diagnósticos rápidos, com `W0008`, origem, linha e coluna.
 - [ ] Versionar e ampliar o catálogo de assinaturas para tipos, símbolos desconhecidos e variações de LIB.
