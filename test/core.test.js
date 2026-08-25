@@ -68,6 +68,25 @@ Return`);
   assert.equal(program.variables.nValue, -123.45);
 });
 
+test("executa ACopy e monta MsgInfo multilinha", () => {
+  const program = core.parse(`#DEFINE CRLF Chr(13)+Chr(10)
+User Function Exemplo()
+Local aExemplo := {1,2,{11,22,33}}, aBkp := {,,{,,}}
+Local cMensagem := ""
+cMensagem += "Dimensão de AExemplo = " + cValToChar(Len(aExemplo)) + CRLF
+cMensagem += "aExemplo[3][2] = " + cValToChar(aExemplo[3][2]) + CRLF
+cMensagem += "Dimensão inicial da Cópia = " + cValToChar(Len(aBkp)) + CRLF
+ACopy(aExemplo,aBkp)
+cMensagem += "Dimensão atual do Cópia = " + cValToChar(Len(aBkp)) + CRLF
+cMensagem += "Cópia[3][3] = " + cValToChar(aBkp[3][3])
+Return MsgInfo(cMensagem,"Exemplo do ACopy")`);
+  assert.equal(program.kind, "message");
+  assert.equal(program.message.kind, "info");
+  assert.equal(program.message.title, "Exemplo do ACopy");
+  assert.equal(program.message.text, "Dimensão de AExemplo = 3\r\naExemplo[3][2] = 22\r\nDimensão inicial da Cópia = 3\r\nDimensão atual do Cópia = 3\r\nCópia[3][3] = 33");
+  assert.equal(program.diagnostics.length, 0);
+});
+
 test("interpreta MSDialog():New e os blocos de Activate", () => {
   const program = core.parse(`#include "TOTVS.CH"
 User Function MSDialog()

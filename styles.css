@@ -221,7 +221,7 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .standalone-message-box { position: absolute; left: 50%; top: 50%; z-index: 3000; display: block; width: 200px; height: 154px; transform: translate(-50%,-50%); background: #fbfbfb; color: #000; box-shadow: 0 16px 42px rgba(0,0,0,.28); font: 11px Arial, sans-serif; }
 .standalone-message-title { height: 28px; padding: 7px 12px; color: #fff; background: linear-gradient(#292522,#171513); font-weight: bold; }
 .standalone-message-content { display: flex; align-items: center; gap: 12px; min-height: 78px; padding: 10px 12px 4px; }
-.standalone-message-content p { margin: 0; line-height: 1.3; }
+.standalone-message-content p { margin: 0; line-height: 1.3; white-space: pre-line; }
 .standalone-message-box .icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; border: 3px solid #fff; border-radius: 50%; background: #d8222a; color: #fff; box-shadow: 0 0 0 2px #999; font: bold 36px/1 Arial, sans-serif; }
 .standalone-message-box.info .icon { background: #1677ad; font: bold 30px/1 Georgia, serif; }
 .standalone-message-box button { position: absolute; right: 10px; bottom: 8px; min-width: 48px; height: 26px; border: 2px solid #00659a; border-radius: 3px; background: #fbfbfb; color: #051f31; font: 11px Arial, sans-serif; }

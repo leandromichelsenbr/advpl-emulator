@@ -161,6 +161,8 @@
     if (/^\.T\.$/i.test(token)) return true;
     if (/^\.F\.$/i.test(token)) return false;
     if (/^-?\d+(?:\.\d+)?$/.test(token)) return Number(token);
+    const array = parseArray(token);
+    if (array) return array;
     let match = token.match(/^Space\s*\((.*)\)$/i);
     if (match) return " ".repeat(Math.max(0, Number(evaluate(match[1], variables)) || 0));
     match = token.match(/^AllTrim\s*\((.*)\)$/i);
@@ -169,7 +171,25 @@
     if (match) return Math.abs(Number(evaluate(match[1], variables)) || 0);
     match = token.match(/^cValToChar\s*\((.*)\)$/i);
     if (match) return String(evaluate(match[1], variables));
+    match = token.match(/^Chr\s*\((.*)\)$/i);
+    if (match) return String.fromCharCode(Number(evaluate(match[1], variables)) || 0);
+    match = token.match(/^Len\s*\((.*)\)$/i);
+    if (match) return evaluate(match[1], variables)?.length ?? 0;
+    match = token.match(/^(\w+)((?:\s*\[\s*[^\]]+\s*\])*)$/i);
+    if (match) {
+      const key = Object.keys(variables).find(name => name.toLowerCase() === match[1].toLowerCase());
+      let value = key ? variables[key] : "";
+      for (const index of (match[2] || "").matchAll(/\[\s*([^\]]+)\s*\]/g)) value = value?.[Number(evaluate(index[1], variables)) - 1];
+      return value ?? "";
+    }
     return variables[token] ?? "";
+  }
+
+  function assignLocalDeclarations(declaration, variables) {
+    for (const item of splitArguments(declaration)) {
+      const local = item.match(/^(\w+)(?:\s*:=\s*(.+))?$/i);
+      if (local) variables[local[1]] = local[2] == null ? null : evaluate(local[2], variables);
+    }
   }
 
   const SIGNATURES = Object.freeze({
@@ -198,6 +218,7 @@
   function parseMessageProgram(source) {
     const lines = statements(source);
     const variables = Object.create(null);
+    for (const define of String(source).matchAll(/^\s*#\s*DEFINE\s+(\w+)\s+(.+)$/gim)) variables[define[1]] = evaluate(define[2].trim(), variables);
     const active = [];
     let message = null;
     const isActive = () => active.every(frame => frame.active);
@@ -216,9 +237,13 @@
       }
       if (/^EndIf$/i.test(line)) { active.pop(); continue; }
       if (!isActive()) continue;
-      const local = line.match(/^Local\s+(\w+)(?:\s*:=\s*(.+))?$/i);
-      if (local) { variables[local[1]] = local[2] == null ? null : evaluate(local[2], variables); continue; }
-      const call = line.match(/^Msg(Info|Stop)\s*\((.*)\)$/i);
+      const local = line.match(/^Local\s+(.+)$/i);
+      if (local) { assignLocalDeclarations(local[1], variables); continue; }
+      const append = line.match(/^(\w+)\s*\+=\s*(.+)$/i);
+      if (append) { variables[append[1]] = String(variables[append[1]] ?? "") + String(evaluate(append[2], variables)); continue; }
+      const copy = line.match(/^ACopy\s*\(\s*(\w+)\s*,\s*(\w+)(?:\s*,[^)]*)?\)$/i);
+      if (copy) { variables[copy[2]] = Array.isArray(variables[copy[1]]) ? variables[copy[1]].slice() : []; continue; }
+      const call = line.match(/^(?:Return\s+)?Msg(Info|Stop)\s*\((.*)\)$/i);
       if (call) {
         const args = splitArguments(call[2]);
         message = { kind: call[1].toLowerCase(), text: String(evaluate(args[0], variables)), title: args[1] ? String(evaluate(args[1], variables)) : "TOTVS" };

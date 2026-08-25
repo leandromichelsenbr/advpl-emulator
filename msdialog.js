@@ -465,6 +465,11 @@
     box.setAttribute("title", program.message.title || "TOTVS");
     box.setAttribute("state", "normal");
     box.tabIndex = -1;
+    const lineCount = String(program.message.text).split(/\r?\n/).length;
+    if (lineCount > 4) {
+      box.style.width = "223.844px";
+      box.style.height = Math.min(420, 96 + lineCount * 12) + "px";
+    }
     const title = document.createElement("div");
     title.className = "standalone-message-title";
     title.textContent = program.message.title || "TOTVS";
