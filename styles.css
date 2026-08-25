@@ -100,6 +100,11 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .status.error { color: #ffb4b4; }
 .status.success { color: #9ee6b1; }
 .status.warning { color: #ffd889; }
+.diagnostics { max-height: 94px; overflow: auto; border-top: 1px solid #394754; background: #17212b; color: #dce7ef; font: 12px/1.4 Consolas, "Courier New", monospace; }
+.diagnostics[hidden] { display: none; }
+.diagnostic { padding: 7px 16px; border-left: 4px solid #7b8791; }
+.diagnostic-warning { border-left-color: #e4ac31; color: #ffd889; }
+.diagnostic-error { border-left-color: #d95555; color: #ffb4b4; }
 
 .desktop {
   flex: 1;
