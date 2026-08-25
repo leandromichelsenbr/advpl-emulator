@@ -206,7 +206,8 @@
         showMessage(AdvPLCore.evaluate(item.expression, state.variables), item.kind, next);
       } else if (item.type === "end") {
         state.dialogElement.remove();
-        setStatus("Diálogo encerrado.", "success");
+        setStatus("Execução concluída.", "success");
+        showRunAgain();
         next();
       } else if (item.type === "return") {
         result = item.value; next();
@@ -409,7 +410,8 @@
       const finish = allowed => {
         if (allowed !== false) {
           dialogEl.remove();
-          setStatus("Diálogo encerrado.", "success");
+          setStatus("Execução concluída.", "success");
+          showRunAgain();
         }
       };
       if (dialog.validation) executeAction(dialog.validation, state, finish);
@@ -420,6 +422,17 @@
     desktopEl.append(dialogEl);
     setStatus(`Tela montada: ${program.controls.length} controle(s).`, "success");
     if (dialog.initialization) executeAction(dialog.initialization, state);
+  }
+
+  function showRunAgain() {
+    if (desktopEl.querySelector(".run-again")) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "run-again";
+    button.textContent = "Executar novamente";
+    button.addEventListener("click", () => runSource());
+    desktopEl.append(button);
+    button.focus();
   }
 
   function renderConsole(lines) {
@@ -493,7 +506,7 @@
     button.addEventListener("click", () => {
       messageIndex += 1;
       if (messageIndex < messages.length) { showCurrent(); button.focus(); }
-      else { box.remove(); setStatus("Mensagens encerradas.", "success"); }
+      else { box.remove(); setStatus("Execução concluída.", "success"); showRunAgain(); }
     });
     content.append(icon, text);
     box.append(title, content, button);
