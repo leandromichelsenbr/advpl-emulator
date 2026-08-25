@@ -203,11 +203,15 @@
       const item = actions[index++];
       if (!item) { if (done) done(result); return; }
       if (item.type === "message") {
-        showMessage(AdvPLCore.evaluate(item.expression, state.variables), item.kind, next);
+        const title = item.titleExpression ? AdvPLCore.evaluate(item.titleExpression, state.variables) : null;
+        showMessage(AdvPLCore.evaluate(item.expression, state.variables), item.kind, next, title);
+      } else if (item.type === "console") {
+        state.onConsole?.(String(AdvPLCore.evaluate(item.expression, state.variables)));
+        next();
       } else if (item.type === "end") {
         state.dialogElement.remove();
-        setStatus("Execução concluída.", "success");
-        showRunAgain();
+        if (state.onEnd) state.onEnd();
+        else { setStatus("Execução concluída.", "success"); showRunAgain(); }
         next();
       } else if (item.type === "return") {
         result = item.value; next();
@@ -484,6 +488,11 @@
           showRuntimeMessage(event, next);
           return;
         }
+        if (event.type === "dialog") {
+          setStatus(`Execução em andamento · aguardando diálogo${warningCount ? ` · ${warningCount} advertência(s) abaixo` : ""}.`, warningCount ? "warning" : "success");
+          renderRuntimeDialog(program, { onConsole: text => { consoleLines.push(text); refreshConsole(); }, onEnd: next });
+          return;
+        }
       }
       if (!program.events.some(event => event.type === "message")) {
         const empty = document.createElement("div");
@@ -495,6 +504,52 @@
       showRunAgain();
     };
     next();
+  }
+
+  function renderRuntimeDialog(program, hooks) {
+    const { dialog } = program;
+    const width = Math.max(220, dialog.right - dialog.left);
+    const height = Math.max(120, dialog.bottom - dialog.top);
+    const dialogEl = document.createElement("wa-dialog");
+    dialogEl.id = "COMP3000";
+    dialogEl.dataset.advpl = "tdialog";
+    dialogEl.className = "ms-dialog dict-tdialog";
+    dialogEl.setAttribute("opened", "");
+    dialogEl.setAttribute("state", "normal");
+    dialogEl.setAttribute("title", dialog.title);
+    dialogEl.style.width = (width + 6) + "px";
+    dialogEl.style.height = (height + 29) + "px";
+    if (dialog.centered) {
+      dialogEl.style.left = "50%"; dialogEl.style.top = "50%";
+      dialogEl.style.transform = "translate(-50%, -50%)";
+    } else {
+      dialogEl.style.left = Math.max(0, dialog.left) + "px";
+      dialogEl.style.top = Math.max(0, dialog.top) + "px";
+    }
+    const titlebar = document.createElement("div");
+    titlebar.className = "ms-titlebar";
+    const caption = document.createElement("span");
+    caption.textContent = dialog.title;
+    const close = document.createElement("button");
+    close.className = "ms-close"; close.type = "button";
+    close.setAttribute("aria-label", "Fechar"); close.textContent = "×";
+    titlebar.append(caption, close);
+    const client = document.createElement("div");
+    client.className = "ms-client"; client.style.height = height + "px";
+    let ended = false;
+    const finish = () => {
+      if (ended) return;
+      ended = true; dialogEl.remove(); hooks.onEnd();
+    };
+    const state = { variables: program.variables, dialogElement: dialogEl, browses: Object.create(null), onConsole: hooks.onConsole, onEnd: finish };
+    close.addEventListener("click", () => {
+      if (dialog.validation) executeAction(dialog.validation, state, allowed => { if (allowed !== false) finish(); });
+      else finish();
+    });
+    for (const control of program.controls) client.append(createControl(control, state));
+    dialogEl.append(titlebar, client);
+    desktopEl.append(dialogEl);
+    if (dialog.initialization) executeAction(dialog.initialization, state);
   }
 
   function showRunAgain() {
@@ -790,10 +845,10 @@
   }
 
   let afterMessage = null;
-  function showMessage(text, kind, done) {
+  function showMessage(text, kind, done, title) {
     messageTextEl.textContent = text;
     overlayEl.classList.toggle("stop", kind === "stop");
-    if (messageTitleEl) messageTitleEl.textContent = kind === "stop" ? "TOTVS" : "Informação";
+    if (messageTitleEl) messageTitleEl.textContent = title || (kind === "stop" ? "TOTVS" : "Informação");
     overlayEl.hidden = false;
     afterMessage = done || null;
     document.getElementById("messageOk").focus();

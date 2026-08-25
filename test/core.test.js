@@ -32,6 +32,29 @@ test("interpreta MSDialog e MSGET", () => {
 });
 test("avalia Space, AllTrim e concatenação", () => assert.equal(core.evaluate('"Olá, " + AllTrim(cNome)', { cNome: "  Leandro  " }), "Olá, Leandro"));
 test("preserva a ordem das ações compostas", () => assert.deepEqual(core.parseAction('(MsgInfo("OK"), oDlg:End())').map(action => action.type), ["message", "end"]));
+test("preserva ConOut em callbacks compostos", () => assert.deepEqual(core.parseAction('(ConOut("clicou"), MsgInfo("OK", "TOTVS"), oDlg:End())').map(action => action.type), ["console", "message", "end"]));
+test("separa texto e título de MsgInfo em callback", () => {
+  const message = core.parseAction('MsgInfo("Dados confirmados", "TOTVS")')[0];
+  assert.equal(message.expression, '"Dados confirmados"');
+  assert.equal(message.titleExpression, '"TOTVS"');
+});
+
+test("ordena console, diálogo e continuação após Activate", () => {
+  const program = core.parse(`User Function FluxoDialog()
+Local oDlg
+ConOut("Preparando diálogo")
+DEFINE DIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 160,320 PIXEL
+@ 20,20 BUTTON "Confirmar" ACTION (ConOut("Botão acionado"), MsgInfo("Dados confirmados", "TOTVS"), oDlg:End()) OF oDlg
+ACTIVATE DIALOG oDlg CENTERED
+ConOut("Diálogo encerrado")
+Return`);
+  assert.deepEqual(program.events, [
+    { type: "console", text: "Preparando diálogo" },
+    { type: "dialog" },
+    { type: "console", text: "Diálogo encerrado" }
+  ]);
+  assert.deepEqual(core.parseAction(program.controls[0].action).map(action => action.type), ["console", "message", "end"]);
+});
 
 test("executa If/Else, Abs, cValToChar e MsgStop sem diálogo", () => {
   const program = core.parse(`User Function abs1()

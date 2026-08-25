@@ -40,11 +40,12 @@ Fontes executáveis também podem retornar `events`, uma lista ordenada preserva
 [
   { type: "console", text: "Processando 1" },
   { type: "console", text: "Processando 2" },
-  { type: "message", kind: "info", text: "Concluído", title: "TOTVS" }
+  { type: "message", kind: "info", text: "Concluído", title: "TOTVS" },
+  { type: "dialog" }
 ]
 ```
 
-O renderizador deve consumir a lista em ordem. Eventos de console podem continuar imediatamente; mensagens suspendem o avanço até a confirmação do usuário. Os campos agregados `console`, `message` e `messages` permanecem disponíveis para compatibilidade.
+O renderizador deve consumir a lista em ordem. Eventos de console podem continuar imediatamente; mensagens suspendem o avanço até a confirmação do usuário; `dialog` suspende em `ACTIVATE` e retoma após fechamento ou `oDlg:End()`. Callbacks podem registrar console, abrir mensagens e encerrar o diálogo dentro da mesma sessão de variáveis. Os campos agregados `console`, `message` e `messages` permanecem disponíveis para compatibilidade.
 
 Diálogos mantêm `dialog`, `controls` e `variables` para compatibilidade com a API 0.1.
 

@@ -300,7 +300,12 @@
       const end = source.match(/^(\w+)\s*:\s*End\s*\(\s*\)$/i);
       if (end) return { type: "end", target: end[1], source };
       const message = source.match(/^Msg(Info|Stop)\s*\((.*)\)$/i);
-      if (message) return { type: "message", kind: message[1].toLowerCase(), expression: message[2], source };
+      if (message) {
+        const args = splitArguments(message[2]);
+        return { type: "message", kind: message[1].toLowerCase(), expression: args[0] || '""', titleExpression: args[1] || null, source };
+      }
+      const consoleCall = source.match(/^ConOut\s*\((.*)\)$/i);
+      if (consoleCall) return { type: "console", expression: consoleCall[1], source };
       if (/^\.T\.$/i.test(source)) return { type: "return", value: true, source };
       if (/^\.F\.$/i.test(source)) return { type: "return", value: false, source };
       return { type: "unknown", source };
@@ -530,7 +535,18 @@
       browse.dataMode = browse.rows.length ? "sample" : "unavailable";
     }
     if (!dialog) throw new Error("Nenhum comando DEFINE MSDIALOG foi encontrado.");
-    return { version: VERSION, dialog, controls, variables };
+    const activationIndex = lines.findIndex(line => /^ACTIVATE\s+(?:MS)?DIALOG\b|^\w+\s*:\s*Activate\s*\(/i.test(line));
+    const runtimeEvents = [];
+    const appendConsoleEvent = line => {
+      const call = line.match(/^ConOut\s*\((.*)\)$/i);
+      if (!call) return;
+      const text = splitArguments(call[1]).map(argument => String(evaluate(argument, variables))).join(" ");
+      runtimeEvents.push({ type: "console", text });
+    };
+    lines.slice(0, Math.max(0, activationIndex)).forEach(appendConsoleEvent);
+    runtimeEvents.push({ type: "dialog" });
+    if (activationIndex >= 0) lines.slice(activationIndex + 1).forEach(appendConsoleEvent);
+    return { version: VERSION, dialog, controls, variables, events: runtimeEvents };
   }
 
   return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray });
