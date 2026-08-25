@@ -33,6 +33,31 @@ test("interpreta MSDialog e MSGET", () => {
 test("avalia Space, AllTrim e concatenação", () => assert.equal(core.evaluate('"Olá, " + AllTrim(cNome)', { cNome: "  Leandro  " }), "Olá, Leandro"));
 test("preserva a ordem das ações compostas", () => assert.deepEqual(core.parseAction('(MsgInfo("OK"), oDlg:End())').map(action => action.type), ["message", "end"]));
 
+test("executa If/Else, Abs, cValToChar e MsgStop sem diálogo", () => {
+  const program = core.parse(`User Function abs1()
+Local nPessoas := 20
+Local nLugares := 18
+If nPessoas < nLugares
+  MsgInfo("Existem " + cValToChar(nLugares - nPessoas) + " disponíveis")
+Else
+  MsgStop("Existem " + cValToChar(Abs(nLugares - nPessoas)) + " faltando")
+EndIf
+Return`);
+  assert.equal(program.kind, "message");
+  assert.deepEqual(program.message, { kind: "stop", text: "Existem 2 faltando", title: "TOTVS" });
+  assert.equal(program.diagnostics.length, 1);
+  assert.deepEqual(program.diagnostics[0], {
+    code: "W0008", severity: "warning", message: "Too few parameters calling MsgInfo",
+    line: 5, column: 3, functionName: "MsgInfo", expectedMinimum: 2, received: 1,
+    origin: "emulator-signatures"
+  });
+});
+
+test("expõe diagnósticos de assinatura sem executar o fonte", () => {
+  assert.equal(core.diagnose('MsgInfo("Texto")')[0].code, "W0008");
+  assert.equal(core.diagnose('MsgInfo("Texto", "Título")').length, 0);
+});
+
 test("interpreta MSDialog():New e os blocos de Activate", () => {
   const program = core.parse(`#include "TOTVS.CH"
 User Function MSDialog()

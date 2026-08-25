@@ -84,6 +84,25 @@
     return result;
   }
 
+  function splitBinary(expression, operators) {
+    let depth = 0, quote = null;
+    for (let index = expression.length - 1; index >= 0; index -= 1) {
+      const char = expression[index];
+      if (quote) { if (char === quote) quote = null; continue; }
+      if (char === '"' || char === "'") { quote = char; continue; }
+      if (char === ")") { depth += 1; continue; }
+      if (char === "(") { depth -= 1; continue; }
+      if (depth !== 0) continue;
+      for (const operator of operators) {
+        const start = index - operator.length + 1;
+        if (start >= 0 && expression.slice(start, index + 1) === operator) {
+          return [expression.slice(0, start).trim(), operator, expression.slice(index + 1).trim()];
+        }
+      }
+    }
+    return null;
+  }
+
   function codeBlockBody(value = "") {
     const match = value.trim().match(/^\{\s*\|[^|]*\|([\s\S]*)\}$/);
     return match ? match[1].trim() : null;
@@ -120,8 +139,24 @@
   function evaluate(expression, variables = {}) {
     let token = String(expression ?? "").trim();
     while (hasOuterParentheses(token)) token = token.slice(1, -1).trim();
+    let binary = splitBinary(token, ["==", "!=", "<=", ">=", "<", ">"]);
+    if (binary) {
+      const [leftSource, operator, rightSource] = binary;
+      const left = evaluate(leftSource, variables), right = evaluate(rightSource, variables);
+      if (operator === "==") return left === right;
+      if (operator === "!=") return left !== right;
+      if (operator === "<") return left < right;
+      if (operator === ">") return left > right;
+      if (operator === "<=") return left <= right;
+      return left >= right;
+    }
     const additions = splitTopLevel(token, "+");
-    if (additions.length > 1) return additions.map(part => String(evaluate(part, variables))).join("");
+    if (additions.length > 1) {
+      const values = additions.map(part => evaluate(part, variables));
+      return values.every(value => typeof value === "number") ? values.reduce((sum, value) => sum + value, 0) : values.map(String).join("");
+    }
+    binary = splitBinary(token, ["-"]);
+    if (binary && binary[0]) return Number(evaluate(binary[0], variables)) - Number(evaluate(binary[2], variables));
     if (/^["']/.test(token)) return unquote(token);
     if (/^\.T\.$/i.test(token)) return true;
     if (/^\.F\.$/i.test(token)) return false;
@@ -130,7 +165,67 @@
     if (match) return " ".repeat(Math.max(0, Number(evaluate(match[1], variables)) || 0));
     match = token.match(/^AllTrim\s*\((.*)\)$/i);
     if (match) return String(evaluate(match[1], variables)).trim();
+    match = token.match(/^Abs\s*\((.*)\)$/i);
+    if (match) return Math.abs(Number(evaluate(match[1], variables)) || 0);
+    match = token.match(/^cValToChar\s*\((.*)\)$/i);
+    if (match) return String(evaluate(match[1], variables));
     return variables[token] ?? "";
+  }
+
+  const SIGNATURES = Object.freeze({
+    // Assinaturas de compatibilidade do emulador. Não substituem o compilador TDS.
+    msginfo: { minimum: 2, code: "W0008" }
+  });
+
+  function diagnose(source) {
+    const diagnostics = [];
+    String(source ?? "").split(/\r?\n/).forEach((line, lineIndex) => {
+      for (const match of line.matchAll(/\b(MsgInfo)\s*\(([^)]*)\)/gi)) {
+        const signature = SIGNATURES[match[1].toLowerCase()];
+        const received = splitArguments(match[2]).filter(argument => argument !== "").length;
+        if (signature && received < signature.minimum) diagnostics.push({
+          code: signature.code, severity: "warning",
+          message: `Too few parameters calling ${match[1]}`,
+          line: lineIndex + 1, column: match.index + 1,
+          functionName: match[1], expectedMinimum: signature.minimum, received,
+          origin: "emulator-signatures"
+        });
+      }
+    });
+    return diagnostics;
+  }
+
+  function parseMessageProgram(source) {
+    const lines = statements(source);
+    const variables = Object.create(null);
+    const active = [];
+    let message = null;
+    const isActive = () => active.every(frame => frame.active);
+    for (const line of lines) {
+      const conditional = line.match(/^If\s+(.+)$/i);
+      if (conditional) {
+        const parentActive = isActive();
+        active.push({ parentActive, condition: parentActive && Boolean(evaluate(conditional[1], variables)), active: false });
+        active.at(-1).active = active.at(-1).condition;
+        continue;
+      }
+      if (/^Else$/i.test(line)) {
+        const frame = active.at(-1);
+        if (frame) frame.active = frame.parentActive && !frame.condition;
+        continue;
+      }
+      if (/^EndIf$/i.test(line)) { active.pop(); continue; }
+      if (!isActive()) continue;
+      const local = line.match(/^Local\s+(\w+)(?:\s*:=\s*(.+))?$/i);
+      if (local) { variables[local[1]] = local[2] == null ? null : evaluate(local[2], variables); continue; }
+      const call = line.match(/^Msg(Info|Stop)\s*\((.*)\)$/i);
+      if (call) {
+        const args = splitArguments(call[2]);
+        message = { kind: call[1].toLowerCase(), text: String(evaluate(args[0], variables)), title: args[1] ? String(evaluate(args[1], variables)) : "TOTVS" };
+      }
+    }
+    if (!message) return null;
+    return { kind: "message", version: VERSION, message, variables, controls: [], diagnostics: diagnose(source) };
   }
 
   function parseAction(action = "") {
@@ -226,6 +321,8 @@
   function parse(source, options = {}) {
     const reportProgram = parseReport(source);
     if (reportProgram) return reportProgram;
+    const messageProgram = /\bDEFINE\s+(?:MS)?DIALOG\b|MSDialog\s*\(\s*\)\s*:\s*New/i.test(source) ? null : parseMessageProgram(source);
+    if (messageProgram) return messageProgram;
     const lines = statements(source);
     const variables = Object.create(null);
     for (const line of lines) {
@@ -371,5 +468,5 @@
     return { version: VERSION, dialog, controls, variables };
   }
 
-  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, evaluate, parseAction, statements, splitTopLevel, splitArguments, parseArray });
+  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray });
 });
