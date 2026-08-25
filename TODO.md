@@ -89,6 +89,10 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 ## Interpretador
 
+- [ ] Adotar `@totvs/tds-parsers` como camada opcional de AST e diagnósticos sintáticos, após validar tamanho, licença e uso no navegador.
+- [ ] Manter um catálogo versionado de assinaturas AdvPL para diagnósticos rápidos e identificados como aproximações do emulador (`W0008`, tipos e símbolos desconhecidos).
+- [ ] Criar um adaptador opcional para TDS-Cli/Language Server que normalize diagnósticos oficiais por versão da LIB, sem expor AppServer ou credenciais ao navegador.
+- [ ] Exibir separadamente diagnósticos do emulador e do compilador TDS, sempre com código, severidade, origem, linha e coluna.
 - [ ] Ampliar expressões, operadores, funções, arrays e blocos de código necessários aos exemplos visuais.
 - [ ] Implementar pré-processamento controlado de constantes e arquivos `.ch` relevantes.
 - [ ] Melhorar resolução de variáveis `Local`, `Private`, `Public` e propriedades de objetos.

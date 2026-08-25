@@ -349,6 +349,10 @@
       else renderReport(program.report);
       return;
     }
+    if (program.kind === "message") {
+      renderStandaloneMessage(program);
+      return;
+    }
     desktopEl.replaceChildren();
     const { dialog } = program;
     const width = Math.max(220, dialog.right - dialog.left);
@@ -400,6 +404,38 @@
     desktopEl.append(dialogEl);
     setStatus(`Tela montada: ${program.controls.length} controle(s).`, "success");
     if (dialog.initialization) executeAction(dialog.initialization, state);
+  }
+
+  function renderStandaloneMessage(program) {
+    desktopEl.replaceChildren();
+    const box = document.createElement("wa-message-box");
+    box.dataset.advpl = "messagebox";
+    box.className = `standalone-message-box dict-messagebox ${program.message.kind}`;
+    box.setAttribute("opened", "");
+    box.setAttribute("title", program.message.title || "TOTVS");
+    box.setAttribute("state", "normal");
+    box.tabIndex = -1;
+    const title = document.createElement("div");
+    title.className = "standalone-message-title";
+    title.textContent = program.message.title || "TOTVS";
+    const content = document.createElement("div");
+    content.className = "standalone-message-content";
+    const icon = document.createElement("span");
+    icon.className = "icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = program.message.kind === "stop" ? "×" : "i";
+    const text = document.createElement("p");
+    text.textContent = program.message.text;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "OK";
+    button.addEventListener("click", () => { box.remove(); setStatus("Mensagem encerrada.", "success"); });
+    content.append(icon, text);
+    box.append(title, content, button);
+    desktopEl.append(box);
+    const warningCount = program.diagnostics?.filter(item => item.severity === "warning").length || 0;
+    setStatus(`Código executado: 1 mensagem${warningCount ? ` · ${warningCount} advertência(s)` : ""}.`, warningCount ? "warning" : "success");
+    button.focus();
   }
 
   function showPrinterSetup(program) {
