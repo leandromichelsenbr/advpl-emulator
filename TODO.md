@@ -17,8 +17,8 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 - [ ] Calibrar `MSDialog`/`TDialog`: título, área útil, coordenadas, centralização, cores, fontes e ciclo de ativação.
 - [ ] Completar a calibração de `TWBrowse`/`TCBrowse`: o cabeçalho, linhas alternadas, seleção, imagens, navegação, clique no cabeçalho e duplo clique já possuem suporte inicial; faltam rolagem fiel, teclado, foco e demais callbacks.
 - [ ] Completar a calibração de `BrGetDDB`/`TGetDados`: edição por célula, exclusão, navegação e alimentação por dados de referência.
-- [ ] Calibrar mensagens (`MsgInfo`, `MsgStop`, `MsgAlert`, confirmações) e seus fluxos modais.
-- [ ] Unificar a ação principal como **Executar código** em todas as interfaces e integrações.
+- [ ] Completar a calibração de mensagens: `MsgInfo` e `MsgStop` já suportam título, conteúdo multilinha e fila; faltam `MsgAlert`, confirmações adicionais, ícones e todos os estados.
+- [x] Unificar a ação principal como **Executar código** nas interfaces atuais.
 - [ ] Criar testes visuais com tolerância definida para impedir regressões de layout.
 
 ## Componentes visuais
@@ -90,18 +90,21 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 ## Interpretador
 
 - [ ] Adotar `@totvs/tds-parsers` como camada opcional de AST e diagnósticos sintáticos, após validar tamanho, licença e uso no navegador.
-- [ ] Manter um catálogo versionado de assinaturas AdvPL para diagnósticos rápidos e identificados como aproximações do emulador (`W0008`, tipos e símbolos desconhecidos).
+- [x] Iniciar um catálogo de assinaturas AdvPL para diagnósticos rápidos, com `W0008`, origem, linha e coluna.
+- [ ] Versionar e ampliar o catálogo de assinaturas para tipos, símbolos desconhecidos e variações de LIB.
 - [ ] Criar um adaptador opcional para TDS-Cli/Language Server que normalize diagnósticos oficiais por versão da LIB, sem expor AppServer ou credenciais ao navegador.
-- [ ] Exibir separadamente diagnósticos do emulador e do compilador TDS, sempre com código, severidade, origem, linha e coluna.
-- [ ] Ampliar expressões, operadores, funções, arrays e blocos de código necessários aos exemplos visuais.
+- [ ] Exibir separadamente diagnósticos do emulador e do compilador TDS; os diagnósticos locais já mostram código, severidade, origem, linha e coluna.
+- [ ] Ampliar expressões, operadores, funções, arrays e blocos de código; já há suporte inicial a comparações, aritmética, arrays aninhados, `Abs`, `Len`, `Chr`, `ACopy` e `AClone`.
 - [ ] Implementar pré-processamento controlado de constantes e arquivos `.ch` relevantes.
 - [ ] Melhorar resolução de variáveis `Local`, `Private`, `Public` e propriedades de objetos.
-- [ ] Suportar chamadas encadeadas, atribuições, condicionais e laços usados na montagem visual.
+- [ ] Completar chamadas encadeadas, atribuições, condicionais e laços; `+=`, `If/Else` e `For/To/Step/Next` possuem suporte inicial em fluxos independentes.
 - [ ] Produzir diagnósticos com linha, coluna e sugestão quando uma construção não for suportada.
 - [ ] Exibir no resultado quais instruções foram interpretadas, aproximadas ou ignoradas.
 
 ## Experiência do laboratório
 
+- [x] Exibir a saída de `ConOut()` em um console recolhível quando o fonte não produzir tela.
+- [x] Oferecer **Executar novamente** após concluir uma fila de mensagens ou encerrar um diálogo.
 - [ ] Oferecer exemplos selecionáveis para diálogos, browses, impressão, códigos de barras, QR Code e gráficos.
 - [ ] Permitir compartilhar um exercício por URL ou arquivo, sem incluir dados sensíveis.
 - [ ] Adicionar modo lado a lado: referência real versus resultado emulado.
