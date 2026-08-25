@@ -359,6 +359,16 @@
       renderStandaloneMessage(program);
       return;
     }
+    if (program.kind === "console") {
+      desktopEl.replaceChildren();
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "O código não gerou uma saída visual.";
+      desktopEl.append(empty);
+      renderConsole(program.console || []);
+      setStatus(`Código executado: ${program.console.length} registro(s) no console.`, "success");
+      return;
+    }
     desktopEl.replaceChildren();
     const { dialog } = program;
     const width = Math.max(220, dialog.right - dialog.left);
@@ -410,6 +420,28 @@
     desktopEl.append(dialogEl);
     setStatus(`Tela montada: ${program.controls.length} controle(s).`, "success");
     if (dialog.initialization) executeAction(dialog.initialization, state);
+  }
+
+  function renderConsole(lines) {
+    if (!lines.length) return;
+    const container = document.createElement("section");
+    container.className = "emulator-console";
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "console-toggle";
+    toggle.textContent = `Mostrar console (${lines.length})`;
+    toggle.setAttribute("aria-expanded", "false");
+    const panel = document.createElement("pre");
+    panel.className = "console-panel";
+    panel.hidden = true;
+    panel.textContent = lines.join("\n");
+    toggle.addEventListener("click", () => {
+      panel.hidden = !panel.hidden;
+      toggle.setAttribute("aria-expanded", String(!panel.hidden));
+      toggle.textContent = panel.hidden ? `Mostrar console (${lines.length})` : "Ocultar console";
+    });
+    container.append(toggle, panel);
+    desktopEl.append(container);
   }
 
   function renderDiagnostics(diagnostics) {

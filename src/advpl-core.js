@@ -228,6 +228,23 @@
     return { kind: "message", version: VERSION, message, variables, controls: [], diagnostics: diagnose(source) };
   }
 
+  function parseConsoleProgram(source) {
+    const lines = statements(source);
+    const variables = Object.create(null);
+    const output = [];
+    for (const line of lines) {
+      const local = line.match(/^Local\s+(\w+)(?:\s*:=\s*(.+))?$/i);
+      if (local) { variables[local[1]] = local[2] == null ? null : evaluate(local[2], variables); continue; }
+      const call = line.match(/^ConOut\s*\((.*)\)$/i);
+      if (call) {
+        const values = splitArguments(call[1]).map(argument => evaluate(argument, variables));
+        output.push(values.map(value => String(value)).join(" "));
+      }
+    }
+    if (!output.length) return null;
+    return { kind: "console", version: VERSION, console: output, variables, controls: [], diagnostics: diagnose(source) };
+  }
+
   function parseAction(action = "") {
     let list = action.trim();
     while (hasOuterParentheses(list)) list = list.slice(1, -1).trim();
@@ -323,6 +340,8 @@
     if (reportProgram) return reportProgram;
     const messageProgram = /\bDEFINE\s+(?:MS)?DIALOG\b|MSDialog\s*\(\s*\)\s*:\s*New/i.test(source) ? null : parseMessageProgram(source);
     if (messageProgram) return messageProgram;
+    const consoleProgram = /\bDEFINE\s+(?:MS)?DIALOG\b|MSDialog\s*\(\s*\)\s*:\s*New/i.test(source) ? null : parseConsoleProgram(source);
+    if (consoleProgram) return consoleProgram;
     const lines = statements(source);
     const variables = Object.create(null);
     for (const line of lines) {

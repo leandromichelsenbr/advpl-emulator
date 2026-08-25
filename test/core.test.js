@@ -58,6 +58,16 @@ test("expõe diagnósticos de assinatura sem executar o fonte", () => {
   assert.equal(core.diagnose('MsgInfo("Texto", "Título")').length, 0);
 });
 
+test("registra ConOut como saída de console", () => {
+  const program = core.parse(`User Function abs2()
+Local nValue := -123.45
+ConOut(Abs(nValue)) // Resultado: 123.45
+Return`);
+  assert.equal(program.kind, "console");
+  assert.deepEqual(program.console, ["123.45"]);
+  assert.equal(program.variables.nValue, -123.45);
+});
+
 test("interpreta MSDialog():New e os blocos de Activate", () => {
   const program = core.parse(`#include "TOTVS.CH"
 User Function MSDialog()
