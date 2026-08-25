@@ -34,6 +34,18 @@ O campo `kind` diferencia as saídas que não são diálogos:
 - `console`: `console` contém as linhas registradas por `ConOut()`;
 - `report`: `report` contém página, orientação, elementos e dados do relatório.
 
+Fontes executáveis também podem retornar `events`, uma lista ordenada preservando a sequência observável:
+
+```js
+[
+  { type: "console", text: "Processando 1" },
+  { type: "console", text: "Processando 2" },
+  { type: "message", kind: "info", text: "Concluído", title: "TOTVS" }
+]
+```
+
+O renderizador deve consumir a lista em ordem. Eventos de console podem continuar imediatamente; mensagens suspendem o avanço até a confirmação do usuário. Os campos agregados `console`, `message` e `messages` permanecem disponíveis para compatibilidade.
+
 Diálogos mantêm `dialog`, `controls` e `variables` para compatibilidade com a API 0.1.
 
 ### Diagnósticos

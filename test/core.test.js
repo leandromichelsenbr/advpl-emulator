@@ -65,7 +65,27 @@ ConOut(Abs(nValue)) // Resultado: 123.45
 Return`);
   assert.equal(program.kind, "console");
   assert.deepEqual(program.console, ["123.45"]);
+  assert.deepEqual(program.events, [{ type: "console", text: "123.45" }]);
   assert.equal(program.variables.nValue, -123.45);
+});
+
+test("preserva a ordem entre console e mensagem no fluxo unificado", () => {
+  const program = core.parse(`User Function Fluxo1()
+Local nCont := 0
+For nCont := 1 To 3
+  ConOut("Processando " + cValToChar(nCont))
+Next
+MsgInfo("Processamento concluído", "TOTVS")
+Return`);
+  assert.equal(program.kind, "message");
+  assert.deepEqual(program.events, [
+    { type: "console", text: "Processando 1" },
+    { type: "console", text: "Processando 2" },
+    { type: "console", text: "Processando 3" },
+    { type: "message", kind: "info", text: "Processamento concluído", title: "TOTVS" }
+  ]);
+  assert.deepEqual(program.console, ["Processando 1", "Processando 2", "Processando 3"]);
+  assert.equal(program.diagnostics.length, 0);
 });
 
 test("executa ACopy e monta MsgInfo multilinha", () => {
