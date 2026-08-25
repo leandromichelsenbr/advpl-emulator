@@ -458,38 +458,50 @@
 
   function renderStandaloneMessage(program) {
     desktopEl.replaceChildren();
+    const messages = program.messages || [program.message];
+    let messageIndex = 0;
     const box = document.createElement("wa-message-box");
     box.dataset.advpl = "messagebox";
     box.className = `standalone-message-box dict-messagebox ${program.message.kind}`;
     box.setAttribute("opened", "");
-    box.setAttribute("title", program.message.title || "TOTVS");
+    box.setAttribute("title", messages[0].title || "TOTVS");
     box.setAttribute("state", "normal");
     box.tabIndex = -1;
-    const lineCount = String(program.message.text).split(/\r?\n/).length;
-    if (lineCount > 4) {
-      box.style.width = "223.844px";
-      box.style.height = Math.min(420, 96 + lineCount * 12) + "px";
-    }
     const title = document.createElement("div");
     title.className = "standalone-message-title";
-    title.textContent = program.message.title || "TOTVS";
     const content = document.createElement("div");
     content.className = "standalone-message-content";
     const icon = document.createElement("span");
     icon.className = "icon";
     icon.setAttribute("aria-hidden", "true");
-    icon.textContent = program.message.kind === "stop" ? "×" : "i";
     const text = document.createElement("p");
-    text.textContent = program.message.text;
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = "OK";
-    button.addEventListener("click", () => { box.remove(); setStatus("Mensagem encerrada.", "success"); });
+    const showCurrent = () => {
+      const message = messages[messageIndex];
+      const lineCount = String(message.text).split(/\r?\n/).length;
+      box.classList.toggle("stop", message.kind === "stop");
+      box.classList.toggle("info", message.kind !== "stop");
+      box.setAttribute("title", message.title || "TOTVS");
+      title.textContent = message.title || "TOTVS";
+      icon.textContent = message.kind === "stop" ? "×" : "i";
+      text.textContent = message.text;
+      box.style.width = lineCount > 4 ? "223.844px" : "200px";
+      box.style.height = lineCount > 4 ? Math.min(420, 96 + lineCount * 12) + "px" : "154px";
+    };
+    button.addEventListener("click", () => {
+      messageIndex += 1;
+      if (messageIndex < messages.length) { showCurrent(); button.focus(); }
+      else { box.remove(); setStatus("Mensagens encerradas.", "success"); }
+    });
     content.append(icon, text);
     box.append(title, content, button);
     desktopEl.append(box);
+    showCurrent();
     const warningCount = program.diagnostics?.filter(item => item.severity === "warning").length || 0;
-    setStatus(`Código executado: 1 mensagem${warningCount ? ` · ${warningCount} advertência(s) abaixo` : ""}.`, warningCount ? "warning" : "success");
+    const messageLabel = messages.length === 1 ? "mensagem" : "mensagens";
+    setStatus(`Código executado: ${messages.length} ${messageLabel}${warningCount ? ` · ${warningCount} advertência(s) abaixo` : ""}.`, warningCount ? "warning" : "success");
     button.focus();
   }
 
