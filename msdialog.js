@@ -23,6 +23,11 @@
   brandEl.textContent = `advpl-emulator · powered by Usina.BR · v${AdvPLCore.PACKAGE_VERSION}`;
   brandEl.setAttribute("aria-label", brandEl.textContent);
   document.body.append(brandEl);
+  const diagnosticsEl = document.createElement("div");
+  diagnosticsEl.className = "diagnostics";
+  diagnosticsEl.hidden = true;
+  diagnosticsEl.setAttribute("aria-live", "polite");
+  statusEl.insertAdjacentElement("afterend", diagnosticsEl);
 
   function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -342,6 +347,7 @@
   }
 
   function render(program) {
+    renderDiagnostics(program.diagnostics || []);
     if (program.kind === "report") {
       desktopEl.replaceChildren();
       if (program.setup?.enabled) showPrinterSetup(program);
@@ -406,6 +412,18 @@
     if (dialog.initialization) executeAction(dialog.initialization, state);
   }
 
+  function renderDiagnostics(diagnostics) {
+    diagnosticsEl.replaceChildren();
+    diagnosticsEl.hidden = diagnostics.length === 0;
+    for (const diagnostic of diagnostics) {
+      const item = document.createElement("div");
+      item.className = `diagnostic diagnostic-${diagnostic.severity || "info"}`;
+      const origin = diagnostic.origin === "emulator-signatures" ? "assinaturas do emulador" : diagnostic.origin;
+      item.textContent = `${diagnostic.code}: ${diagnostic.message} — linha ${diagnostic.line}, coluna ${diagnostic.column} · ${origin}`;
+      diagnosticsEl.append(item);
+    }
+  }
+
   function renderStandaloneMessage(program) {
     desktopEl.replaceChildren();
     const box = document.createElement("wa-message-box");
@@ -434,7 +452,7 @@
     box.append(title, content, button);
     desktopEl.append(box);
     const warningCount = program.diagnostics?.filter(item => item.severity === "warning").length || 0;
-    setStatus(`Código executado: 1 mensagem${warningCount ? ` · ${warningCount} advertência(s)` : ""}.`, warningCount ? "warning" : "success");
+    setStatus(`Código executado: 1 mensagem${warningCount ? ` · ${warningCount} advertência(s) abaixo` : ""}.`, warningCount ? "warning" : "success");
     button.focus();
   }
 
@@ -680,6 +698,7 @@
       render(program);
       return program;
     } catch (error) {
+      renderDiagnostics([]);
       setStatus(error.message, "error");
       throw error;
     }
