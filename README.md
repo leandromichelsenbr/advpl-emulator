@@ -49,6 +49,7 @@ As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e
 - `ACTION MsgInfo(...)` e `ACTION oDlg:End()`.
 - `MsgInfo()` e `MsgStop()` independentes, com título, conteúdo multilinha e filas modais;
 - `ConOut()` com painel recolhível **Mostrar console**;
+- fluxo ordenado de eventos para combinar `ConOut()` e mensagens no mesmo fonte sem antecipar saídas posteriores;
 - botão **Executar novamente** ao concluir mensagens ou encerrar um diálogo;
 - diagnósticos de assinatura com código, severidade, linha, coluna e origem, incluindo suporte inicial ao `W0008`;
 - construção orientada a objetos com `MSDialog():New()` e `oDlg:Activate()`;

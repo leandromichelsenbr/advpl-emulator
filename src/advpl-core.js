@@ -226,6 +226,8 @@
     for (const define of String(source).matchAll(/^\s*#\s*DEFINE\s+(\w+)\s+(.+)$/gim)) variables[define[1]] = evaluate(define[2].trim(), variables);
     const active = [];
     const messages = [];
+    const consoleOutput = [];
+    const events = [];
     const isActive = () => active.every(frame => frame.active);
     const executeLine = line => {
       const local = line.match(/^Local\s+(.+)$/i);
@@ -237,7 +239,16 @@
       const call = line.match(/^(?:Return\s+)?Msg(Info|Stop)\s*\((.*)\)$/i);
       if (call) {
         const args = splitArguments(call[2]);
-        messages.push({ kind: call[1].toLowerCase(), text: String(evaluate(args[0], variables)), title: args[1] ? String(evaluate(args[1], variables)) : "TOTVS" });
+        const message = { kind: call[1].toLowerCase(), text: String(evaluate(args[0], variables)), title: args[1] ? String(evaluate(args[1], variables)) : "TOTVS" };
+        messages.push(message);
+        events.push({ type: "message", ...message });
+        return true;
+      }
+      const consoleCall = line.match(/^ConOut\s*\((.*)\)$/i);
+      if (consoleCall) {
+        const text = splitArguments(consoleCall[1]).map(argument => String(evaluate(argument, variables))).join(" ");
+        consoleOutput.push(text);
+        events.push({ type: "console", text });
         return true;
       }
       return false;
@@ -276,25 +287,10 @@
       }
       executeLine(line);
     }
-    if (!messages.length) return null;
-    return { kind: "message", version: VERSION, message: messages[0], messages, variables, controls: [], diagnostics: diagnose(source) };
-  }
-
-  function parseConsoleProgram(source) {
-    const lines = statements(source);
-    const variables = Object.create(null);
-    const output = [];
-    for (const line of lines) {
-      const local = line.match(/^Local\s+(\w+)(?:\s*:=\s*(.+))?$/i);
-      if (local) { variables[local[1]] = local[2] == null ? null : evaluate(local[2], variables); continue; }
-      const call = line.match(/^ConOut\s*\((.*)\)$/i);
-      if (call) {
-        const values = splitArguments(call[1]).map(argument => evaluate(argument, variables));
-        output.push(values.map(value => String(value)).join(" "));
-      }
-    }
-    if (!output.length) return null;
-    return { kind: "console", version: VERSION, console: output, variables, controls: [], diagnostics: diagnose(source) };
+    if (!events.length) return null;
+    const common = { version: VERSION, events, console: consoleOutput, variables, controls: [], diagnostics: diagnose(source) };
+    if (messages.length) return { kind: "message", message: messages[0], messages, ...common };
+    return { kind: "console", ...common };
   }
 
   function parseAction(action = "") {
@@ -392,8 +388,6 @@
     if (reportProgram) return reportProgram;
     const messageProgram = /\bDEFINE\s+(?:MS)?DIALOG\b|MSDialog\s*\(\s*\)\s*:\s*New/i.test(source) ? null : parseMessageProgram(source);
     if (messageProgram) return messageProgram;
-    const consoleProgram = /\bDEFINE\s+(?:MS)?DIALOG\b|MSDialog\s*\(\s*\)\s*:\s*New/i.test(source) ? null : parseConsoleProgram(source);
-    if (consoleProgram) return consoleProgram;
     const lines = statements(source);
     const variables = Object.create(null);
     for (const line of lines) {

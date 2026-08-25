@@ -356,6 +356,10 @@
       else renderReport(program.report);
       return;
     }
+    if (program.events?.length) {
+      renderRuntime(program);
+      return;
+    }
     if (program.kind === "message") {
       renderStandaloneMessage(program);
       return;
@@ -422,6 +426,75 @@
     desktopEl.append(dialogEl);
     setStatus(`Tela montada: ${program.controls.length} controle(s).`, "success");
     if (dialog.initialization) executeAction(dialog.initialization, state);
+  }
+
+  function renderRuntime(program) {
+    desktopEl.replaceChildren();
+    const consoleLines = [];
+    let eventIndex = 0;
+    const warningCount = program.diagnostics?.filter(item => item.severity === "warning").length || 0;
+
+    const refreshConsole = () => {
+      desktopEl.querySelector(".emulator-console")?.remove();
+      renderConsole(consoleLines);
+    };
+
+    const showRuntimeMessage = (event, done) => {
+      const box = document.createElement("wa-message-box");
+      box.dataset.advpl = "messagebox";
+      box.className = `standalone-message-box dict-messagebox ${event.kind}`;
+      box.setAttribute("opened", "");
+      box.setAttribute("title", event.title || "TOTVS");
+      box.setAttribute("state", "normal");
+      box.tabIndex = -1;
+      const lineCount = String(event.text).split(/\r?\n/).length;
+      box.style.width = lineCount > 4 ? "223.844px" : "200px";
+      box.style.height = lineCount > 4 ? Math.min(420, 96 + lineCount * 12) + "px" : "154px";
+      const title = document.createElement("div");
+      title.className = "standalone-message-title";
+      title.textContent = event.title || "TOTVS";
+      const content = document.createElement("div");
+      content.className = "standalone-message-content";
+      const icon = document.createElement("span");
+      icon.className = "icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = event.kind === "stop" ? "×" : "i";
+      const text = document.createElement("p");
+      text.textContent = event.text;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "OK";
+      button.addEventListener("click", () => { box.remove(); done(); });
+      content.append(icon, text);
+      box.append(title, content, button);
+      desktopEl.append(box);
+      button.focus();
+    };
+
+    const next = () => {
+      while (eventIndex < program.events.length) {
+        const event = program.events[eventIndex++];
+        if (event.type === "console") {
+          consoleLines.push(event.text);
+          refreshConsole();
+          continue;
+        }
+        if (event.type === "message") {
+          setStatus(`Execução em andamento · evento ${eventIndex} de ${program.events.length}${warningCount ? ` · ${warningCount} advertência(s) abaixo` : ""}.`, warningCount ? "warning" : "success");
+          showRuntimeMessage(event, next);
+          return;
+        }
+      }
+      if (!program.events.some(event => event.type === "message")) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "O código não gerou uma saída visual.";
+        desktopEl.prepend(empty);
+      }
+      setStatus(`Execução concluída · ${consoleLines.length} registro(s) no console${warningCount ? ` · ${warningCount} advertência(s) abaixo` : ""}.`, warningCount ? "warning" : "success");
+      showRunAgain();
+    };
+    next();
   }
 
   function showRunAgain() {

@@ -89,6 +89,8 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 ## Interpretador
 
+- [x] Criar um fluxo ordenado de eventos para combinar console e mensagens em uma mesma execução.
+- [ ] Estender o fluxo unificado para abertura de diálogos, callbacks, relatórios e chamadas entre funções.
 - [ ] Adotar `@totvs/tds-parsers` como camada opcional de AST e diagnósticos sintáticos, após validar tamanho, licença e uso no navegador.
 - [x] Iniciar um catálogo de assinaturas AdvPL para diagnósticos rápidos, com `W0008`, origem, linha e coluna.
 - [ ] Versionar e ampliar o catálogo de assinaturas para tipos, símbolos desconhecidos e variações de LIB.
@@ -103,7 +105,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 ## Experiência do laboratório
 
-- [x] Exibir a saída de `ConOut()` em um console recolhível quando o fonte não produzir tela.
+- [x] Exibir a saída de `ConOut()` em um console recolhível, inclusive junto de mensagens no mesmo fluxo.
 - [x] Oferecer **Executar novamente** após concluir uma fila de mensagens ou encerrar um diálogo.
 - [ ] Oferecer exemplos selecionáveis para diálogos, browses, impressão, códigos de barras, QR Code e gráficos.
 - [ ] Permitir compartilhar um exercício por URL ou arquivo, sem incluir dados sensíveis.
