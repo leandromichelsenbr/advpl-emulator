@@ -87,6 +87,22 @@ Return MsgInfo(cMensagem,"Exemplo do ACopy")`);
   assert.equal(program.diagnostics.length, 0);
 });
 
+test("executa AClone e fila de MsgInfo em For", () => {
+  const program = core.parse(`User Function AClone1()
+Local aMatriz1 := {10,20,30}
+Local aMatriz2 := AClone(aMatriz1)
+Local nCont := 0
+For nCont := 1 To Len(aMatriz2)
+  MsgInfo(CValToChar(aMatriz2[nCont]))
+Next nCont
+Return`);
+  assert.equal(program.kind, "message");
+  assert.deepEqual(program.messages.map(message => message.text), ["10", "20", "30"]);
+  assert.equal(program.message.text, "10");
+  assert.equal(program.messages.every(message => message.title === "TOTVS"), true);
+  assert.equal(program.diagnostics[0].code, "W0008");
+});
+
 test("interpreta MSDialog():New e os blocos de Activate", () => {
   const program = core.parse(`#include "TOTVS.CH"
 User Function MSDialog()
