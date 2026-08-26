@@ -51,6 +51,7 @@ As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e
 - `ConOut()` com painel recolhível **Mostrar console**;
 - fluxo ordenado de eventos para combinar `ConOut()` e mensagens no mesmo fonte sem antecipar saídas posteriores;
 - eventos de diálogo que suspendem o fluxo em `ACTIVATE`, retomam após `oDlg:End()` e compartilham console e mensagens com callbacks;
+- eventos de impressão que preservam mensagens e console antes/depois de `Setup()` e suspendem o fluxo durante `Preview()`;
 - botão **Executar novamente** ao concluir mensagens ou encerrar um diálogo;
 - diagnósticos de assinatura com código, severidade, linha, coluna e origem, incluindo suporte inicial ao `W0008`;
 - construção orientada a objetos com `MSDialog():New()` e `oDlg:Activate()`;

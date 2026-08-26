@@ -266,6 +266,38 @@ Return`);
   assert.equal(program.report.rows.length, 7);
 });
 
+test("ordena console, mensagem, preview e continuação do relatório", () => {
+  const program = core.parse(`User Function FluxoRelatorio()
+Local oPrinter
+ConOut("Preparando relatório")
+MsgInfo("O relatório será gerado", "TOTVS")
+oPrinter := FWMSPrinter():New("exemplo.rel", IMP_PDF)
+oPrinter:Say(20,30,"Relatório de exemplo")
+oPrinter:Preview()
+ConOut("Relatório encerrado")
+Return`);
+  assert.equal(program.kind, "report");
+  assert.deepEqual(program.events, [
+    { type: "console", text: "Preparando relatório" },
+    { type: "message", kind: "info", text: "O relatório será gerado", title: "TOTVS" },
+    { type: "report-create" },
+    { type: "report-preview" },
+    { type: "console", text: "Relatório encerrado" }
+  ]);
+  assert.equal(program.report.elements[0].text, "Relatório de exemplo");
+});
+
+test("inclui Setup antes do preview no fluxo unificado de impressão", () => {
+  const program = core.parse(`User Function FluxoSetup()
+ConOut("Início")
+oPrinter := TMSPrinter():New("Fluxo")
+oPrinter:Setup()
+oPrinter:Preview()
+ConOut("Fim")
+Return`);
+  assert.deepEqual(program.events.map(event => event.type), ["console", "report-create", "report-setup", "report-preview", "console"]);
+});
+
 test("interpreta Setup, Say e códigos EAN13", () => {
   const program = core.parse(`User Function teste()
 Local oPrinter

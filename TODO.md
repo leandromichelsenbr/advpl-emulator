@@ -76,7 +76,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 - [ ] Modelar `lServer`, `nDevice`, `cPathPDF` e `cPrinter` sem realizar escrita arbitrária no servidor.
 - [ ] Completar `Setup()` para destinos PDF, spool e impressora simulada.
-- [ ] Reproduzir `Preview()` com navegação entre todas as páginas.
+- [ ] Completar `Preview()` com navegação entre todas as páginas; fechamento e retomada do fluxo já possuem suporte.
 - [ ] Gerar PDF multipágina com dimensões e orientação consistentes com o preview.
 
 #### Fase 5 — Fixture e fidelidade
@@ -91,7 +91,8 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 - [x] Criar um fluxo ordenado de eventos para combinar console e mensagens em uma mesma execução.
 - [x] Incorporar abertura/fechamento de diálogos e callbacks ao fluxo unificado.
-- [ ] Estender o fluxo unificado para relatórios e chamadas entre funções.
+- [x] Incorporar criação, setup, preview e fechamento de relatórios ao fluxo unificado.
+- [ ] Estender o fluxo unificado para chamadas entre funções.
 - [ ] Adotar `@totvs/tds-parsers` como camada opcional de AST e diagnósticos sintáticos, após validar tamanho, licença e uso no navegador.
 - [x] Iniciar um catálogo de assinaturas AdvPL para diagnósticos rápidos, com `W0008`, origem, linha e coluna.
 - [ ] Versionar e ampliar o catálogo de assinaturas para tipos, símbolos desconhecidos e variações de LIB.
