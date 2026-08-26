@@ -355,7 +355,7 @@
       ["0001", "Plastico"], ["0002", "Borracha"], ["0003", "Aluminio"], ["0004", "Eletronicos"],
       ["0005", "Pneumaticos"], ["0006", "Produtos Quimicos"], ["0007", "Produto de Venda"]
     ] : [];
-    return {
+    const program = {
       kind: "report", version: VERSION,
       confirmation: question ? { message: unquote(question[1]), title: unquote(question[2]) } : null,
       setup: { enabled: /:\s*Setup\s*\(\s*\)/i.test(cleanSource), title: engine === "TMSPrinter" ? "Configuração de Impressora" : "TOTVSPrinter", variant: engine === "TMSPrinter" ? "legacy" : "framework" },
@@ -374,6 +374,36 @@
       },
       controls: [], variables: Object.create(null)
     };
+    const reportLines = statements(source);
+    const runtimeVariables = Object.create(null);
+    for (const line of reportLines) {
+      const local = line.match(/^Local\s+(.+)$/i);
+      if (local) assignLocalDeclarations(local[1], runtimeVariables);
+    }
+    const hasMixedRuntime = reportLines.some(line => /^(?:ConOut|MsgInfo|MsgStop)\s*\(/i.test(line));
+    if (hasMixedRuntime) {
+      const events = [];
+      for (const line of reportLines) {
+        let match = line.match(/^ConOut\s*\((.*)\)$/i);
+        if (match) {
+          events.push({ type: "console", text: splitArguments(match[1]).map(argument => String(evaluate(argument, runtimeVariables))).join(" ") });
+          continue;
+        }
+        match = line.match(/^Msg(Info|Stop)\s*\((.*)\)$/i);
+        if (match) {
+          const args = splitArguments(match[2]);
+          events.push({ type: "message", kind: match[1].toLowerCase(), text: String(evaluate(args[0], runtimeVariables)), title: args[1] ? String(evaluate(args[1], runtimeVariables)) : "TOTVS" });
+          continue;
+        }
+        if (/\b(?:FWMSPrinter|TMSPrinter)\s*\(\s*\)\s*:\s*New/i.test(line)) events.push({ type: "report-create" });
+        else if (/^\w+\s*:\s*Setup\s*\(\s*\)/i.test(line)) events.push({ type: "report-setup" });
+        else if (/^\w+\s*:\s*Preview\s*\(\s*\)/i.test(line)) events.push({ type: "report-preview" });
+      }
+      program.events = events;
+      program.variables = runtimeVariables;
+      program.diagnostics = diagnose(source);
+    }
+    return program;
   }
 
   function tableRows(tables, alias) {

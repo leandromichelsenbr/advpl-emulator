@@ -353,15 +353,15 @@
 
   function render(program) {
     renderDiagnostics(program.diagnostics || []);
+    if (program.events?.length) {
+      renderRuntime(program);
+      return;
+    }
     if (program.kind === "report") {
       desktopEl.replaceChildren();
       if (program.setup?.enabled) showPrinterSetup(program);
       else if (program.confirmation) showReportConfirmation(program);
       else renderReport(program.report);
-      return;
-    }
-    if (program.events?.length) {
-      renderRuntime(program);
       return;
     }
     if (program.kind === "message") {
@@ -436,6 +436,7 @@
     desktopEl.replaceChildren();
     const consoleLines = [];
     let eventIndex = 0;
+    let skipReportPreview = false;
     const warningCount = program.diagnostics?.filter(item => item.severity === "warning").length || 0;
 
     const refreshConsole = () => {
@@ -493,8 +494,21 @@
           renderRuntimeDialog(program, { onConsole: text => { consoleLines.push(text); refreshConsole(); }, onEnd: next });
           return;
         }
+        if (event.type === "report-create") continue;
+        if (event.type === "report-setup") {
+          setStatus("Execução em andamento · aguardando configuração da impressora.", "success");
+          showPrinterSetup(program, accepted => { skipReportPreview = !accepted; next(); });
+          return;
+        }
+        if (event.type === "report-preview") {
+          if (skipReportPreview) continue;
+          setStatus("Execução em andamento · aguardando fechamento do preview.", "success");
+          renderReport(program.report, () => { refreshConsole(); next(); });
+          refreshConsole();
+          return;
+        }
       }
-      if (!program.events.some(event => event.type === "message")) {
+      if (!program.events.some(event => ["message", "dialog", "report-preview"].includes(event.type))) {
         const empty = document.createElement("div");
         empty.className = "empty-state";
         empty.textContent = "O código não gerou uma saída visual.";
@@ -646,20 +660,21 @@
     button.focus();
   }
 
-  function showPrinterSetup(program) {
+  function showPrinterSetup(program, done) {
     if (program.setup.variant === "legacy") {
-      if (!legacyPrinterSetupOverlayEl) { renderReport(program.report); return; }
+      if (!legacyPrinterSetupOverlayEl) { if (done) done(true); else renderReport(program.report); return; }
       document.getElementById(program.report.orientation === "landscape" ? "legacyLandscape" : "legacyPortrait").checked = true;
       legacyPrinterSetupOverlayEl.hidden = false;
       document.getElementById("legacyPrinterOk").onclick = () => {
         program.report.orientation = document.querySelector('input[name="legacyOrientation"]:checked').value;
-        legacyPrinterSetupOverlayEl.hidden = true; renderReport(program.report);
+        legacyPrinterSetupOverlayEl.hidden = true;
+        if (done) done(true); else renderReport(program.report);
       };
-      document.getElementById("legacyPrinterCancel").onclick = () => { legacyPrinterSetupOverlayEl.hidden = true; setStatus("Configuração de impressão cancelada.", ""); };
+      document.getElementById("legacyPrinterCancel").onclick = () => { legacyPrinterSetupOverlayEl.hidden = true; setStatus("Configuração de impressão cancelada.", ""); if (done) done(false); };
       document.getElementById("legacyPrinterOk").focus();
       return;
     }
-    if (!printerSetupOverlayEl) { renderReport(program.report); return; }
+    if (!printerSetupOverlayEl) { if (done) done(true); else renderReport(program.report); return; }
     const orientationSelect = document.getElementById("printerOrientation");
     orientationSelect.value = program.report.orientation;
     printerSetupOverlayEl.hidden = false;
@@ -667,11 +682,12 @@
       program.report.orientation = orientationSelect.value;
       program.report.orientationSource = "Setup";
       printerSetupOverlayEl.hidden = true;
-      renderReport(program.report);
+      if (done) done(true); else renderReport(program.report);
     };
     document.getElementById("printerSetupCancel").onclick = () => {
       printerSetupOverlayEl.hidden = true;
       setStatus("Configuração de impressão cancelada.", "");
+      if (done) done(false);
     };
     document.getElementById("printerSetupOk").focus();
   }
@@ -769,7 +785,7 @@
     };
   }
 
-  function renderReport(report) {
+  function renderReport(report, onClose) {
     desktopEl.replaceChildren();
     const preview = document.createElement("section");
     preview.className = "report-preview";
@@ -783,6 +799,13 @@
     printButton.textContent = "Imprimir / Salvar PDF";
     printButton.addEventListener("click", () => window.print());
     toolbar.append(info, printButton);
+    if (onClose) {
+      const closeButton = document.createElement("button");
+      closeButton.className = "primary report-close-preview";
+      closeButton.textContent = "Fechar preview";
+      closeButton.addEventListener("click", () => { preview.remove(); onClose(); });
+      toolbar.append(closeButton);
+    }
     const page = document.createElement("article");
     page.className = "report-page " + (report.orientation === "landscape" ? "report-landscape" : "report-portrait");
     page.dataset.advpl = "fwmsprinter-page";
