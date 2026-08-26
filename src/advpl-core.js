@@ -136,13 +136,13 @@
     return depth === 0;
   }
 
-  function evaluate(expression, variables = {}) {
+  function evaluate(expression, variables = {}, callFunction = null) {
     let token = String(expression ?? "").trim();
     while (hasOuterParentheses(token)) token = token.slice(1, -1).trim();
     let binary = splitBinary(token, ["==", "!=", "<=", ">=", "<", ">"]);
     if (binary) {
       const [leftSource, operator, rightSource] = binary;
-      const left = evaluate(leftSource, variables), right = evaluate(rightSource, variables);
+      const left = evaluate(leftSource, variables, callFunction), right = evaluate(rightSource, variables, callFunction);
       if (operator === "==") return left === right;
       if (operator === "!=") return left !== right;
       if (operator === "<") return left < right;
@@ -152,11 +152,11 @@
     }
     const additions = splitTopLevel(token, "+");
     if (additions.length > 1) {
-      const values = additions.map(part => evaluate(part, variables));
+      const values = additions.map(part => evaluate(part, variables, callFunction));
       return values.every(value => typeof value === "number") ? values.reduce((sum, value) => sum + value, 0) : values.map(String).join("");
     }
     binary = splitBinary(token, ["-"]);
-    if (binary && binary[0]) return Number(evaluate(binary[0], variables)) - Number(evaluate(binary[2], variables));
+    if (binary && binary[0]) return Number(evaluate(binary[0], variables, callFunction)) - Number(evaluate(binary[2], variables, callFunction));
     if (/^["']/.test(token)) return unquote(token);
     if (/^\.T\.$/i.test(token)) return true;
     if (/^\.F\.$/i.test(token)) return false;
@@ -164,27 +164,29 @@
     const array = parseArray(token);
     if (array) return array;
     let match = token.match(/^Space\s*\((.*)\)$/i);
-    if (match) return " ".repeat(Math.max(0, Number(evaluate(match[1], variables)) || 0));
+    if (match) return " ".repeat(Math.max(0, Number(evaluate(match[1], variables, callFunction)) || 0));
     match = token.match(/^AllTrim\s*\((.*)\)$/i);
-    if (match) return String(evaluate(match[1], variables)).trim();
+    if (match) return String(evaluate(match[1], variables, callFunction)).trim();
     match = token.match(/^Abs\s*\((.*)\)$/i);
-    if (match) return Math.abs(Number(evaluate(match[1], variables)) || 0);
+    if (match) return Math.abs(Number(evaluate(match[1], variables, callFunction)) || 0);
     match = token.match(/^cValToChar\s*\((.*)\)$/i);
-    if (match) return String(evaluate(match[1], variables));
+    if (match) return String(evaluate(match[1], variables, callFunction));
     match = token.match(/^Chr\s*\((.*)\)$/i);
-    if (match) return String.fromCharCode(Number(evaluate(match[1], variables)) || 0);
+    if (match) return String.fromCharCode(Number(evaluate(match[1], variables, callFunction)) || 0);
     match = token.match(/^Len\s*\((.*)\)$/i);
-    if (match) return evaluate(match[1], variables)?.length ?? 0;
+    if (match) return evaluate(match[1], variables, callFunction)?.length ?? 0;
     match = token.match(/^AClone\s*\((.*)\)$/i);
     if (match) {
       const clone = value => Array.isArray(value) ? value.map(clone) : value;
-      return clone(evaluate(match[1], variables));
+      return clone(evaluate(match[1], variables, callFunction));
     }
+    match = token.match(/^(?:U_)?(\w+)\s*\((.*)\)$/i);
+    if (match && callFunction) return callFunction(match[1], splitArguments(match[2]).map(argument => evaluate(argument, variables, callFunction)));
     match = token.match(/^(\w+)((?:\s*\[\s*[^\]]+\s*\])*)$/i);
     if (match) {
       const key = Object.keys(variables).find(name => name.toLowerCase() === match[1].toLowerCase());
       let value = key ? variables[key] : "";
-      for (const index of (match[2] || "").matchAll(/\[\s*([^\]]+)\s*\]/g)) value = value?.[Number(evaluate(index[1], variables)) - 1];
+      for (const index of (match[2] || "").matchAll(/\[\s*([^\]]+)\s*\]/g)) value = value?.[Number(evaluate(index[1], variables, callFunction)) - 1];
       return value ?? "";
     }
     return variables[token] ?? "";
@@ -222,73 +224,116 @@
 
   function parseMessageProgram(source) {
     const lines = statements(source);
-    const variables = Object.create(null);
-    for (const define of String(source).matchAll(/^\s*#\s*DEFINE\s+(\w+)\s+(.+)$/gim)) variables[define[1]] = evaluate(define[2].trim(), variables);
-    const active = [];
+    const globals = Object.create(null);
+    for (const define of String(source).matchAll(/^\s*#\s*DEFINE\s+(\w+)\s+(.+)$/gim)) globals[define[1]] = evaluate(define[2].trim(), globals);
     const messages = [];
     const consoleOutput = [];
     const events = [];
-    const isActive = () => active.every(frame => frame.active);
-    const executeLine = line => {
-      const local = line.match(/^Local\s+(.+)$/i);
-      if (local) { assignLocalDeclarations(local[1], variables); return true; }
-      const append = line.match(/^(\w+)\s*\+=\s*(.+)$/i);
-      if (append) { variables[append[1]] = String(variables[append[1]] ?? "") + String(evaluate(append[2], variables)); return true; }
-      const copy = line.match(/^ACopy\s*\(\s*(\w+)\s*,\s*(\w+)(?:\s*,[^)]*)?\)$/i);
-      if (copy) { variables[copy[2]] = Array.isArray(variables[copy[1]]) ? variables[copy[1]].slice() : []; return true; }
-      const call = line.match(/^(?:Return\s+)?Msg(Info|Stop)\s*\((.*)\)$/i);
-      if (call) {
-        const args = splitArguments(call[2]);
-        const message = { kind: call[1].toLowerCase(), text: String(evaluate(args[0], variables)), title: args[1] ? String(evaluate(args[1], variables)) : "TOTVS" };
-        messages.push(message);
-        events.push({ type: "message", ...message });
-        return true;
-      }
-      const consoleCall = line.match(/^ConOut\s*\((.*)\)$/i);
-      if (consoleCall) {
-        const text = splitArguments(consoleCall[1]).map(argument => String(evaluate(argument, variables))).join(" ");
-        consoleOutput.push(text);
-        events.push({ type: "console", text });
-        return true;
-      }
-      return false;
-    };
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-      const line = lines[lineIndex];
-      const conditional = line.match(/^If\s+(.+)$/i);
-      if (conditional) {
-        const parentActive = isActive();
-        active.push({ parentActive, condition: parentActive && Boolean(evaluate(conditional[1], variables)), active: false });
-        active.at(-1).active = active.at(-1).condition;
-        continue;
-      }
-      if (/^Else$/i.test(line)) {
-        const frame = active.at(-1);
-        if (frame) frame.active = frame.parentActive && !frame.condition;
-        continue;
-      }
-      if (/^EndIf$/i.test(line)) { active.pop(); continue; }
-      if (!isActive()) continue;
-      const loop = line.match(/^For\s+(\w+)\s*:=\s*(.+?)\s+To\s+(.+?)(?:\s+Step\s+(.+))?$/i);
-      if (loop) {
-        let nextIndex = lineIndex + 1, depth = 1;
-        for (; nextIndex < lines.length; nextIndex += 1) {
-          if (/^For\b/i.test(lines[nextIndex])) depth += 1;
-          if (/^Next\b/i.test(lines[nextIndex]) && --depth === 0) break;
-        }
-        const start = Number(evaluate(loop[2], variables)), end = Number(evaluate(loop[3], variables));
-        const step = loop[4] ? Number(evaluate(loop[4], variables)) : 1;
-        for (let value = start; step >= 0 ? value <= end : value >= end; value += step) {
-          variables[loop[1]] = value;
-          for (let bodyIndex = lineIndex + 1; bodyIndex < nextIndex; bodyIndex += 1) executeLine(lines[bodyIndex]);
-        }
-        lineIndex = nextIndex;
-        continue;
-      }
-      executeLine(line);
+    const functions = Object.create(null);
+    let current = { name: "__main__", visibility: "implicit", parameters: [], lines: [] };
+    functions.__main__ = current;
+    for (const line of lines) {
+      const header = line.match(/^(User|Static)\s+Function\s+(\w+)\s*\(([^)]*)\)/i);
+      if (header) {
+        current = { name: header[2], visibility: header[1].toLowerCase(), parameters: splitArguments(header[3]).filter(Boolean), lines: [] };
+        functions[header[2].toLowerCase()] = current;
+      } else current.lines.push(line);
     }
+    const entry = Object.values(functions).find(item => item.visibility === "user") || functions.__main__;
+    const findFunction = name => functions[String(name).replace(/^U_/i, "").toLowerCase()];
+    let callFunction, callDepth = 0;
+    const executeFunction = (definition, args = []) => {
+      const variables = Object.assign(Object.create(null), globals);
+      definition.parameters.forEach((name, index) => { variables[name] = args[index] ?? null; });
+      const active = [];
+      const isActive = () => active.every(frame => frame.active);
+      let returned = false, returnValue = null;
+      const value = expression => evaluate(expression, variables, callFunction);
+      const executeLine = line => {
+        const local = line.match(/^Local\s+(.+)$/i);
+        if (local) {
+          for (const item of splitArguments(local[1])) {
+            const declaration = item.match(/^(\w+)(?:\s*:=\s*(.+))?$/i);
+            if (declaration) variables[declaration[1]] = declaration[2] == null ? null : value(declaration[2]);
+          }
+          return true;
+        }
+        const parameters = line.match(/^Param(?:eter)?s?\s+(.+)$/i);
+        if (parameters) { splitArguments(parameters[1]).forEach((name, index) => { variables[name] = args[index] ?? null; }); return true; }
+        const append = line.match(/^(\w+)\s*\+=\s*(.+)$/i);
+        if (append) { variables[append[1]] = String(variables[append[1]] ?? "") + String(value(append[2])); return true; }
+        const assignment = line.match(/^(\w+)\s*:=\s*(.+)$/i);
+        if (assignment) { variables[assignment[1]] = value(assignment[2]); return true; }
+        const copy = line.match(/^ACopy\s*\(\s*(\w+)\s*,\s*(\w+)(?:\s*,[^)]*)?\)$/i);
+        if (copy) { variables[copy[2]] = Array.isArray(variables[copy[1]]) ? variables[copy[1]].slice() : []; return true; }
+        const call = line.match(/^(Return\s+)?Msg(Info|Stop)\s*\((.*)\)$/i);
+        if (call) {
+          const messageArgs = splitArguments(call[3]);
+          const message = { kind: call[2].toLowerCase(), text: String(value(messageArgs[0])), title: messageArgs[1] ? String(value(messageArgs[1])) : "TOTVS" };
+          messages.push(message);
+          events.push({ type: "message", ...message });
+          if (call[1]) returned = true;
+          return true;
+        }
+        const consoleCall = line.match(/^ConOut\s*\((.*)\)$/i);
+        if (consoleCall) {
+          const text = splitArguments(consoleCall[1]).map(argument => String(value(argument))).join(" ");
+          consoleOutput.push(text);
+          events.push({ type: "console", text });
+          return true;
+        }
+        const functionCall = line.match(/^(?:U_)?(\w+)\s*\((.*)\)$/i);
+        if (functionCall && findFunction(functionCall[1])) { callFunction(functionCall[1], splitArguments(functionCall[2]).map(value)); return true; }
+        const returnMatch = line.match(/^Return(?:\s+(.+))?$/i);
+        if (returnMatch) { returnValue = returnMatch[1] == null ? null : value(returnMatch[1]); returned = true; return true; }
+        return false;
+      };
+      for (let lineIndex = 0; lineIndex < definition.lines.length && !returned; lineIndex += 1) {
+        const line = definition.lines[lineIndex];
+        const conditional = line.match(/^If\s+(.+)$/i);
+        if (conditional) {
+          const parentActive = isActive();
+          active.push({ parentActive, condition: parentActive && Boolean(value(conditional[1])), active: false });
+          active.at(-1).active = active.at(-1).condition;
+          continue;
+        }
+        if (/^Else$/i.test(line)) {
+          const frame = active.at(-1);
+          if (frame) frame.active = frame.parentActive && !frame.condition;
+          continue;
+        }
+        if (/^EndIf$/i.test(line)) { active.pop(); continue; }
+        if (!isActive()) continue;
+        const loop = line.match(/^For\s+(\w+)\s*:=\s*(.+?)\s+To\s+(.+?)(?:\s+Step\s+(.+))?$/i);
+        if (loop) {
+          let nextIndex = lineIndex + 1, depth = 1;
+          for (; nextIndex < definition.lines.length; nextIndex += 1) {
+            if (/^For\b/i.test(definition.lines[nextIndex])) depth += 1;
+            if (/^Next\b/i.test(definition.lines[nextIndex]) && --depth === 0) break;
+          }
+          const start = Number(value(loop[2])), end = Number(value(loop[3]));
+          const step = loop[4] ? Number(value(loop[4])) : 1;
+          for (let loopValue = start; step >= 0 ? loopValue <= end : loopValue >= end; loopValue += step) {
+            variables[loop[1]] = loopValue;
+            for (let bodyIndex = lineIndex + 1; bodyIndex < nextIndex && !returned; bodyIndex += 1) executeLine(definition.lines[bodyIndex]);
+          }
+          lineIndex = nextIndex;
+          continue;
+        }
+        executeLine(line);
+      }
+      return { value: returnValue, variables };
+    };
+    callFunction = (name, args) => {
+      const definition = findFunction(name);
+      if (!definition || callDepth >= 64) return "";
+      callDepth += 1;
+      try { return executeFunction(definition, args).value; }
+      finally { callDepth -= 1; }
+    };
+    const execution = executeFunction(entry);
     if (!events.length) return null;
-    const common = { version: VERSION, events, console: consoleOutput, variables, controls: [], diagnostics: diagnose(source) };
+    const common = { version: VERSION, events, console: consoleOutput, variables: execution.variables, controls: [], diagnostics: diagnose(source) };
     if (messages.length) return { kind: "message", message: messages[0], messages, ...common };
     return { kind: "console", ...common };
   }

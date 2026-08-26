@@ -45,6 +45,7 @@ As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e
 - funções `Space()`, `AllTrim()`, `Abs()`, `cValToChar()`, `Chr()`, `Len()`, `ACopy()` e `AClone()`;
 - constantes simples declaradas com `#DEFINE`, incluindo combinações como `CRLF`;
 - declarações `Local` múltiplas, atribuição `+=`, `If`/`Else` e `For`/`To`/`Step`/`Next` no subconjunto executável;
+- chamadas a `User Function` e `Static Function`, inclusive com parâmetros, retorno e eventos produzidos pela função chamada;
 - ações compostas sequenciais, como `(MsgInfo(...), oDlg:End())`;
 - `ACTION MsgInfo(...)` e `ACTION oDlg:End()`.
 - `MsgInfo()` e `MsgStop()` independentes, com título, conteúdo multilinha e filas modais;
@@ -77,6 +78,6 @@ Os diagnósticos identificados como `emulator-signatures` são aproximações lo
 npm test
 ```
 
-Os testes protegem o contrato público do núcleo, expressões e fluxo de execução, mensagens, console, componentes visuais, ações, relatórios, códigos de barras e orientação de página.
+Os testes protegem o contrato público do núcleo, expressões, chamadas entre funções e fluxo de execução, mensagens, console, componentes visuais, ações, relatórios, códigos de barras e orientação de página.
 
 Veja também o [registro das implementações de 25 de agosto de 2026](docs/updates-2026-08-25.md).

@@ -372,3 +372,48 @@ Return`);
   assert.equal(program.report.orientationSource, "SetLandscape");
   assert.equal(program.report.paper, "custom");
 });
+
+test("executa função auxiliar com parâmetros e valor de retorno", () => {
+  const program = core.parse(`User Function teste()
+Local nTotal := U_Soma(10, 5)
+ConOut("Total", nTotal)
+MsgInfo(cValToChar(nTotal), "Resultado")
+Return
+
+User Function Soma(nA, nB)
+Return nA + nB`);
+  assert.deepEqual(program.events, [
+    { type: "console", text: "Total 15" },
+    { type: "message", kind: "info", text: "15", title: "Resultado" }
+  ]);
+});
+
+test("propaga eventos de funções chamadas na ordem de execução", () => {
+  const program = core.parse(`User Function teste()
+ConOut("Antes")
+U_Processa("Cliente 001")
+ConOut("Depois")
+Return
+
+Static Function Processa(cNome)
+ConOut("Processando", cNome)
+MsgInfo(cNome, "Cadastro")
+Return .T.`);
+  assert.deepEqual(program.events, [
+    { type: "console", text: "Antes" },
+    { type: "console", text: "Processando Cliente 001" },
+    { type: "message", kind: "info", text: "Cliente 001", title: "Cadastro" },
+    { type: "console", text: "Depois" }
+  ]);
+});
+
+test("não executa função auxiliar que não foi chamada", () => {
+  const program = core.parse(`User Function teste()
+ConOut("Principal")
+Return
+
+User Function NaoChamada()
+ConOut("Não deveria aparecer")
+Return`);
+  assert.deepEqual(program.events, [{ type: "console", text: "Principal" }]);
+});
