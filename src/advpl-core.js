@@ -266,7 +266,7 @@
         if (assignment) { variables[assignment[1]] = value(assignment[2]); return true; }
         const copy = line.match(/^ACopy\s*\(\s*(\w+)\s*,\s*(\w+)(?:\s*,[^)]*)?\)$/i);
         if (copy) { variables[copy[2]] = Array.isArray(variables[copy[1]]) ? variables[copy[1]].slice() : []; return true; }
-        const call = line.match(/^(Return\s+)?Msg(Info|Stop)\s*\((.*)\)$/i);
+        const call = line.match(/^(Return\s+)?Msg(Info|Stop|Alert)\s*\((.*)\)$/i);
         if (call) {
           const messageArgs = splitArguments(call[3]);
           const message = { kind: call[2].toLowerCase(), text: String(value(messageArgs[0])), title: messageArgs[1] ? String(value(messageArgs[1])) : "TOTVS" };
@@ -344,7 +344,7 @@
     return splitTopLevel(list, ",").map(source => {
       const end = source.match(/^(\w+)\s*:\s*End\s*\(\s*\)$/i);
       if (end) return { type: "end", target: end[1], source };
-      const message = source.match(/^Msg(Info|Stop)\s*\((.*)\)$/i);
+      const message = source.match(/^Msg(Info|Stop|Alert)\s*\((.*)\)$/i);
       if (message) {
         const args = splitArguments(message[2]);
         return { type: "message", kind: message[1].toLowerCase(), expression: args[0] || '""', titleExpression: args[1] || null, source };
@@ -425,7 +425,7 @@
       const local = line.match(/^Local\s+(.+)$/i);
       if (local) assignLocalDeclarations(local[1], runtimeVariables);
     }
-    const hasMixedRuntime = reportLines.some(line => /^(?:ConOut|MsgInfo|MsgStop)\s*\(/i.test(line));
+    const hasMixedRuntime = reportLines.some(line => /^(?:ConOut|MsgInfo|MsgStop|MsgAlert)\s*\(/i.test(line));
     if (hasMixedRuntime) {
       const events = [];
       for (const line of reportLines) {
@@ -434,7 +434,7 @@
           events.push({ type: "console", text: splitArguments(match[1]).map(argument => String(evaluate(argument, runtimeVariables))).join(" ") });
           continue;
         }
-        match = line.match(/^Msg(Info|Stop)\s*\((.*)\)$/i);
+        match = line.match(/^Msg(Info|Stop|Alert)\s*\((.*)\)$/i);
         if (match) {
           const args = splitArguments(match[2]);
           events.push({ type: "message", kind: match[1].toLowerCase(), text: String(evaluate(args[0], runtimeVariables)), title: args[1] ? String(evaluate(args[1], runtimeVariables)) : "TOTVS" });

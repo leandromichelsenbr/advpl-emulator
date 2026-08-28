@@ -81,6 +81,17 @@ test("expõe diagnósticos de assinatura sem executar o fonte", () => {
   assert.equal(core.diagnose('MsgInfo("Texto", "Título")').length, 0);
 });
 
+test("interpreta MsgAlert como caixa de advertência", () => {
+  const program = core.parse(`#INCLUDE "PROTHEUS.CH"
+#INCLUDE "tbiconn.ch"
+User Function Teste()
+MsgAlert("Teste de Mensagem", "Teste")
+Return`);
+  assert.equal(program.kind, "message");
+  assert.deepEqual(program.message, { kind: "alert", text: "Teste de Mensagem", title: "Teste" });
+  assert.deepEqual(program.events, [{ type: "message", kind: "alert", text: "Teste de Mensagem", title: "Teste" }]);
+});
+
 test("registra ConOut como saída de console", () => {
   const program = core.parse(`User Function abs2()
 Local nValue := -123.45

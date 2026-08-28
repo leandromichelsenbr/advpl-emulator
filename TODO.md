@@ -108,6 +108,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 ## Experiência do laboratório
 
+- [x] Calibrar `MsgAlert()` como caixa modal de advertência, com título e ícone próprios.
 - [x] Exibir a saída de `ConOut()` em um console recolhível, inclusive junto de mensagens no mesmo fluxo.
 - [x] Oferecer **Executar novamente** após concluir uma fila de mensagens ou encerrar um diálogo.
 - [ ] Oferecer exemplos selecionáveis para diálogos, browses, impressão, códigos de barras, QR Code e gráficos.

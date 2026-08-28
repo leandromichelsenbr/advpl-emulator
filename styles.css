@@ -213,6 +213,7 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .message-content { display: flex; align-items: center; gap: 14px; }
 .message-icon { display: none; width: 44px; height: 44px; flex: 0 0 44px; border: 4px solid #fff; border-radius: 50%; background: #d8222a; color: #fff; box-shadow: 0 0 0 2px #999; font: bold 40px/34px Arial, sans-serif; text-align: center; }
 .message-overlay.stop .message-icon { display: block; }
+.message-overlay.alert .message-icon { display: block; width: 48px; height: 42px; flex-basis: 48px; border: 0; border-radius: 0; clip-path: polygon(50% 0,100% 100%,0 100%); background: #f2bd16; color: #111; box-shadow: none; font: bold 26px/52px Arial, sans-serif; }
 .message-overlay.stop .message-box { width: min(300px, 90vw); border-radius: 0; padding: 0 12px 10px; }
 .message-overlay.stop .message-title { margin: 0 -12px 12px; padding: 6px 12px; color: #fff; background: linear-gradient(#292522, #171513); font-size: 12px; }
 .message-overlay.stop .message-text { display: flex; align-items: center; margin: 0; font-size: 12px; }
@@ -224,6 +225,7 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .standalone-message-content p { margin: 0; line-height: 1.3; white-space: pre-line; }
 .standalone-message-box .icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; border: 3px solid #fff; border-radius: 50%; background: #d8222a; color: #fff; box-shadow: 0 0 0 2px #999; font: bold 36px/1 Arial, sans-serif; }
 .standalone-message-box.info .icon { background: #1677ad; font: bold 30px/1 Georgia, serif; }
+.standalone-message-box.alert .icon { width: 44px; height: 40px; flex-basis: 44px; border: 0; border-radius: 0; clip-path: polygon(50% 0,100% 100%,0 100%); background: #f2bd16; color: #111; box-shadow: none; font: bold 25px/50px Arial, sans-serif; }
 .standalone-message-box button { position: absolute; right: 10px; bottom: 8px; min-width: 48px; height: 26px; border: 2px solid #00659a; border-radius: 3px; background: #fbfbfb; color: #051f31; font: 11px Arial, sans-serif; }
 
 .emulator-console { position: absolute; right: 12px; bottom: 12px; z-index: 3100; display: flex; max-width: calc(100% - 24px); flex-direction: column; align-items: flex-end; }
