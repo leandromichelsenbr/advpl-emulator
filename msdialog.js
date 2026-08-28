@@ -12,6 +12,7 @@
   const printerSetupOverlayEl = document.getElementById("printerSetupOverlay");
   const legacyPrinterSetupOverlayEl = document.getElementById("legacyPrinterSetupOverlay");
   const messageTitleEl = document.getElementById("messageTitle") || document.querySelector(".message-title");
+  const messageIconEl = overlayEl?.querySelector(".message-icon");
   const emulatorConfig = globalThis.ADVPL_EMULATOR_CONFIG || {};
   const headless = emulatorConfig.headless === true || new URLSearchParams(globalThis.location?.search || "").get("headless") === "1";
 
@@ -35,7 +36,7 @@
 
   function highlightAdvPL(source) {
     const tokens = [];
-    const pattern = /(\/\/[^\r\n]*|^\s*#\s*\w+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\.(?:T|F)\.|\b\d+(?:\.\d+)?\b|\b(?:User\s+Function|Static\s+Function|Function|Return|Local|Private|Public|Static|If|ElseIf|Else|EndIf|For|Next|While|EndDo|Do\s+Case|Case|Otherwise|EndCase|DEFINE|ACTIVATE|DIALOG|MSDIALOG|TITLE|FROM|TO|PIXEL|CENTERED|SIZE|OF|PROMPT|VAR|ACTION|VALID|WHEN|PICTURE)\b|\b(?:MSDialog|TWBrowse|LoadBitmap|GetResources|MsgInfo|MsgStop|Space|AllTrim|If)\b|:\s*\w+)/gim;
+    const pattern = /(\/\/[^\r\n]*|^\s*#\s*\w+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\.(?:T|F)\.|\b\d+(?:\.\d+)?\b|\b(?:User\s+Function|Static\s+Function|Function|Return|Local|Private|Public|Static|If|ElseIf|Else|EndIf|For|Next|While|EndDo|Do\s+Case|Case|Otherwise|EndCase|DEFINE|ACTIVATE|DIALOG|MSDIALOG|TITLE|FROM|TO|PIXEL|CENTERED|SIZE|OF|PROMPT|VAR|ACTION|VALID|WHEN|PICTURE)\b|\b(?:MSDialog|TWBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Space|AllTrim|If)\b|:\s*\w+)/gim;
     let lastIndex = 0;
     source.replace(pattern, (match, _capture, offset) => {
       tokens.push(escapeHtml(source.slice(lastIndex, offset)));
@@ -46,7 +47,7 @@
       else if (/^\.(?:T|F)\.$/i.test(match)) kind = "boolean";
       else if (/^\d/.test(match)) kind = "number";
       else if (/^:/.test(match)) kind = "method";
-      else if (/^(?:MSDialog|TWBrowse|LoadBitmap|GetResources|MsgInfo|MsgStop|Space|AllTrim|If)$/i.test(match)) kind = "function";
+      else if (/^(?:MSDialog|TWBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Space|AllTrim|If)$/i.test(match)) kind = "function";
       else kind = "keyword";
       tokens.push(`<span class="syntax-${kind}">${escapeHtml(match)}</span>`);
       lastIndex = offset + match.length;
@@ -357,6 +358,10 @@
       renderRuntime(program);
       return;
     }
+    if (program.kind === "axcadastro") {
+      renderAxCadastro(program);
+      return;
+    }
     if (program.kind === "report") {
       desktopEl.replaceChildren();
       if (program.setup?.enabled) showPrinterSetup(program);
@@ -518,6 +523,106 @@
       showRunAgain();
     };
     next();
+  }
+
+  function playEventList(events, done) {
+    let index = 0;
+    const next = () => {
+      const event = (events || [])[index++];
+      if (!event) { done?.(); return; }
+      if (event.type === "message") {
+        const box = document.createElement("wa-message-box");
+        box.dataset.advpl = "messagebox"; box.className = `standalone-message-box dict-messagebox ${event.kind}`;
+        box.setAttribute("opened", ""); box.setAttribute("title", event.title || "TOTVS"); box.setAttribute("state", "normal"); box.tabIndex = -1;
+        const title = document.createElement("div"); title.className = "standalone-message-title"; title.textContent = event.title || "TOTVS";
+        const content = document.createElement("div"); content.className = "standalone-message-content";
+        const icon = document.createElement("span"); icon.className = "icon"; icon.setAttribute("aria-hidden", "true"); icon.textContent = event.kind === "stop" ? "×" : event.kind === "alert" ? "!" : "i";
+        const text = document.createElement("p"); text.textContent = event.text;
+        const button = document.createElement("button"); button.type = "button"; button.textContent = "OK";
+        button.addEventListener("click", () => { box.remove(); next(); });
+        content.append(icon, text); box.append(title, content, button); desktopEl.append(box); button.focus();
+      }
+      else next();
+    };
+    next();
+  }
+
+  function renderAxCadastro(program) {
+    desktopEl.replaceChildren();
+    const dialog = document.createElement("wa-dialog");
+    dialog.dataset.advpl = "tdialog";
+    dialog.className = "axcadastro dict-msdialog";
+    dialog.setAttribute("frameless", ""); dialog.setAttribute("resizable", ""); dialog.setAttribute("opened", "");
+    dialog.setAttribute("state", "normal"); dialog.setAttribute("title", ""); dialog.tabIndex = -1;
+
+    const header = document.createElement("header");
+    header.className = "ax-header";
+    const heading = document.createElement("h2"); heading.textContent = program.title;
+    const custom = document.createElement("div"); custom.className = "ax-custom-buttons";
+    for (const item of program.customButtons || []) {
+      const button = document.createElement("button"); button.type = "button"; button.textContent = item.label; button.title = item.tooltip || item.title || item.label;
+      button.addEventListener("click", () => playEventList(item.events)); custom.append(button);
+    }
+    const close = document.createElement("button"); close.type = "button"; close.className = "ax-close"; close.textContent = "×"; close.title = "Fechar";
+    close.addEventListener("click", () => { dialog.remove(); setStatus("Execução concluída.", "success"); showRunAgain(); });
+    header.append(heading, custom, close);
+
+    const toolbar = document.createElement("div"); toolbar.className = "ax-toolbar";
+    const actions = document.createElement("div"); actions.className = "ax-actions";
+    const search = document.createElement("input"); search.type = "search"; search.placeholder = "Pesquisar"; search.setAttribute("aria-label", "Pesquisar");
+    const filterButton = document.createElement("button"); filterButton.type = "button"; filterButton.className = "ax-filter"; filterButton.textContent = "Filtrar";
+    toolbar.append(actions, search, filterButton);
+
+    const grid = document.createElement("wa-tgrid"); grid.dataset.advpl = "tgrid"; grid.className = "ax-grid dict-tgrid";
+    grid.setAttribute("selection-mode", "row"); grid.setAttribute("headerheight", "27"); grid.setAttribute("rowheight", "30"); grid.setAttribute("alternateinterval", "1");
+    const table = document.createElement("table");
+    const thead = document.createElement("thead"), headerRow = document.createElement("tr");
+    for (const column of program.columns) { const th = document.createElement("th"); th.textContent = column.label; headerRow.append(th); }
+    thead.append(headerRow);
+    const tbody = document.createElement("tbody"); table.append(thead, tbody); grid.append(table);
+    let selectedIndex = program.rows.length ? 0 : -1;
+    const details = document.createElement("pre"); details.className = "ax-details"; details.hidden = true;
+    const renderRows = () => {
+      const term = search.value.trim().toLocaleLowerCase("pt-BR"); tbody.replaceChildren();
+      program.rows.forEach((row, rowIndex) => {
+        if (term && !Object.values(row).some(value => String(value).toLocaleLowerCase("pt-BR").includes(term))) return;
+        const tr = document.createElement("tr"); tr.tabIndex = 0; tr.classList.toggle("selected", rowIndex === selectedIndex);
+        for (const column of program.columns) { const td = document.createElement("td"); td.textContent = row[column.field] ?? ""; tr.append(td); }
+        tr.addEventListener("click", () => { selectedIndex = rowIndex; renderRows(); updateDetails(); }); tbody.append(tr);
+      });
+    };
+    const updateDetails = () => { details.textContent = selectedIndex >= 0 ? JSON.stringify(program.rows[selectedIndex], null, 2) : "Nenhum registro selecionado."; };
+    search.addEventListener("input", renderRows); filterButton.addEventListener("click", () => search.focus());
+
+    const runTransaction = () => playEventList([
+      ...program.callbacks.duringTransaction,
+      ...program.callbacks.confirm,
+      ...program.callbacks.ok,
+      ...program.callbacks.afterTransaction
+    ]);
+    const openRecord = mode => {
+      if (mode === "visualizar") { details.hidden = false; updateDetails(); return; }
+      const editor = document.createElement("div"); editor.className = "ax-editor-overlay";
+      const panel = document.createElement("section"); panel.className = "ax-editor";
+      const title = document.createElement("h3"); title.textContent = mode === "incluir" ? `Incluir ${program.title}` : `Alterar ${program.title}`;
+      const fields = document.createElement("div"); fields.className = "ax-editor-fields";
+      const record = mode === "alterar" && selectedIndex >= 0 ? program.rows[selectedIndex] : {};
+      for (const column of program.columns) { const label = document.createElement("label"); label.textContent = column.label; const input = document.createElement("input"); input.value = record[column.field] ?? ""; label.append(input); fields.append(label); }
+      const footer = document.createElement("footer"); const cancel = document.createElement("button"); cancel.textContent = "Cancelar"; const ok = document.createElement("button"); ok.textContent = "OK"; ok.className = "primary";
+      cancel.addEventListener("click", () => editor.remove()); ok.addEventListener("click", () => { editor.remove(); runTransaction(); }); footer.append(cancel, ok); panel.append(title, fields, footer); editor.append(panel); desktopEl.append(editor); ok.focus();
+    };
+    const actionButton = (label, handler) => { const button = document.createElement("button"); button.type = "button"; button.textContent = label; button.addEventListener("click", handler); actions.append(button); return button; };
+    actionButton("Incluir", () => openRecord("incluir")); actionButton("Alterar", () => openRecord("alterar")); actionButton("Visualizar", () => openRecord("visualizar"));
+    const moreWrap = document.createElement("div"); moreWrap.className = "ax-more"; const more = document.createElement("button"); more.type = "button"; more.textContent = "Outras Ações"; const menu = document.createElement("div"); menu.className = "ax-menu"; menu.hidden = true;
+    more.addEventListener("click", () => { menu.hidden = !menu.hidden; });
+    const deleteButton = document.createElement("button"); deleteButton.textContent = "Excluir"; deleteButton.addEventListener("click", () => { menu.hidden = true; playEventList(program.callbacks.delete); }); menu.append(deleteButton);
+    for (const item of program.additionalActions || []) { const button = document.createElement("button"); button.textContent = item.label; button.addEventListener("click", () => { menu.hidden = true; playEventList(item.events); }); menu.append(button); }
+    moreWrap.append(more, menu); actions.append(moreWrap);
+    const detailToggle = document.createElement("button"); detailToggle.type = "button"; detailToggle.className = "ax-detail-toggle"; detailToggle.textContent = "MOSTRAR DETALHES";
+    detailToggle.addEventListener("click", () => { details.hidden = !details.hidden; detailToggle.textContent = details.hidden ? "MOSTRAR DETALHES" : "OCULTAR DETALHES"; updateDetails(); });
+    dialog.append(header, toolbar, grid, details, detailToggle); desktopEl.append(dialog); renderRows(); updateDetails();
+    setStatus(`AxCadastro montado: ${program.rows.length} registro(s) de ${program.alias}.`, "success");
+    playEventList(program.callbacks.pre);
   }
 
   function renderRuntimeDialog(program, hooks) {
@@ -873,6 +978,7 @@
     messageTextEl.textContent = text;
     overlayEl.classList.toggle("stop", kind === "stop");
     overlayEl.classList.toggle("alert", kind === "alert");
+    if (messageIconEl) messageIconEl.textContent = kind === "stop" ? "×" : kind === "alert" ? "!" : "i";
     if (messageTitleEl) messageTitleEl.textContent = title || (kind === "info" ? "Informação" : "TOTVS");
     overlayEl.hidden = false;
     afterMessage = done || null;

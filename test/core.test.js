@@ -428,3 +428,36 @@ ConOut("Não deveria aparecer")
 Return`);
   assert.deepEqual(program.events, [{ type: "console", text: "Principal" }]);
 });
+
+test("interpreta AxCadastro, dados e callbacks de manutenção", () => {
+  const program = core.parse(`User Function Teste()
+Local aRotAdic := {}
+Local bPre := {||MsgAlert('Chamada antes da função')}
+Local bOK := {||MsgAlert('Chamada ao clicar em OK'), .T.}
+Local bTTS := {||MsgAlert('Chamada durante transacao')}
+Local bNoTTS := {||MsgAlert('Chamada após transacao')}
+Local aButtons := {}
+AAdd(aButtons,{ "PRODUTO", {|| MsgAlert("Teste")}, "Teste", "Botão Teste" })
+AAdd(aRotAdic,{ "Adicional", "U_Adic", 0, 6 })
+AxCadastro("SA1", "Clientes", "U_DelOk()", "U_COK()", aRotAdic, bPre, bOK, bTTS, bNoTTS, , , aButtons, , )
+Return(.T.)
+User Function DelOk()
+MsgAlert("Chamada antes do delete")
+Return
+User Function COK()
+MsgAlert("Clicou botao OK")
+Return .T.
+User Function Adic()
+MsgAlert("Rotina adicional")
+Return`, { tables: sampleData.tables });
+  assert.equal(program.kind, "axcadastro");
+  assert.equal(program.title, "Clientes");
+  assert.equal(program.alias, "SA1");
+  assert.equal(program.rows.length, 5);
+  assert.deepEqual(program.columns.map(column => column.field), ["A1_COD", "A1_LOJA", "A1_NOME"]);
+  assert.equal(program.callbacks.pre[0].text, "Chamada antes da função");
+  assert.equal(program.callbacks.confirm[0].text, "Clicou botao OK");
+  assert.equal(program.callbacks.delete[0].text, "Chamada antes do delete");
+  assert.equal(program.additionalActions[0].events[0].text, "Rotina adicional");
+  assert.equal(program.customButtons[0].events[0].text, "Teste");
+});

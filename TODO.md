@@ -23,6 +23,10 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 
 ## Componentes visuais
 
+- [x] Implementar a primeira versão interativa de `AxCadastro()`, incluindo dados fictícios por alias e callbacks principais.
+- [ ] Calibrar formulários de inclusão/alteração de `AxCadastro()` a partir dos campos SX3 fornecidos em dados de exemplo.
+- [ ] Ampliar permissões, legendas, filtros avançados, detalhes e ações de menu de `AxCadastro()`.
+
 - [ ] `SAY`, `GET`, `MSGET`, `CHECKBOX` e `BUTTON`: completar `PICTURE`, `VALID`, `WHEN`, estados desabilitados e foco.
 - [ ] Botões de imagem, bitmaps, ícones e recursos retornados por `GetResources()`/`LoadBitmap()`.
 - [ ] Radio buttons, combos, listas, abas, grupos, painéis e barras de ferramentas.
