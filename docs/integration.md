@@ -17,7 +17,7 @@ A saída de `parse()` é um modelo neutro. A página pode renderizá-lo com HTML
 - `AdvPLCore.VERSION`: versão do contrato público;
 - `AdvPLCore.API_VERSION`: linha compatível da API (`0.1`);
 - `AdvPLCore.PACKAGE_VERSION`: versão atual da distribuição;
-- `AdvPLCore.parse(source, options)`: transforma AdvPL em um modelo de diálogo, mensagem, console ou relatório;
+- `AdvPLCore.parse(source, options)`: transforma AdvPL em um modelo de diálogo, mensagem, console, relatório ou cadastro;
 - `AdvPLCore.evaluate(expression, variables)`: avalia o subconjunto suportado;
 - `AdvPLCore.parseAction(action)`: converte uma ação em comandos ordenados;
 - `AdvPLCore.diagnose(source)`: retorna diagnósticos locais sem executar o fonte;
@@ -33,6 +33,9 @@ O campo `kind` diferencia as saídas que não são diálogos:
 - `message`: `message` contém a primeira modal e `messages` preserva toda a fila;
 - `console`: `console` contém as linhas registradas por `ConOut()`;
 - `report`: `report` contém página, orientação, elementos e dados do relatório.
+- `axcadastro`: contém `alias`, `title`, `rows`, `columns`, `callbacks`, `additionalActions` e `customButtons` para uma manutenção interativa.
+
+No modelo `axcadastro`, os registros são obtidos de `options.tables[alias]`. Os callbacks já são normalizados como listas de eventos de mensagem, permitindo que outro renderizador reproduza `bPre`, confirmação, exclusão e as fases da transação sem interpretar novamente os blocos de código.
 
 Fontes executáveis também podem retornar `events`, uma lista ordenada preservando a sequência observável:
 

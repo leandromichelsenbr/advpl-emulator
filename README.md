@@ -60,6 +60,7 @@ As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e
 - `DEFINE DIALOG` e `TWBrowse():New()` com arrays, seleção e duplo clique;
 - `TCBrowse():New()` com colunas, `bLine`, `bHeaderClick`, `bLDblClick` e botões `GoUp`, `GoDown`, `GoTop` e `GoBottom`;
 - `BrGetDDB():New()` com alias, colunas `TCColumn`, seleção por célula e callbacks de edição/exclusão;
+- `AxCadastro()` com grid baseado em alias, pesquisa, detalhes, inclusão, alteração, visualização, exclusão, ações adicionais, botões personalizados e callbacks transacionais;
 - base fictícia local com registros de exemplo para `SA1`, `SB1` e `SBM`, sem conexão externa;
 - realce de sintaxe AdvPL no editor;
 - `FWMSPrinter` com setup, preview, A4 retrato/paisagem e impressão pelo navegador;

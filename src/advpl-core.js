@@ -463,7 +463,61 @@
     return key ? record[key] : "";
   }
 
+  function parseAxCadastro(source, options = {}) {
+    const line = statements(source).find(statement => /^AxCadastro\s*\(/i.test(statement));
+    if (!line) return null;
+    const match = line.match(/^AxCadastro\s*\(([\s\S]*)\)$/i);
+    if (!match) return null;
+    const args = splitArguments(match[1]);
+    const alias = unquote(args[0] || "");
+    const title = unquote(args[1] || "Cadastro");
+    const functionBodies = Object.create(null);
+    const functionPattern = /(?:User|Static)\s+Function\s+(\w+)\s*\([^)]*\)([\s\S]*?)(?=(?:User|Static)\s+Function\b|$)/gi;
+    for (const functionMatch of source.matchAll(functionPattern)) functionBodies[functionMatch[1].toLowerCase()] = functionMatch[2];
+    const messageEvents = value => {
+      let body = String(value || "").trim();
+      const block = codeBlockBody(body);
+      if (block != null) body = block;
+      const functionCall = body.match(/^(?:U_)?(\w+)\s*(?:\(.*\))?$/i);
+      if (functionCall && functionBodies[functionCall[1].toLowerCase()]) body = functionBodies[functionCall[1].toLowerCase()];
+      const events = [];
+      for (const message of body.matchAll(/Msg(Info|Stop|Alert)\s*\(([^)]*)\)/gi)) {
+        const messageArgs = splitArguments(message[2]);
+        events.push({ type: "message", kind: message[1].toLowerCase(), text: String(evaluate(messageArgs[0])), title: messageArgs[1] ? String(evaluate(messageArgs[1])) : "TOTVS" });
+      }
+      return events;
+    };
+    const localBlocks = Object.create(null);
+    for (const local of source.matchAll(/Local\s+(\w+)\s*:=\s*(\{\s*\|[^|]*\|[^\r\n]*\})/gi)) localBlocks[local[1].toLowerCase()] = local[2];
+    const resolveCallback = value => {
+      const token = String(value || "").trim();
+      return messageEvents(localBlocks[token.toLowerCase()] || unquote(token));
+    };
+    const additionalActions = [];
+    const customButtons = [];
+    for (const addLine of statements(source).filter(statement => /^AAdd\s*\(/i.test(statement))) {
+      const add = addLine.match(/^AAdd\s*\(\s*(\w+)\s*,\s*\{([\s\S]*)\}\s*\)$/i);
+      if (!add) continue;
+      const values = splitArguments(add[2]);
+      if (/aRotAdic/i.test(add[1])) additionalActions.push({ label: unquote(values[0]), events: messageEvents(unquote(values[1])) });
+      if (/aButtons/i.test(add[1])) customButtons.push({ label: unquote(values[0]), title: unquote(values[2]), tooltip: unquote(values[3]), events: messageEvents(values[1]) });
+    }
+    const rows = tableRows(options.tables, alias);
+    const columns = rows.length ? Object.keys(rows[0]).map(field => ({ field, label: field.replace(/^\w\d?_/, "") })) : [];
+    return {
+      kind: "axcadastro", version: VERSION, title, alias, rows, columns,
+      callbacks: {
+        delete: messageEvents(unquote(args[2])), confirm: messageEvents(unquote(args[3])),
+        pre: resolveCallback(args[5]), ok: resolveCallback(args[6]),
+        duringTransaction: resolveCallback(args[7]), afterTransaction: resolveCallback(args[8])
+      },
+      additionalActions, customButtons, controls: [], variables: Object.create(null), diagnostics: diagnose(source)
+    };
+  }
+
   function parse(source, options = {}) {
+    const axCadastroProgram = parseAxCadastro(source, options);
+    if (axCadastroProgram) return axCadastroProgram;
     const reportProgram = parseReport(source);
     if (reportProgram) return reportProgram;
     const messageProgram = /\bDEFINE\s+(?:MS)?DIALOG\b|MSDialog\s*\(\s*\)\s*:\s*New/i.test(source) ? null : parseMessageProgram(source);
@@ -624,5 +678,5 @@
     return { version: VERSION, dialog, controls, variables, events: runtimeEvents };
   }
 
-  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray });
+  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, parseAxCadastro, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray });
 });
