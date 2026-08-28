@@ -463,7 +463,7 @@
       const icon = document.createElement("span");
       icon.className = "icon";
       icon.setAttribute("aria-hidden", "true");
-      icon.textContent = event.kind === "stop" ? "×" : "i";
+      icon.textContent = event.kind === "stop" ? "×" : event.kind === "alert" ? "!" : "i";
       const text = document.createElement("p");
       text.textContent = event.text;
       const button = document.createElement("button");
@@ -637,10 +637,11 @@
       const message = messages[messageIndex];
       const lineCount = String(message.text).split(/\r?\n/).length;
       box.classList.toggle("stop", message.kind === "stop");
-      box.classList.toggle("info", message.kind !== "stop");
+      box.classList.toggle("alert", message.kind === "alert");
+      box.classList.toggle("info", message.kind === "info");
       box.setAttribute("title", message.title || "TOTVS");
       title.textContent = message.title || "TOTVS";
-      icon.textContent = message.kind === "stop" ? "×" : "i";
+      icon.textContent = message.kind === "stop" ? "×" : message.kind === "alert" ? "!" : "i";
       text.textContent = message.text;
       box.style.width = lineCount > 4 ? "223.844px" : "200px";
       box.style.height = lineCount > 4 ? Math.min(420, 96 + lineCount * 12) + "px" : "154px";
@@ -871,7 +872,8 @@
   function showMessage(text, kind, done, title) {
     messageTextEl.textContent = text;
     overlayEl.classList.toggle("stop", kind === "stop");
-    if (messageTitleEl) messageTitleEl.textContent = title || (kind === "stop" ? "TOTVS" : "Informação");
+    overlayEl.classList.toggle("alert", kind === "alert");
+    if (messageTitleEl) messageTitleEl.textContent = title || (kind === "info" ? "Informação" : "TOTVS");
     overlayEl.hidden = false;
     afterMessage = done || null;
     document.getElementById("messageOk").focus();
