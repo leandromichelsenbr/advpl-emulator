@@ -97,6 +97,8 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [x] Incorporar abertura/fechamento de diálogos e callbacks ao fluxo unificado.
 - [x] Incorporar criação, setup, preview e fechamento de relatórios ao fluxo unificado.
 - [x] Estender o fluxo unificado para chamadas entre funções, com parâmetros, retorno e propagação ordenada de eventos.
+- [x] Coordenar análise sintática assíncrona e execução visual, impedindo efeitos quando o parser TDS encontrar erro.
+- [x] Descartar respostas atrasadas e sincronizar o protocolo headless com o término da análise.
 - [ ] Permitir que funções chamadas criem e manipulem diálogos e relatórios usando o mesmo contexto de objetos da função principal.
 - [x] Iniciar o épico [`@totvs/tds-parsers`: AST e diagnósticos sintáticos opcionais](#épico-tds-parsers-ast-e-diagnósticos-sintáticos-opcionais) com adaptador neutro, Web Worker, bundle sob demanda, diagnóstico posicionado e fallback.
 - [x] Iniciar um catálogo de assinaturas AdvPL para diagnósticos rápidos, com `W0008`, origem, linha e coluna.
@@ -172,6 +174,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 #### 7. Critérios de aceite do épico
 
 - [x] O laboratório continua funcional sem `@totvs/tds-parsers` e sem conexão externa, recorrendo ao parser leve se o worker ou bundle não carregar.
+- [x] Erros sintáticos interrompem a execução antes de mensagens, diálogos ou relatórios serem renderizados.
 - [ ] O parser avançado não bloqueia a interface durante fontes grandes ou inválidos.
 - [ ] O bundle e o tempo de inicialização permanecem dentro dos limites definidos na prova de conceito.
 - [ ] Todos os exemplos existentes produzem modelo e saída equivalentes antes e depois da ativação da AST.

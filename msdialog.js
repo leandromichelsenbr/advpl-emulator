@@ -4,6 +4,7 @@
   const sourceEl = document.getElementById("source");
   const desktopEl = document.getElementById("desktop");
   const statusEl = document.getElementById("status");
+  const runButtonEl = document.getElementById("runButton");
   const overlayEl = document.getElementById("messageOverlay");
   const messageTextEl = document.getElementById("messageText");
   const highlightingEl = document.getElementById("highlighting");
@@ -985,53 +986,129 @@
     return runtimeTables;
   }
 
-  let parserAnalysisSequence = 0;
+  const parserMode = emulatorConfig.parserMode || "auto";
+  const analyzeSource = (source, options = {}) => {
+    if (globalThis.AdvPLParserAdapter) {
+      return globalThis.AdvPLParserAdapter.analyze(source, {
+        mode: parserMode,
+        workerUrl: `src/tds-parser-worker.js?v=${AdvPLCore.PACKAGE_VERSION}`,
+        ...options
+      });
+    }
+    return Promise.resolve({
+      version: "0.1",
+      parser: "light",
+      ast: null,
+      diagnostics: [],
+      elapsedMs: 0,
+      fallbackUsed: parserMode !== "light",
+      fallbackReason: parserMode === "light" ? null : "Adaptador TDS indisponível."
+    });
+  };
+  const executionPipeline = globalThis.AdvPLExecutionPipeline?.create({
+    analyze: analyzeSource,
+    parse: (source, options) => AdvPLCore.parse(source, options)
+  });
+  let uiRunSequence = 0;
+
   function runSource(source, data) {
+    uiRunSequence += 1;
+    executionPipeline?.cancel();
     if (typeof source === "string") sourceEl.value = source;
     updateHighlighting();
     try {
       const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
       const program = AdvPLCore.parse(sourceEl.value, { tables });
       render(program);
-      const sequence = ++parserAnalysisSequence;
-      const parserMode = emulatorConfig.parserMode || "auto";
-      if (globalThis.AdvPLParserAdapter && parserMode !== "light") {
-        globalThis.AdvPLParserAdapter.analyze(sourceEl.value, {
-          mode: parserMode,
-          workerUrl: `src/tds-parser-worker.js?v=${AdvPLCore.PACKAGE_VERSION}.1`
-        }).then(analysis => {
-          if (sequence !== parserAnalysisSequence) return;
-          program.parserAnalysis = analysis;
-          const diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];
-          program.diagnostics = diagnostics;
-          renderDiagnostics(diagnostics);
-        }).catch(error => {
-          if (sequence === parserAnalysisSequence) console.warn("Parser TDS opcional indisponível:", error);
-        });
-      }
+      runButtonEl.disabled = false;
       return program;
     } catch (error) {
       renderDiagnostics([]);
       setStatus(error.message, "error");
+      runButtonEl.disabled = false;
       throw error;
+    }
+  }
+
+  async function runSourceAsync(source, data, options = {}) {
+    const sequence = ++uiRunSequence;
+    if (typeof source === "string") sourceEl.value = source;
+    updateHighlighting();
+    runButtonEl.disabled = true;
+    renderDiagnostics([]);
+    setStatus("Analisando sintaxe…", "");
+    try {
+      const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
+      let result;
+      if (executionPipeline) {
+        result = await executionPipeline.run(sourceEl.value, {
+          analysis: options.analysis,
+          parser: { tables }
+        });
+      } else {
+        const analysis = await analyzeSource(sourceEl.value, options.analysis);
+        const hasErrors = (analysis.diagnostics || []).some(diagnostic => diagnostic.severity === "error");
+        const program = hasErrors ? null : AdvPLCore.parse(sourceEl.value, { tables });
+        if (program) {
+          program.parserAnalysis = analysis;
+          program.diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];
+        }
+        result = { executed: !hasErrors, stale: false, analysis, program };
+      }
+      if (sequence !== uiRunSequence || result.stale) return result;
+      if (!result.executed) {
+        desktopEl.replaceChildren();
+        const empty = document.createElement("div");
+        empty.className = "empty-state syntax-error-state";
+        empty.textContent = "Execução não iniciada. Corrija o erro sintático indicado e execute novamente.";
+        desktopEl.append(empty);
+        renderDiagnostics(result.analysis.diagnostics || []);
+        setStatus("Execução interrompida: corrija o erro indicado.", "error");
+        return result;
+      }
+      render(result.program);
+      if (result.analysis.fallbackUsed) {
+        setStatus(`${statusEl.textContent} · Parser avançado indisponível; execução realizada pelo parser leve.`, "warning");
+      }
+      return result;
+    } catch (error) {
+      if (sequence === uiRunSequence) {
+        desktopEl.replaceChildren();
+        renderDiagnostics([]);
+        setStatus(`Análise sintática indisponível: ${error.message}`, "error");
+      }
+      throw error;
+    } finally {
+      if (sequence === uiRunSequence) runButtonEl.disabled = false;
     }
   }
 
   if (emulatorConfig.data !== undefined || emulatorConfig.tables !== undefined) setData(emulatorConfig.data ?? emulatorConfig.tables);
   globalThis.AdvPLEmulator = Object.freeze({
     run: runSource,
-    analyze: (source, options) => globalThis.AdvPLParserAdapter?.analyze(source, options),
+    runAsync: runSourceAsync,
+    analyze: analyzeSource,
     setData,
     headless
   });
-  document.getElementById("runButton").addEventListener("click", () => {
-    try { runSource(); } catch (_error) { /* O status apresenta o diagnóstico. */ }
+  runButtonEl.addEventListener("click", () => {
+    runSourceAsync().catch(() => { /* O status apresenta o diagnóstico. */ });
   });
-  globalThis.addEventListener("message", event => {
+  globalThis.addEventListener("message", async event => {
     if (event.origin !== globalThis.location.origin || event.data?.type !== "advpl-emulator:run" || typeof event.data.source !== "string") return;
     try {
-      runSource(event.data.source, event.data.data ?? event.data.tables);
-      event.source?.postMessage({ type: "advpl-emulator:rendered" }, event.origin);
+      const result = await runSourceAsync(event.data.source, event.data.data ?? event.data.tables, event.data.options || {});
+      if (result.stale) {
+        event.source?.postMessage({ type: "advpl-emulator:stale", executed: false }, event.origin);
+        return;
+      }
+      event.source?.postMessage({
+        type: result.executed ? "advpl-emulator:rendered" : "advpl-emulator:diagnostics",
+        executed: result.executed,
+        parser: result.analysis.parser,
+        fallbackUsed: result.analysis.fallbackUsed,
+        diagnostics: result.executed ? result.program.diagnostics || [] : result.analysis.diagnostics || []
+      }, event.origin);
     } catch (error) {
       event.source?.postMessage({ type: "advpl-emulator:error", message: error.message }, event.origin);
     }
@@ -1056,6 +1133,6 @@
   });
 
   updateHighlighting();
-  document.getElementById("runButton").click();
+  runButtonEl.click();
   if (globalThis.parent !== globalThis) globalThis.parent.postMessage({ type: "advpl-emulator:ready", headless }, globalThis.location.origin);
 })();

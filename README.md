@@ -35,6 +35,8 @@ Sites de treinamento e plugins podem consumir somente `src/advpl-core.js` e cria
 
 O laboratório completo carrega `@totvs/tds-parsers` sob demanda em um Web Worker. Se o bundle avançado não estiver disponível, a execução visual continua usando o parser leve.
 
+O botão principal e `AdvPLEmulator.runAsync()` aguardam a análise sintática. Quando o parser TDS encontra um erro, nenhuma mensagem, tela ou impressão é executada; `AdvPLEmulator.run()` permanece disponível apenas para compatibilidade síncrona.
+
 Para incorporar apenas a saída visual em outra página, use o [modo headless](docs/integration.md#modo-headless-para-incorporação).
 
 As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e a versão do pacote em execução.
