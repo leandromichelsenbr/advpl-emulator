@@ -1,8 +1,14 @@
 /* global TDSParserRuntime */
 "use strict";
 
-importScripts("../vendor/tds-parser.bundle.js?v=0.3.1");
+// O bundle é separado do laboratório para ser baixado apenas no modo avançado.
+importScripts("../vendor/tds-parser.bundle.js?v=0.3.2");
 
+/*
+ * Recebe apenas dados serializáveis. A AST é convertida para objeto simples
+ * porque instâncias com protótipo do pacote não atravessam todos os navegadores
+ * de maneira uniforme pelo algoritmo de clonagem estruturada.
+ */
 self.addEventListener("message", event => {
   const { id, source, parserInfo } = event.data || {};
   try {

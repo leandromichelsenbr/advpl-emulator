@@ -41,6 +41,8 @@ Para incorporar apenas a saída visual em outra página, use o [modo headless](d
 
 As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e a versão do pacote em execução.
 
+Os módulos internos recebem comentários didáticos sobre propósito, contratos e decisões não evidentes. O padrão adotado está em [Comentários didáticos nos fontes](docs/source-commenting.md).
+
 ### Versionamento
 
 Cada entrega funcional ou correção publicada deve incrementar a versão do pacote seguindo versionamento semântico. Correções incrementam o *patch*, novas funcionalidades compatíveis incrementam o *minor* e mudanças incompatíveis incrementam o *major*. A marca exibida pelo emulador usa `AdvPLCore.PACKAGE_VERSION` e deve permanecer sincronizada com `package.json` e `package-lock.json`.

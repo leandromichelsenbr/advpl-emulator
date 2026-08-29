@@ -10,6 +10,7 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 - Manter execução segura: interpretar somente o subconjunto suportado, sem executar AdvPL arbitrário.
 - Registrar exemplos de referência e testes de regressão antes de considerar um componente concluído.
 - Indicar claramente limitações e diferenças conhecidas em relação ao SmartClient e ao WebApp.
+- Manter comentários didáticos nos módulos internos, priorizando propósito, contratos e decisões não evidentes.
 
 ## Prioridade imediata
 
@@ -197,6 +198,8 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 ## Qualidade e integração
 
+- [x] Definir um padrão inicial de comentários didáticos para funções e módulos internos.
+- [ ] Ampliar gradualmente os comentários de arquitetura no renderizador, modelo de relatórios e interpretador leve.
 - [ ] Criar fixtures versionadas para cada fonte, HTML, imagem e PDF de referência autorizado.
 - [ ] Cobrir parser, modelo intermediário, eventos e renderizadores com testes automatizados.
 - [ ] Executar testes de integração do laboratório incorporado, além da versão local.

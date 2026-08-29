@@ -1,3 +1,10 @@
+/*
+ * Fachada neutra para @totvs/tds-parsers.
+ *
+ * O restante do emulador depende deste contrato, e não das classes internas
+ * da TOTVS. Isso permite atualizar ou desativar o parser avançado sem alterar
+ * o executor visual e mantém um fallback leve para ambientes incompatíveis.
+ */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -8,6 +15,7 @@
   const CONTRACT_VERSION = "0.1";
   let requestId = 0;
 
+  /** Converte os diferentes formatos de posição do PEG em um diagnóstico único. */
   function syntaxDiagnostic(error) {
     const start = error?.location?.start || (Number(error?.line) ? error : error?.location) || {};
     return {
@@ -20,6 +28,7 @@
     };
   }
 
+  /** Representa uma análise que continuará somente com o parser leve. */
   function lightResult(startedAt, fallbackUsed, reason) {
     return {
       version: CONTRACT_VERSION,
@@ -32,6 +41,7 @@
     };
   }
 
+  /** Normaliza tanto ASTs válidas quanto erros devolvidos sem lançamento de exceção. */
   function normalizeSuccess(result, startedAt) {
     if (result?.error) {
       return {
@@ -55,6 +65,10 @@
     };
   }
 
+  /**
+   * Executa uma análise isolada. Um Worker é criado por chamada e terminado
+   * após resposta, erro ou timeout para não acumular estado entre exercícios.
+   */
   function analyzeWithWorker(source, options, startedAt) {
     return new Promise((resolve, reject) => {
       const worker = new Worker(options.workerUrl || "src/tds-parser-worker.js");
@@ -83,6 +97,11 @@
     });
   }
 
+  /**
+   * Ponto de entrada público. `light` não abre Worker; `tds` exige a camada
+   * avançada; `auto` recua com segurança se a infraestrutura não carregar.
+   * A opção `parser` existe para injeção controlada nos testes em Node.js.
+   */
   async function analyze(source, suppliedOptions = {}) {
     const options = { mode: "auto", timeoutMs: 3000, ...suppliedOptions };
     const startedAt = Date.now();
