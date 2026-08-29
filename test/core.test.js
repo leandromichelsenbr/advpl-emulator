@@ -15,10 +15,10 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("mantém o contrato público 0.1 na versão 0.2.0 do pacote", () => {
+test("mantém o contrato público 0.1 na versão 0.2.1 do pacote", () => {
   assert.equal(core.VERSION, "0.1.0");
   assert.equal(core.API_VERSION, "0.1");
-  assert.equal(core.PACKAGE_VERSION, "0.2.0");
+  assert.equal(core.PACKAGE_VERSION, "0.2.1");
 });
 test("interpreta MSDialog e MSGET", () => {
   const program = core.parse(source);
