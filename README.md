@@ -48,7 +48,7 @@ As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e
 - chamadas a `User Function` e `Static Function`, inclusive com parâmetros, retorno e eventos produzidos pela função chamada;
 - ações compostas sequenciais, como `(MsgInfo(...), oDlg:End())`;
 - `ACTION MsgInfo(...)` e `ACTION oDlg:End()`.
-- `MsgInfo()`, `MsgStop()` e `MsgAlert()` independentes, com título, ícones correspondentes, conteúdo multilinha e filas modais;
+- `MsgInfo()`, `MsgStop()`, `MsgAlert()` e `Alert()` independentes, com título, ícones correspondentes, conteúdo multilinha e filas modais;
 - `ConOut()` com painel recolhível **Mostrar console**;
 - fluxo ordenado de eventos para combinar `ConOut()` e mensagens no mesmo fonte sem antecipar saídas posteriores;
 - eventos de diálogo que suspendem o fluxo em `ACTIVATE`, retomam após `oDlg:End()` e compartilham console e mensagens com callbacks;

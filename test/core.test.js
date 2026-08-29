@@ -92,6 +92,18 @@ Return`);
   assert.deepEqual(program.events, [{ type: "message", kind: "alert", text: "Teste de Mensagem", title: "Teste" }]);
 });
 
+test("interpreta Alert como caixa crítica com título TOTVS", () => {
+  const program = core.parse(`User Function Teste()
+Alert("Mensagem de alerta")
+Return`);
+  assert.equal(program.kind, "message");
+  assert.deepEqual(program.message, { kind: "stop", text: "Mensagem de alerta", title: "TOTVS" });
+  assert.deepEqual(program.events, [{ type: "message", kind: "stop", text: "Mensagem de alerta", title: "TOTVS" }]);
+  assert.deepEqual(core.parseAction('Alert("Falha")')[0], {
+    type: "message", kind: "stop", expression: '"Falha"', titleExpression: null, source: 'Alert("Falha")'
+  });
+});
+
 test("registra ConOut como saída de console", () => {
   const program = core.parse(`User Function abs2()
 Local nValue := -123.45
