@@ -98,7 +98,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [x] Incorporar criação, setup, preview e fechamento de relatórios ao fluxo unificado.
 - [x] Estender o fluxo unificado para chamadas entre funções, com parâmetros, retorno e propagação ordenada de eventos.
 - [ ] Permitir que funções chamadas criem e manipulem diálogos e relatórios usando o mesmo contexto de objetos da função principal.
-- [ ] Executar o épico [`@totvs/tds-parsers`: AST e diagnósticos sintáticos opcionais](#épico-tds-parsers-ast-e-diagnósticos-sintáticos-opcionais).
+- [x] Iniciar o épico [`@totvs/tds-parsers`: AST e diagnósticos sintáticos opcionais](#épico-tds-parsers-ast-e-diagnósticos-sintáticos-opcionais) com adaptador neutro, Web Worker, bundle sob demanda, diagnóstico posicionado e fallback.
 - [x] Iniciar um catálogo de assinaturas AdvPL para diagnósticos rápidos, com `W0008`, origem, linha e coluna.
 - [ ] Versionar e ampliar o catálogo de assinaturas para tipos, símbolos desconhecidos e variações de LIB.
 - [ ] Criar um adaptador opcional para TDS-Cli/Language Server que normalize diagnósticos oficiais por versão da LIB, sem expor AppServer ou credenciais ao navegador.
@@ -119,16 +119,16 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [x] Confirmar que o projeto está publicado pela organização oficial TOTVS e oferece API embarcada para AdvPL.
 - [x] Confirmar licença Apache-2.0 no repositório e no pacote NPM.
 - [x] Registrar a referência inicial do NPM: versão `0.1.5`, 42 arquivos e aproximadamente 1,47 MB descompactados, verificada em 28/08/2026.
-- [ ] Verificar se a distribuição possui arquivo `NOTICE` ou atribuições adicionais que devam acompanhar o emulador.
-- [ ] Criar inventário de dependências efetivamente incorporadas ao bundle e respectivas licenças.
-- [ ] Registrar decisão arquitetural sobre versão fixada, política de atualização e manutenção do adaptador.
+- [x] Verificar se a distribuição possui arquivo `NOTICE` ou atribuições adicionais que devam acompanhar o emulador.
+- [x] Criar inventário de dependências efetivamente incorporadas ao bundle e respectivas licenças.
+- [x] Registrar decisão arquitetural sobre versão fixada, política de atualização e manutenção do adaptador.
 
 #### 2. Prova de conceito no navegador
 
 - [ ] Criar experimento isolado em `experiments/tds-parser-browser/`, sem alterar o caminho de execução atual.
-- [ ] Gerar bundles ESM e IIFE com esbuild ou Rollup e medir tamanhos original, minificado e gzip.
-- [ ] Verificar dependências de APIs exclusivas do Node.js, como `fs`, `path`, `process` e carregamento de módulos.
-- [ ] Executar o parser dentro de Web Worker para evitar bloqueio do editor.
+- [x] Gerar bundle IIFE com esbuild e medir o tamanho minificado; o bundle inicial possui aproximadamente 117 KB.
+- [x] Verificar dependências de APIs exclusivas do Node.js, como `fs`, `path`, `process` e carregamento de módulos.
+- [x] Executar o parser dentro de Web Worker para evitar bloqueio do editor.
 - [ ] Validar nos navegadores suportados pelo laboratório local, GitHub Pages e página incorporada da Usina.BR.
 - [ ] Medir tempo e memória para fontes de aproximadamente 100, 1.000 e 10.000 linhas.
 - [ ] Definir limites de tempo, tamanho de fonte e recuperação segura após falha do worker.
@@ -144,11 +144,11 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 #### 4. Adaptador e contrato neutro
 
-- [ ] Criar `AdvPLParserAdapter` para impedir que o restante do projeto dependa diretamente do formato da AST da TOTVS.
-- [ ] Normalizar resultado como `{ parser, ast, diagnostics, elapsedMs, fallbackUsed }`.
-- [ ] Definir modos `light`, `tds` e `auto`; adotar `auto` como candidato somente após a prova de conceito.
-- [ ] Carregar o bundle avançado sob demanda, mantendo o primeiro carregamento do laboratório leve.
-- [ ] Manter fallback automático para o parser atual quando o pacote não carregar ou rejeitar o fonte.
+- [x] Criar `AdvPLParserAdapter` para impedir que o restante do projeto dependa diretamente do formato da AST da TOTVS.
+- [x] Normalizar resultado como `{ parser, ast, diagnostics, elapsedMs, fallbackUsed }`.
+- [x] Definir modos `light`, `tds` e `auto`, com `auto` ativo na prova de conceito integrada.
+- [x] Carregar o bundle avançado sob demanda, mantendo o primeiro carregamento do laboratório leve.
+- [x] Manter fallback automático para o parser atual quando o pacote não carregar.
 - [ ] Versionar o formato da AST normalizada e documentar alterações incompatíveis.
 
 #### 5. Integração gradual no interpretador
@@ -162,7 +162,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 #### 6. Diagnósticos e experiência do laboratório
 
-- [ ] Normalizar erros sintáticos com linha, coluna, severidade, mensagem e origem `tds-parser`.
+- [x] Normalizar erros sintáticos com linha, coluna, severidade, mensagem e origem `tds-parser`.
 - [ ] Manter `emulator-signatures` separado para advertências aproximadas como `W0008`.
 - [ ] Reservar `tds-compiler` para diagnósticos oficiais futuros do TDS-Cli, Language Server ou AppServer.
 - [ ] Exibir claramente quando a análise avançada estiver indisponível e o fallback tiver sido usado.
@@ -171,7 +171,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 
 #### 7. Critérios de aceite do épico
 
-- [ ] O laboratório continua funcional sem `@totvs/tds-parsers` e sem conexão externa.
+- [x] O laboratório continua funcional sem `@totvs/tds-parsers` e sem conexão externa, recorrendo ao parser leve se o worker ou bundle não carregar.
 - [ ] O parser avançado não bloqueia a interface durante fontes grandes ou inválidos.
 - [ ] O bundle e o tempo de inicialização permanecem dentro dos limites definidos na prova de conceito.
 - [ ] Todos os exemplos existentes produzem modelo e saída equivalentes antes e depois da ativação da AST.

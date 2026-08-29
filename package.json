@@ -1,11 +1,16 @@
 {
   "name": "advpl-emulator",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
+    "build:tds-parser": "esbuild scripts/tds-parser-browser-entry.js --bundle --platform=browser --format=iife --global-name=TDSParserRuntime --outfile=vendor/tds-parser.bundle.js --minify",
     "test": "node --test"
   },
   "dependencies": {
+    "@totvs/tds-parsers": "0.1.5",
     "qrcode-generator": "^2.0.4"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.9"
   }
 }

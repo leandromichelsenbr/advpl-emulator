@@ -692,7 +692,7 @@
     for (const diagnostic of diagnostics) {
       const item = document.createElement("div");
       item.className = `diagnostic diagnostic-${diagnostic.severity || "info"}`;
-      const origin = diagnostic.origin === "emulator-signatures" ? "assinaturas do emulador" : diagnostic.origin;
+      const origin = diagnostic.origin === "emulator-signatures" ? "assinaturas do emulador" : diagnostic.origin === "tds-parser" ? "parser sintático TDS" : diagnostic.origin;
       item.textContent = `${diagnostic.code}: ${diagnostic.message} — linha ${diagnostic.line}, coluna ${diagnostic.column} · ${origin}`;
       diagnosticsEl.append(item);
     }
@@ -985,6 +985,7 @@
     return runtimeTables;
   }
 
+  let parserAnalysisSequence = 0;
   function runSource(source, data) {
     if (typeof source === "string") sourceEl.value = source;
     updateHighlighting();
@@ -992,6 +993,22 @@
       const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
       const program = AdvPLCore.parse(sourceEl.value, { tables });
       render(program);
+      const sequence = ++parserAnalysisSequence;
+      const parserMode = emulatorConfig.parserMode || "auto";
+      if (globalThis.AdvPLParserAdapter && parserMode !== "light") {
+        globalThis.AdvPLParserAdapter.analyze(sourceEl.value, {
+          mode: parserMode,
+          workerUrl: `src/tds-parser-worker.js?v=${AdvPLCore.PACKAGE_VERSION}.1`
+        }).then(analysis => {
+          if (sequence !== parserAnalysisSequence) return;
+          program.parserAnalysis = analysis;
+          const diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];
+          program.diagnostics = diagnostics;
+          renderDiagnostics(diagnostics);
+        }).catch(error => {
+          if (sequence === parserAnalysisSequence) console.warn("Parser TDS opcional indisponível:", error);
+        });
+      }
       return program;
     } catch (error) {
       renderDiagnostics([]);
@@ -1001,7 +1018,12 @@
   }
 
   if (emulatorConfig.data !== undefined || emulatorConfig.tables !== undefined) setData(emulatorConfig.data ?? emulatorConfig.tables);
-  globalThis.AdvPLEmulator = Object.freeze({ run: runSource, setData, headless });
+  globalThis.AdvPLEmulator = Object.freeze({
+    run: runSource,
+    analyze: (source, options) => globalThis.AdvPLParserAdapter?.analyze(source, options),
+    setData,
+    headless
+  });
   document.getElementById("runButton").addEventListener("click", () => {
     try { runSource(); } catch (_error) { /* O status apresenta o diagnóstico. */ }
   });

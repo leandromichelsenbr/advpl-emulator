@@ -23,6 +23,7 @@ A saída de `parse()` é um modelo neutro. A página pode renderizá-lo com HTML
 - `AdvPLCore.diagnose(source)`: retorna diagnósticos locais sem executar o fonte;
 - `AdvPLCore.statements(source)`: aplica comentários e continuações com `;`;
 - `AdvPLCore.splitTopLevel(expression, separator)`: separa expressões respeitando strings e parênteses.
+- `AdvPLParserAdapter.analyze(source, options)`: executa análise sintática opcional em Web Worker e retorna AST, diagnósticos, duração e informação de fallback.
 
 O renderizador deve manter as variáveis da sessão, refletir alterações dos campos e executar os comandos retornados por `parseAction()` na ordem apresentada.
 
@@ -63,6 +64,17 @@ const diagnostics = AdvPLCore.diagnose(source);
 ```
 
 Atualmente `origin: "emulator-signatures"` identifica advertências aproximadas pelo catálogo local, como `W0008`. Elas não devem ser apresentadas como resultado oficial do compilador TDS. A integração futura deverá manter origens distintas para permitir comparar ou priorizar os diagnósticos.
+
+### Parser sintático TDS opcional
+
+A versão 0.3.0 incorpora `@totvs/tds-parsers@0.1.5` atrás de `AdvPLParserAdapter`. O executor leve continua responsável pelos efeitos emulados; a AST avançada é usada inicialmente apenas para análise estrutural e erros sintáticos. No navegador, o pacote é carregado sob demanda por `src/tds-parser-worker.js`, evitando incluir seus aproximadamente 117 KB minificados no carregamento inicial.
+
+```js
+const analysis = await AdvPLEmulator.analyze(source, { mode: "auto" });
+// { version, parser, ast, diagnostics, elapsedMs, fallbackUsed, fallbackReason }
+```
+
+Os modos disponíveis são `light`, `tds` e `auto`. `auto` usa o parser avançado e recua para o leve quando o worker ou bundle não estiver disponível. `tds` torna uma falha de carregamento explícita. Erros reconhecidos pelo pacote usam `origin: "tds-parser"`; eles são diagnósticos sintáticos locais, não resultados oficiais de compilação do AppServer ou TDS.
 
 O arquivo `msdialog.js` aceita shells legados sem os elementos opcionais de realce de sintaxe e impressão. Para integrações novas, prefira consumir apenas `src/advpl-core.js` e manter um renderizador próprio.
 
