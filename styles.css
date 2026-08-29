@@ -262,6 +262,8 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .standalone-message-box.info .icon { background: #1677ad; font: bold 30px/1 Georgia, serif; }
 .standalone-message-box.alert .icon { width: 44px; height: 40px; flex-basis: 44px; border: 0; border-radius: 0; clip-path: polygon(50% 0,100% 100%,0 100%); background: #f2bd16; color: #111; box-shadow: none; font: bold 25px/50px Arial, sans-serif; }
 .standalone-message-box button { position: absolute; right: 10px; bottom: 8px; min-width: 48px; height: 26px; border: 2px solid #00659a; border-radius: 3px; background: #fbfbfb; color: #051f31; font: 11px Arial, sans-serif; }
+.dynamic-message-layer { position: absolute; inset: 0; z-index: 3400; background: rgba(18,27,36,.35); }
+.dynamic-message-layer .standalone-message-box { z-index: 1; }
 
 .emulator-console { position: absolute; right: 12px; bottom: 12px; z-index: 3100; display: flex; max-width: calc(100% - 24px); flex-direction: column; align-items: flex-end; }
 .console-toggle { height: 30px; padding: 0 12px; border: 1px solid #5f7384; border-radius: 4px; background: #1e2a35; color: #dce7ef; cursor: pointer; font: 12px Arial, sans-serif; }
