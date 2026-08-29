@@ -9,12 +9,15 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.3.1";
+  const PACKAGE_VERSION = "0.3.2";
 
+  // Remove comentários de linha antes de formar instruções lógicas.
+  // Comentários dentro de strings ainda são uma limitação conhecida do parser leve.
   function stripComments(source) {
     return source.split(/\r?\n/).map(line => line.replace(/\/\/.*$/, "")).join("\n");
   }
 
+  /** Junta linhas continuadas por `;` e ignora diretivas tratadas em outras fases. */
   function statements(source) {
     const result = [];
     let current = "";
@@ -43,6 +46,10 @@
     return match ? match[1].trim() : null;
   }
 
+  /**
+   * Divide uma expressão sem cortar conteúdo dentro de strings ou parênteses.
+   * É a base para concatenação e listas simples do subconjunto interpretado.
+   */
   function splitTopLevel(expression, separator) {
     const result = [];
     let current = "", depth = 0, quote = null;
@@ -58,6 +65,7 @@
     return result.filter(Boolean);
   }
 
+  /** Separa argumentos respeitando chamadas, arrays e blocos de código aninhados. */
   function splitArguments(expression) {
     const result = [];
     let current = "", depth = 0, quote = null, blockDepth = 0;
@@ -136,6 +144,10 @@
     return depth === 0;
   }
 
+  /**
+   * Avaliador seguro e deliberadamente limitado. Ele reconhece apenas funções
+   * e operadores cadastrados abaixo; nunca encaminha texto AdvPL para `eval`.
+   */
   function evaluate(expression, variables = {}, callFunction = null) {
     let token = String(expression ?? "").trim();
     while (hasOuterParentheses(token)) token = token.slice(1, -1).trim();
@@ -204,6 +216,7 @@
     msginfo: { minimum: 2, code: "W0008" }
   });
 
+  /** Produz advertências aproximadas do emulador, separadas do parser e compilador TDS. */
   function diagnose(source) {
     const diagnostics = [];
     String(source ?? "").split(/\r?\n/).forEach((line, lineIndex) => {
