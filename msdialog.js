@@ -453,38 +453,6 @@
       renderConsole(consoleLines);
     };
 
-    const showRuntimeMessage = (event, done) => {
-      const box = document.createElement("wa-message-box");
-      box.dataset.advpl = "messagebox";
-      box.className = `standalone-message-box dict-messagebox ${event.kind}`;
-      box.setAttribute("opened", "");
-      box.setAttribute("title", event.title || "TOTVS");
-      box.setAttribute("state", "normal");
-      box.tabIndex = -1;
-      const lineCount = String(event.text).split(/\r?\n/).length;
-      box.style.width = lineCount > 4 ? "223.844px" : "200px";
-      box.style.height = lineCount > 4 ? Math.min(420, 96 + lineCount * 12) + "px" : "154px";
-      const title = document.createElement("div");
-      title.className = "standalone-message-title";
-      title.textContent = event.title || "TOTVS";
-      const content = document.createElement("div");
-      content.className = "standalone-message-content";
-      const icon = document.createElement("span");
-      icon.className = "icon";
-      icon.setAttribute("aria-hidden", "true");
-      icon.textContent = event.kind === "stop" ? "×" : event.kind === "alert" ? "!" : "i";
-      const text = document.createElement("p");
-      text.textContent = event.text;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = "OK";
-      button.addEventListener("click", () => { box.remove(); done(); });
-      content.append(icon, text);
-      box.append(title, content, button);
-      desktopEl.append(box);
-      button.focus();
-    };
-
     const next = () => {
       while (eventIndex < program.events.length) {
         const event = program.events[eventIndex++];
@@ -495,7 +463,7 @@
         }
         if (event.type === "message") {
           setStatus(`Execução em andamento · evento ${eventIndex} de ${program.events.length}${warningCount ? ` · ${warningCount} advertência(s) abaixo` : ""}.`, warningCount ? "warning" : "success");
-          showRuntimeMessage(event, next);
+          showStandaloneMessage(event, next);
           return;
         }
         if (event.type === "dialog") {
@@ -529,23 +497,33 @@
     next();
   }
 
+  function showStandaloneMessage(event, done, modal = false) {
+    const host = modal ? document.createElement("div") : desktopEl;
+    if (modal) host.className = "dynamic-message-layer";
+    const box = document.createElement("wa-message-box");
+    box.dataset.advpl = "messagebox";
+    box.className = `standalone-message-box dict-messagebox ${event.kind || "info"}`;
+    box.setAttribute("opened", ""); box.setAttribute("title", event.title || "TOTVS"); box.setAttribute("state", "normal"); box.tabIndex = -1;
+    const lineCount = String(event.text).split(/\r?\n/).length;
+    box.style.width = lineCount > 4 ? "223.844px" : "200px";
+    box.style.height = lineCount > 4 ? Math.min(420, 96 + lineCount * 12) + "px" : "154px";
+    const title = document.createElement("div"); title.className = "standalone-message-title"; title.textContent = event.title || "TOTVS";
+    const content = document.createElement("div"); content.className = "standalone-message-content";
+    const icon = document.createElement("span"); icon.className = "icon"; icon.setAttribute("aria-hidden", "true"); icon.textContent = event.kind === "stop" ? "×" : event.kind === "alert" ? "!" : "i";
+    const text = document.createElement("p"); text.textContent = event.text;
+    const button = document.createElement("button"); button.type = "button"; button.textContent = "OK";
+    button.addEventListener("click", () => { if (modal) host.remove(); else box.remove(); done?.(); });
+    content.append(icon, text); box.append(title, content, button); host.append(box);
+    if (modal) desktopEl.append(host);
+    button.focus();
+  }
+
   function playEventList(events, done) {
     let index = 0;
     const next = () => {
       const event = (events || [])[index++];
       if (!event) { done?.(); return; }
-      if (event.type === "message") {
-        const box = document.createElement("wa-message-box");
-        box.dataset.advpl = "messagebox"; box.className = `standalone-message-box dict-messagebox ${event.kind}`;
-        box.setAttribute("opened", ""); box.setAttribute("title", event.title || "TOTVS"); box.setAttribute("state", "normal"); box.tabIndex = -1;
-        const title = document.createElement("div"); title.className = "standalone-message-title"; title.textContent = event.title || "TOTVS";
-        const content = document.createElement("div"); content.className = "standalone-message-content";
-        const icon = document.createElement("span"); icon.className = "icon"; icon.setAttribute("aria-hidden", "true"); icon.textContent = event.kind === "stop" ? "×" : event.kind === "alert" ? "!" : "i";
-        const text = document.createElement("p"); text.textContent = event.text;
-        const button = document.createElement("button"); button.type = "button"; button.textContent = "OK";
-        button.addEventListener("click", () => { box.remove(); next(); });
-        content.append(icon, text); box.append(title, content, button); desktopEl.append(box); button.focus();
-      }
+      if (event.type === "message") showStandaloneMessage(event, next, true);
       else next();
     };
     next();
@@ -979,14 +957,7 @@
 
   let afterMessage = null;
   function showMessage(text, kind, done, title) {
-    messageTextEl.textContent = text;
-    overlayEl.classList.toggle("stop", kind === "stop");
-    overlayEl.classList.toggle("alert", kind === "alert");
-    if (messageIconEl) messageIconEl.textContent = kind === "stop" ? "×" : kind === "alert" ? "!" : "i";
-    if (messageTitleEl) messageTitleEl.textContent = title || (kind === "info" ? "Informação" : "TOTVS");
-    overlayEl.hidden = false;
-    afterMessage = done || null;
-    document.getElementById("messageOk").focus();
+    showStandaloneMessage({ type: "message", text, kind: kind || "info", title: title || (kind === "info" ? "Informação" : "TOTVS") }, done, true);
   }
 
   const defaultTables = globalThis.AdvPLSampleData?.tables || {};
