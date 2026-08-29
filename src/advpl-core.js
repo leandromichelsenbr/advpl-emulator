@@ -9,7 +9,64 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.3.2";
+  const PACKAGE_VERSION = "0.4.0";
+
+  const DEFAULT_INDENT = "    ";
+  const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
+  const BRANCH_PATTERN = /^(?:else(?:if)?\b|case\b|otherwise\b|catch\b)/i;
+  const BLOCK_CLOSE_PATTERN = /^(?:endif\b|next\b|enddo\b|endcase\b|endtry\b|end\s*try\b|return\b|activate\s+(?:ms)?dialog\b)/i;
+
+  function removeOneIndent(text, indentUnit = DEFAULT_INDENT) {
+    if (text.startsWith(indentUnit)) return text.slice(indentUnit.length);
+    return text.replace(/^\t|^ {1,4}/, "");
+  }
+
+  /**
+   * Calcula a edição produzida por Enter sem depender do DOM. Fechamentos são
+   * recuados antes da quebra; aberturas e continuações por `;` avançam um nível.
+   */
+  function editorNewline(source, selectionStart, selectionEnd = selectionStart, indentUnit = DEFAULT_INDENT) {
+    const text = String(source ?? "");
+    const start = Math.max(0, Number(selectionStart) || 0);
+    const end = Math.max(start, Number(selectionEnd) || start);
+    const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+    const beforeCursor = text.slice(lineStart, start);
+    const leading = beforeCursor.match(/^[ \t]*/)?.[0] || "";
+    const statement = beforeCursor.trim();
+    const closes = BLOCK_CLOSE_PATTERN.test(statement) || BRANCH_PATTERN.test(statement);
+    const currentIndent = closes ? removeOneIndent(leading, indentUnit) : leading;
+    const opens = BLOCK_OPEN_PATTERN.test(statement) || BRANCH_PATTERN.test(statement) || /;\s*$/.test(statement);
+    const nextIndent = currentIndent + (opens ? indentUnit : "");
+    const rewrittenPrefix = text.slice(0, lineStart) + currentIndent + beforeCursor.slice(leading.length);
+    const value = rewrittenPrefix + "\n" + nextIndent + text.slice(end);
+    const cursor = rewrittenPrefix.length + 1 + nextIndent.length;
+    return { value, selectionStart: cursor, selectionEnd: cursor };
+  }
+
+  /** Aplica Tab ou Shift+Tab à linha atual ou a todas as linhas selecionadas. */
+  function editorTab(source, selectionStart, selectionEnd = selectionStart, outdent = false, indentUnit = DEFAULT_INDENT) {
+    const text = String(source ?? "");
+    const start = Math.max(0, Number(selectionStart) || 0);
+    const end = Math.max(start, Number(selectionEnd) || start);
+    if (start === end && !outdent) {
+      const value = text.slice(0, start) + indentUnit + text.slice(end);
+      const cursor = start + indentUnit.length;
+      return { value, selectionStart: cursor, selectionEnd: cursor };
+    }
+    const blockStart = text.lastIndexOf("\n", start - 1) + 1;
+    let blockEnd = text.indexOf("\n", end);
+    if (blockEnd < 0) blockEnd = text.length;
+    const original = text.slice(blockStart, blockEnd);
+    const lines = original.split("\n");
+    const transformed = lines.map(line => outdent ? removeOneIndent(line, indentUnit) : indentUnit + line).join("\n");
+    const deltaStart = outdent ? -(lines[0].length - removeOneIndent(lines[0], indentUnit).length) : indentUnit.length;
+    const deltaTotal = transformed.length - original.length;
+    return {
+      value: text.slice(0, blockStart) + transformed + text.slice(blockEnd),
+      selectionStart: Math.max(blockStart, start + deltaStart),
+      selectionEnd: Math.max(blockStart, end + deltaTotal)
+    };
+  }
 
   // Remove comentários de linha antes de formar instruções lógicas.
   // Comentários dentro de strings ainda são uma limitação conhecida do parser leve.
@@ -700,5 +757,5 @@
     return { version: VERSION, dialog, controls, variables, events: runtimeEvents };
   }
 
-  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, parseAxCadastro, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray });
+  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, parseAxCadastro, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray, editorNewline, editorTab });
 });

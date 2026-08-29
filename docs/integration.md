@@ -23,6 +23,8 @@ A saída de `parse()` é um modelo neutro. A página pode renderizá-lo com HTML
 - `AdvPLCore.diagnose(source)`: retorna diagnósticos locais sem executar o fonte;
 - `AdvPLCore.statements(source)`: aplica comentários e continuações com `;`;
 - `AdvPLCore.splitTopLevel(expression, separator)`: separa expressões respeitando strings e parênteses.
+- `AdvPLCore.editorNewline(source, start, end)`: calcula a quebra de linha e indentação AdvPL sem depender do DOM;
+- `AdvPLCore.editorTab(source, start, end, outdent)`: indenta ou recua a linha/seleção.
 - `AdvPLParserAdapter.analyze(source, options)`: executa análise sintática opcional em Web Worker e retorna AST, diagnósticos, duração e informação de fallback.
 - `AdvPLEmulator.runAsync(source, data, options)`: analisa, aguarda o parser e só então executa o código quando não houver erro sintático.
 

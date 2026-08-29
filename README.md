@@ -67,6 +67,7 @@ Cada entrega funcional ou correção publicada deve incrementar a versão do pac
 - eventos de diálogo que suspendem o fluxo em `ACTIVATE`, retomam após `oDlg:End()` e compartilham console e mensagens com callbacks;
 - eventos de impressão que preservam mensagens e console antes/depois de `Setup()` e suspendem o fluxo durante `Preview()`;
 - botão **Executar novamente** ao concluir mensagens ou encerrar um diálogo;
+- indentação automática no editor com `Enter`, `Tab` e `Shift+Tab` para blocos AdvPL;
 - diagnósticos de assinatura com código, severidade, linha, coluna e origem, incluindo suporte inicial ao `W0008`;
 - construção orientada a objetos com `MSDialog():New()` e `oDlg:Activate()`;
 - blocos de inicialização e validação com `MsgStop()`;
