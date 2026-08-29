@@ -98,7 +98,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [x] Incorporar criação, setup, preview e fechamento de relatórios ao fluxo unificado.
 - [x] Estender o fluxo unificado para chamadas entre funções, com parâmetros, retorno e propagação ordenada de eventos.
 - [ ] Permitir que funções chamadas criem e manipulem diálogos e relatórios usando o mesmo contexto de objetos da função principal.
-- [ ] Adotar `@totvs/tds-parsers` como camada opcional de AST e diagnósticos sintáticos, após validar tamanho, licença e uso no navegador.
+- [ ] Executar o épico [`@totvs/tds-parsers`: AST e diagnósticos sintáticos opcionais](#épico-tds-parsers-ast-e-diagnósticos-sintáticos-opcionais).
 - [x] Iniciar um catálogo de assinaturas AdvPL para diagnósticos rápidos, com `W0008`, origem, linha e coluna.
 - [ ] Versionar e ampliar o catálogo de assinaturas para tipos, símbolos desconhecidos e variações de LIB.
 - [ ] Criar um adaptador opcional para TDS-Cli/Language Server que normalize diagnósticos oficiais por versão da LIB, sem expor AppServer ou credenciais ao navegador.
@@ -109,6 +109,75 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [ ] Completar chamadas encadeadas, atribuições, condicionais e laços; `+=`, `If/Else` e `For/To/Step/Next` possuem suporte inicial em fluxos independentes.
 - [ ] Produzir diagnósticos com linha, coluna e sugestão quando uma construção não for suportada.
 - [ ] Exibir no resultado quais instruções foram interpretadas, aproximadas ou ignoradas.
+
+### Épico `tds-parsers`: AST e diagnósticos sintáticos opcionais
+
+**Objetivo:** usar `@totvs/tds-parsers` para compreender a estrutura do fonte e localizar erros sintáticos, sem substituir de uma vez o executor atual, sem exigir AppServer e sem impedir o laboratório de funcionar quando a camada avançada estiver indisponível.
+
+#### 1. Viabilidade e governança
+
+- [x] Confirmar que o projeto está publicado pela organização oficial TOTVS e oferece API embarcada para AdvPL.
+- [x] Confirmar licença Apache-2.0 no repositório e no pacote NPM.
+- [x] Registrar a referência inicial do NPM: versão `0.1.5`, 42 arquivos e aproximadamente 1,47 MB descompactados, verificada em 28/08/2026.
+- [ ] Verificar se a distribuição possui arquivo `NOTICE` ou atribuições adicionais que devam acompanhar o emulador.
+- [ ] Criar inventário de dependências efetivamente incorporadas ao bundle e respectivas licenças.
+- [ ] Registrar decisão arquitetural sobre versão fixada, política de atualização e manutenção do adaptador.
+
+#### 2. Prova de conceito no navegador
+
+- [ ] Criar experimento isolado em `experiments/tds-parser-browser/`, sem alterar o caminho de execução atual.
+- [ ] Gerar bundles ESM e IIFE com esbuild ou Rollup e medir tamanhos original, minificado e gzip.
+- [ ] Verificar dependências de APIs exclusivas do Node.js, como `fs`, `path`, `process` e carregamento de módulos.
+- [ ] Executar o parser dentro de Web Worker para evitar bloqueio do editor.
+- [ ] Validar nos navegadores suportados pelo laboratório local, GitHub Pages e página incorporada da Usina.BR.
+- [ ] Medir tempo e memória para fontes de aproximadamente 100, 1.000 e 10.000 linhas.
+- [ ] Definir limites de tempo, tamanho de fonte e recuperação segura após falha do worker.
+
+#### 3. Corpus de compatibilidade AdvPL
+
+- [ ] Criar fixtures mínimas para `MsgAlert`, diálogo, browse, `AxCadastro`, relatório e chamada entre funções.
+- [ ] Testar continuações com `;`, comentários, strings com vírgulas, arrays e blocos de código aninhados.
+- [ ] Testar `User Function`, `Static Function`, parâmetros, `Return`, `If`, `For`, `While` e `Do Case`.
+- [ ] Testar fontes válidos e inválidos, registrando linha, coluna, mensagem e comportamento observado.
+- [ ] Avaliar limites com `#include`, `#define`, macros, embedded SQL e construções dependentes de versão da LIB.
+- [ ] Comparar a AST com o inventário do `danfeii.prw` sem publicar código ou dados proprietários.
+
+#### 4. Adaptador e contrato neutro
+
+- [ ] Criar `AdvPLParserAdapter` para impedir que o restante do projeto dependa diretamente do formato da AST da TOTVS.
+- [ ] Normalizar resultado como `{ parser, ast, diagnostics, elapsedMs, fallbackUsed }`.
+- [ ] Definir modos `light`, `tds` e `auto`; adotar `auto` como candidato somente após a prova de conceito.
+- [ ] Carregar o bundle avançado sob demanda, mantendo o primeiro carregamento do laboratório leve.
+- [ ] Manter fallback automático para o parser atual quando o pacote não carregar ou rejeitar o fonte.
+- [ ] Versionar o formato da AST normalizada e documentar alterações incompatíveis.
+
+#### 5. Integração gradual no interpretador
+
+- [ ] Usar inicialmente a AST apenas para separar funções, instruções, argumentos, blocos e posições no fonte.
+- [ ] Preservar o executor e o modelo neutro atuais durante a primeira integração.
+- [ ] Migrar um recurso por vez, começando por chamadas de função e caixas de mensagem.
+- [ ] Migrar a descoberta estrutural de diálogos, callbacks, `AxCadastro` e impressão somente após testes de equivalência.
+- [ ] Executar parser leve e parser TDS em modo de comparação durante o desenvolvimento, sem duplicar efeitos visuais.
+- [ ] Registrar divergências como fixtures antes de substituir qualquer caminho estável.
+
+#### 6. Diagnósticos e experiência do laboratório
+
+- [ ] Normalizar erros sintáticos com linha, coluna, severidade, mensagem e origem `tds-parser`.
+- [ ] Manter `emulator-signatures` separado para advertências aproximadas como `W0008`.
+- [ ] Reservar `tds-compiler` para diagnósticos oficiais futuros do TDS-Cli, Language Server ou AppServer.
+- [ ] Exibir claramente quando a análise avançada estiver indisponível e o fallback tiver sido usado.
+- [ ] Permitir clicar no diagnóstico para posicionar o editor na linha e coluna correspondentes.
+- [ ] Nunca apresentar um diagnóstico do parser local como resultado oficial de compilação Protheus.
+
+#### 7. Critérios de aceite do épico
+
+- [ ] O laboratório continua funcional sem `@totvs/tds-parsers` e sem conexão externa.
+- [ ] O parser avançado não bloqueia a interface durante fontes grandes ou inválidos.
+- [ ] O bundle e o tempo de inicialização permanecem dentro dos limites definidos na prova de conceito.
+- [ ] Todos os exemplos existentes produzem modelo e saída equivalentes antes e depois da ativação da AST.
+- [ ] Falhas, incompatibilidades e fallback possuem testes automatizados.
+- [ ] Licença, atribuições, versão fixada e processo de atualização estão documentados.
+- [ ] O modo avançado funciona no laboratório local, no GitHub Pages e na incorporação da Usina.BR.
 
 ## Experiência do laboratório
 
