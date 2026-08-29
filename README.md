@@ -59,6 +59,7 @@ As saídas exibem discretamente a identificação do projeto, a marca Usina.BR e
 - blocos de inicialização e validação com `MsgStop()`;
 - `DEFINE DIALOG` e `TWBrowse():New()` com arrays, seleção e duplo clique;
 - `TCBrowse():New()` com colunas, `bLine`, `bHeaderClick`, `bLDblClick` e botões `GoUp`, `GoDown`, `GoTop` e `GoBottom`;
+- callbacks de `TCBrowse` preservam suas ações reais, incluindo caixas críticas disparadas por `Alert()`;
 - `BrGetDDB():New()` com alias, colunas `TCColumn`, seleção por célula e callbacks de edição/exclusão;
 - `AxCadastro()` com grid baseado em alias, pesquisa, detalhes, inclusão, alteração, visualização, exclusão, ações adicionais, botões personalizados e callbacks transacionais;
 - base fictícia local com registros de exemplo para `SA1`, `SB1` e `SBM`, sem conexão externa;

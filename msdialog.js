@@ -251,7 +251,10 @@
       headers.forEach((label, columnIndex) => {
         const th = document.createElement("th");
         th.textContent = label;
-        if (control.headerClick) th.addEventListener("click", () => showMessage("bHeaderClick"));
+        if (control.headerClick) th.addEventListener("click", () => {
+          if (control.headerClickAction) executeAction(control.headerClickAction, state);
+          else showMessage("bHeaderClick", "stop");
+        });
         if (control.columnWidths?.[columnIndex]) th.style.width = (control.columnWidths[columnIndex] * 2) + "px";
         headerRow.append(th);
       });
@@ -284,7 +287,8 @@
             selected = rowIndex;
             if (control.toggleOnDoubleClick) control.rows[rowIndex][0] = !control.rows[rowIndex][0];
             if (getDados && control.customEdit) showMessage("editLine", "stop");
-            if (control.doubleClickMessage) showMessage(control.doubleClickMessage);
+            if (control.doubleClickAction) executeAction(control.doubleClickAction, state);
+            else if (control.doubleClickMessage) showMessage(control.doubleClickMessage, "stop");
             draw();
           });
           body.append(tr);
@@ -337,10 +341,10 @@
         else if (command === "godown") browse.goDown();
         else if (command === "gotop") browse.goTop();
         else if (command === "gobottom") browse.goBottom();
-        else if (command === "nat") showMessage(String(browse.current));
-        else if (command === "nlen") showMessage(String(browse.length));
-        else if (command === "nrowcount") showMessage(String(browse.visibleCount));
-        else if (command === "calias") showMessage(browse.alias);
+        else if (command === "nat") showMessage(String(browse.current), "stop");
+        else if (command === "nlen") showMessage(String(browse.length), "stop");
+        else if (command === "nrowcount") showMessage(String(browse.visibleCount), "stop");
+        else if (command === "calias") showMessage(browse.alias, "stop");
       });
     } else {
       element = document.createElement("button");

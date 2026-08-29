@@ -573,7 +573,8 @@
           type: "BROWSE", objectVariable: match[1], row: numeric(args[0]) * 2, col: numeric(args[1]) * 2,
           width: numeric(args[2], 260) * 2, height: numeric(args[3], 184) * 2,
           headers: parseArray(args[5]) || [], columnWidths: parseArray(args[6]) || [], rows: [], arrayVariable: null,
-          sourceClass: match[2], toggleOnDoubleClick: false, doubleClickMessage: null, headerClick: false, formats: {}
+          sourceClass: match[2], toggleOnDoubleClick: false, doubleClickMessage: null,
+          doubleClickAction: null, headerClick: false, headerClickAction: null, formats: {}
         });
         continue;
       }
@@ -631,12 +632,16 @@
         if (browse) {
           browse.toggleOnDoubleClick = /!\s*\w+\s*\[.*?\]\s*\[?\s*1/i.test(line);
           browse.doubleClickMessage = /alert\s*\(\s*['"]bLDblClick['"]\s*\)/i.test(line) ? "bLDblClick" : null;
+          browse.doubleClickAction = codeBlockBody(line.replace(/^[^:]+:\s*bLDblClick\s*:=\s*/i, ""));
         }
       }
       const headerClick = line.match(/^(\w+)\s*:\s*bHeaderClick\s*:=/i);
       if (headerClick) {
         const browse = controls.find(control => control.type === "BROWSE" && control.objectVariable.toLowerCase() === headerClick[1].toLowerCase());
-        if (browse) browse.headerClick = true;
+        if (browse) {
+          browse.headerClick = true;
+          browse.headerClickAction = codeBlockBody(line.replace(/^[^:]+:\s*bHeaderClick\s*:=\s*/i, ""));
+        }
       }
       const browseLine = line.match(/^(\w+)\s*:\s*bLine\s*:=/i);
       if (browseLine) {
