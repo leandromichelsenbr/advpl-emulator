@@ -15,10 +15,38 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("mantém o contrato público 0.1 na versão 0.3.2 do pacote", () => {
+test("mantém o contrato público 0.1 na versão 0.4.0 do pacote", () => {
   assert.equal(core.VERSION, "0.1.0");
   assert.equal(core.API_VERSION, "0.1");
-  assert.equal(core.PACKAGE_VERSION, "0.3.2");
+  assert.equal(core.PACKAGE_VERSION, "0.4.0");
+});
+
+test("Enter cria indentação após abertura de bloco AdvPL", () => {
+  const source = "User Function Teste()";
+  const edit = core.editorNewline(source, source.length);
+  assert.equal(edit.value, "User Function Teste()\n    ");
+  assert.equal(edit.selectionStart, edit.value.length);
+});
+
+test("Enter recua fechamento e mantém o próximo nível", () => {
+  const source = "    If lOk\n        MsgInfo(\"OK\", \"Teste\")\n        EndIf";
+  const edit = core.editorNewline(source, source.length);
+  assert.equal(edit.value, "    If lOk\n        MsgInfo(\"OK\", \"Teste\")\n    EndIf\n    ");
+});
+
+test("Enter indenta ramificações, diálogo e continuação", () => {
+  assert.equal(core.editorNewline("    Else", 8).value, "Else\n    ");
+  const dialog = "DEFINE DIALOG oDlg TITLE \"Teste\"";
+  assert.equal(core.editorNewline(dialog, dialog.length).value, dialog + "\n    ");
+  assert.equal(core.editorNewline("Local cTexto := ;", 17).value, "Local cTexto := ;\n    ");
+});
+
+test("Tab e Shift+Tab alteram uma seleção de linhas", () => {
+  const source = "linha1\nlinha2";
+  const indented = core.editorTab(source, 0, source.length);
+  assert.equal(indented.value, "    linha1\n    linha2");
+  const restored = core.editorTab(indented.value, 0, indented.value.length, true);
+  assert.equal(restored.value, source);
 });
 test("interpreta MSDialog e MSGET", () => {
   const program = core.parse(source);

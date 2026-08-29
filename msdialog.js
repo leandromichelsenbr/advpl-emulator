@@ -1120,6 +1120,22 @@
     if (done) done();
   });
   sourceEl.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      const edit = AdvPLCore.editorNewline(sourceEl.value, sourceEl.selectionStart, sourceEl.selectionEnd);
+      sourceEl.value = edit.value;
+      sourceEl.setSelectionRange(edit.selectionStart, edit.selectionEnd);
+      updateHighlighting();
+      return;
+    }
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const edit = AdvPLCore.editorTab(sourceEl.value, sourceEl.selectionStart, sourceEl.selectionEnd, event.shiftKey);
+      sourceEl.value = edit.value;
+      sourceEl.setSelectionRange(edit.selectionStart, edit.selectionEnd);
+      updateHighlighting();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
       event.preventDefault();
       document.getElementById("runButton").click();

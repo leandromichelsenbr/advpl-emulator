@@ -194,6 +194,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [ ] Adicionar modo lado a lado: referência real versus resultado emulado.
 - [ ] Tornar editor, preview e setups responsivos e acessíveis por teclado.
 - [ ] Preservar o código localmente no navegador e oferecer restauração do exemplo.
+- [x] Indentar automaticamente blocos, continuações e seleções durante a digitação.
 - [ ] Disponibilizar documentação de construções suportadas diretamente no laboratório.
 
 ## Qualidade e integração
