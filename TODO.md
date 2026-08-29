@@ -17,7 +17,7 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 - [ ] Calibrar `MSDialog`/`TDialog`: título, área útil, coordenadas, centralização, cores, fontes e ciclo de ativação.
 - [ ] Completar a calibração de `TWBrowse`/`TCBrowse`: o cabeçalho, linhas alternadas, seleção, imagens, navegação, clique no cabeçalho e duplo clique já possuem suporte inicial; faltam rolagem fiel, teclado, foco e demais callbacks.
 - [ ] Completar a calibração de `BrGetDDB`/`TGetDados`: edição por célula, exclusão, navegação e alimentação por dados de referência.
-- [ ] Completar a calibração de mensagens: `MsgInfo` e `MsgStop` já suportam título, conteúdo multilinha e fila; faltam `MsgAlert`, confirmações adicionais, ícones e todos os estados.
+- [ ] Completar a calibração de mensagens: `MsgInfo`, `MsgStop`, `MsgAlert` e `Alert` já possuem suporte inicial; faltam confirmações adicionais e calibração de todos os estados.
 - [x] Unificar a ação principal como **Executar código** nas interfaces atuais.
 - [ ] Criar testes visuais com tolerância definida para impedir regressões de layout.
 
@@ -182,6 +182,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 ## Experiência do laboratório
 
 - [x] Calibrar `MsgAlert()` como caixa modal de advertência, com título e ícone próprios.
+- [x] Calibrar `Alert()` como caixa modal crítica, com título padrão `TOTVS` e ícone vermelho.
 - [x] Exibir a saída de `ConOut()` em um console recolhível, inclusive junto de mensagens no mesmo fluxo.
 - [x] Oferecer **Executar novamente** após concluir uma fila de mensagens ou encerrar um diálogo.
 - [ ] Oferecer exemplos selecionáveis para diálogos, browses, impressão, códigos de barras, QR Code e gráficos.

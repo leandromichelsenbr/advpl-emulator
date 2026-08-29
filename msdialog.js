@@ -36,7 +36,7 @@
 
   function highlightAdvPL(source) {
     const tokens = [];
-    const pattern = /(\/\/[^\r\n]*|^\s*#\s*\w+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\.(?:T|F)\.|\b\d+(?:\.\d+)?\b|\b(?:User\s+Function|Static\s+Function|Function|Return|Local|Private|Public|Static|If|ElseIf|Else|EndIf|For|Next|While|EndDo|Do\s+Case|Case|Otherwise|EndCase|DEFINE|ACTIVATE|DIALOG|MSDIALOG|TITLE|FROM|TO|PIXEL|CENTERED|SIZE|OF|PROMPT|VAR|ACTION|VALID|WHEN|PICTURE)\b|\b(?:MSDialog|TWBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Space|AllTrim|If)\b|:\s*\w+)/gim;
+    const pattern = /(\/\/[^\r\n]*|^\s*#\s*\w+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\.(?:T|F)\.|\b\d+(?:\.\d+)?\b|\b(?:User\s+Function|Static\s+Function|Function|Return|Local|Private|Public|Static|If|ElseIf|Else|EndIf|For|Next|While|EndDo|Do\s+Case|Case|Otherwise|EndCase|DEFINE|ACTIVATE|DIALOG|MSDIALOG|TITLE|FROM|TO|PIXEL|CENTERED|SIZE|OF|PROMPT|VAR|ACTION|VALID|WHEN|PICTURE)\b|\b(?:MSDialog|TWBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Alert|Space|AllTrim|If)\b|:\s*\w+)/gim;
     let lastIndex = 0;
     source.replace(pattern, (match, _capture, offset) => {
       tokens.push(escapeHtml(source.slice(lastIndex, offset)));
@@ -47,7 +47,7 @@
       else if (/^\.(?:T|F)\.$/i.test(match)) kind = "boolean";
       else if (/^\d/.test(match)) kind = "number";
       else if (/^:/.test(match)) kind = "method";
-      else if (/^(?:MSDialog|TWBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Space|AllTrim|If)$/i.test(match)) kind = "function";
+      else if (/^(?:MSDialog|TWBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Alert|Space|AllTrim|If)$/i.test(match)) kind = "function";
       else kind = "keyword";
       tokens.push(`<span class="syntax-${kind}">${escapeHtml(match)}</span>`);
       lastIndex = offset + match.length;
