@@ -24,6 +24,7 @@ A saída de `parse()` é um modelo neutro. A página pode renderizá-lo com HTML
 - `AdvPLCore.statements(source)`: aplica comentários e continuações com `;`;
 - `AdvPLCore.splitTopLevel(expression, separator)`: separa expressões respeitando strings e parênteses.
 - `AdvPLParserAdapter.analyze(source, options)`: executa análise sintática opcional em Web Worker e retorna AST, diagnósticos, duração e informação de fallback.
+- `AdvPLEmulator.runAsync(source, data, options)`: analisa, aguarda o parser e só então executa o código quando não houver erro sintático.
 
 O renderizador deve manter as variáveis da sessão, refletir alterações dos campos e executar os comandos retornados por `parseAction()` na ordem apresentada.
 
@@ -76,6 +77,15 @@ const analysis = await AdvPLEmulator.analyze(source, { mode: "auto" });
 
 Os modos disponíveis são `light`, `tds` e `auto`. `auto` usa o parser avançado e recua para o leve quando o worker ou bundle não estiver disponível. `tds` torna uma falha de carregamento explícita. Erros reconhecidos pelo pacote usam `origin: "tds-parser"`; eles são diagnósticos sintáticos locais, não resultados oficiais de compilação do AppServer ou TDS.
 
+Na versão 0.3.1, a interface e o protocolo headless usam o pipeline coordenado. Novas integrações devem preferir:
+
+```js
+const result = await frame.contentWindow.AdvPLEmulator.runAsync(codigoAdvPL, dados);
+// { executed, stale, program, analysis }
+```
+
+`executed` é falso quando há erro sintático; nesse caso `program` é nulo e nenhum efeito visual é produzido. `stale` identifica uma análise descartada porque uma execução mais nova começou. `AdvPLEmulator.run()` permanece disponível como caminho síncrono legado e não aguarda a análise avançada.
+
 O arquivo `msdialog.js` aceita shells legados sem os elementos opcionais de realce de sintaxe e impressão. Para integrações novas, prefira consumir apenas `src/advpl-core.js` e manter um renderizador próprio.
 
 ## Modo headless para incorporação
@@ -102,10 +112,10 @@ window.addEventListener("message", event => {
 });
 ```
 
-O frame responde com `advpl-emulator:rendered` ou `advpl-emulator:error`. Uma integração de mesma origem também pode chamar diretamente:
+O frame responde somente após análise e eventual execução. Os tipos são `advpl-emulator:rendered`, `advpl-emulator:diagnostics`, `advpl-emulator:stale` ou `advpl-emulator:error`. Uma integração de mesma origem também pode chamar diretamente:
 
 ```js
-frame.contentWindow.AdvPLEmulator.run(codigoAdvPL);
+await frame.contentWindow.AdvPLEmulator.runAsync(codigoAdvPL);
 ```
 
 ### Dados de exemplo na chamada

@@ -1,7 +1,7 @@
 /* global TDSParserRuntime */
 "use strict";
 
-importScripts("../vendor/tds-parser.bundle.js?v=0.3.0.1");
+importScripts("../vendor/tds-parser.bundle.js?v=0.3.1");
 
 self.addEventListener("message", event => {
   const { id, source, parserInfo } = event.data || {};
