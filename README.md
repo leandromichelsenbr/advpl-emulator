@@ -21,7 +21,10 @@ Os próximos componentes, calibrações visuais e evoluções do interpretador e
 ```text
 Fonte AdvPL
     ↓
-src/advpl-core.js      parser, execução controlada e diagnósticos
+src/advpl-core.js      parser leve, execução controlada e diagnósticos
+src/tds-parser-adapter.js  adaptador opcional para AST sintática TDS
+src/tds-parser-worker.js   execução isolada do parser avançado
+vendor/tds-parser.bundle.js bundle do analisador AdvPL oficial
     ↓
 modelo neutro          telas, mensagens, console, relatórios e ações
     ↓
@@ -29,6 +32,8 @@ msdialog.js            renderizador HTML/CSS de telas e relatórios
 ```
 
 Sites de treinamento e plugins podem consumir somente `src/advpl-core.js` e criar seu próprio renderizador. Consulte [a documentação de integração](docs/integration.md).
+
+O laboratório completo carrega `@totvs/tds-parsers` sob demanda em um Web Worker. Se o bundle avançado não estiver disponível, a execução visual continua usando o parser leve.
 
 Para incorporar apenas a saída visual em outra página, use o [modo headless](docs/integration.md#modo-headless-para-incorporação).
 
