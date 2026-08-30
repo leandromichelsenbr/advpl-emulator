@@ -1,0 +1,103 @@
+# Kardex do AdvPL Emulator
+
+Registro cronológico consolidado das movimentações do projeto. Para detalhes técnicos e itens futuros, consulte também o [histórico de implementação](docs/updates-2026-08-25.md) e o [backlog](TODO.md).
+
+## Situação atual
+
+| Campo | Situação |
+|---|---|
+| Versão da distribuição | `0.4.1` |
+| Contrato público | `0.1` |
+| Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
+| Parser de execução | núcleo leve com fallback |
+| Testes automatizados | 42 |
+| Branch de publicação | `main` |
+
+## Movimentações
+
+### 0.4.1 — 30/08/2026
+
+**Tipo:** documentação, governança e referências visuais.
+
+- Criado este Kardex como registro oficial das versões e entregas.
+- Incorporadas ao histórico as imagens atualizadas de `AxCadastro` e `FWMSPrinter` do [PR #37](https://github.com/leandromichelsenbr/advpl-emulator/pull/37).
+- Regularizado o incremento de versão posterior à atualização dos exemplos.
+- Mantidos o contrato público `0.1` e os 42 testes automatizados.
+
+### 0.4.0 — 29/08/2026
+
+**Tipo:** funcionalidade do editor.
+
+- Adicionada indentação automática para funções, condicionais, laços, ramificações, diálogos e continuações por `;`.
+- `Tab` e `Shift+Tab` passaram a indentar ou recuar linhas e seleções.
+- Preservado o atalho `Ctrl+Enter` para execução.
+- Entrega: [PR #36](https://github.com/leandromichelsenbr/advpl-emulator/pull/36).
+
+### 0.3.2 — 29/08/2026
+
+**Tipo:** documentação interna.
+
+- Iniciado o padrão de comentários didáticos nos módulos internos.
+- Documentados propósito, contratos, fallback, concorrência, segurança e limitações do parser.
+- Criado o guia de comentários dos fontes.
+- Entrega: [PR #35](https://github.com/leandromichelsenbr/advpl-emulator/pull/35).
+
+### 0.3.1 — 29/08/2026
+
+**Tipo:** execução e segurança.
+
+- Criado `AdvPLEmulator.runAsync()`.
+- A análise sintática passou a ocorrer antes da execução visual.
+- Erros TDS passaram a impedir mensagens, diálogos e relatórios.
+- Adicionado descarte de resultados antigos e protocolo headless assíncrono.
+- Entrega: [PR #34](https://github.com/leandromichelsenbr/advpl-emulator/pull/34).
+
+### 0.3.0 — 29/08/2026
+
+**Tipo:** arquitetura do interpretador.
+
+- Adotado `@totvs/tds-parsers@0.1.5` como camada opcional.
+- Criados adaptador neutro, bundle sob demanda e Web Worker.
+- Implementados os modos `light`, `tds` e `auto`.
+- Normalizados AST, diagnósticos, duração e fallback.
+- Entrega: [PR #33](https://github.com/leandromichelsenbr/advpl-emulator/pull/33).
+
+### 0.2.1 — 29/08/2026
+
+**Tipo:** correções de mensagens e versionamento.
+
+- Implementado `Alert()` crítico e sua execução em callbacks do `TCBrowse`.
+- Corrigidos ícones de mensagens abertas por callbacks em páginas incorporadas.
+- Formalizada a política de versionamento semântico.
+- Entregas: [PR #29](https://github.com/leandromichelsenbr/advpl-emulator/pull/29), [PR #30](https://github.com/leandromichelsenbr/advpl-emulator/pull/30), [PR #31](https://github.com/leandromichelsenbr/advpl-emulator/pull/31) e [PR #32](https://github.com/leandromichelsenbr/advpl-emulator/pull/32).
+
+### 0.2.0 — 22 a 28/08/2026
+
+**Tipo:** expansão funcional.
+
+- Incorporados componentes visuais, impressão, relatórios e orientação de página.
+- Criados laboratório público, modo headless e compatibilidade com incorporação.
+- Adicionados dados fictícios e JSON por execução.
+- Implementados `BrGetDDB`, `TCBrowse`, `AxCadastro`, mensagens, console, `ACopy`, `AClone` e chamadas entre funções.
+- Unificados eventos de console, mensagens, diálogos e relatórios.
+- Adicionados branding, versão visível, inventário DANFE e backlog do parser TDS.
+- Período coberto pelos [PRs #2 a #28](https://github.com/leandromichelsenbr/advpl-emulator/pulls?q=is%3Apr+is%3Amerged+2..28).
+
+### 0.1.0 — 14/08/2026
+
+**Tipo:** fundação.
+
+- Criado o primeiro emulador visual AdvPL.
+- Separado o núcleo reutilizável da apresentação HTML.
+- Definido o contrato público inicial `0.1`.
+- Entrega-base: [PR #1](https://github.com/leandromichelsenbr/advpl-emulator/pull/1).
+
+## Regra de atualização
+
+Toda entrega publicada deve:
+
+1. incrementar a versão semântica da distribuição;
+2. sincronizar `package.json`, `package-lock.json` e `AdvPLCore.PACKAGE_VERSION`;
+3. atualizar os parâmetros de invalidação de cache das páginas;
+4. registrar aqui data, tipo, resumo, validação e referência da entrega;
+5. preservar versões anteriores, sem reescrever retroativamente seus resultados.

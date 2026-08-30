@@ -16,6 +16,8 @@ O laboratório público sem autenticação está em [`exercise.html`](exercise.h
 
 Os próximos componentes, calibrações visuais e evoluções do interpretador estão registrados no [TODO do projeto](TODO.md).
 
+O histórico consolidado de versões e entregas está no [Kardex do projeto](KARDEX.md).
+
 ## Arquitetura atualizável
 
 ```text
