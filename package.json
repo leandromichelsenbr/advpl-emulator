@@ -1,6 +1,6 @@
 {
   "name": "advpl-emulator",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "scripts": {
     "build:tds-parser": "esbuild scripts/tds-parser-browser-entry.js --bundle --platform=browser --format=iife --global-name=TDSParserRuntime --outfile=vendor/tds-parser.bundle.js --minify",
