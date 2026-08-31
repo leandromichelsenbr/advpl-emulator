@@ -6,14 +6,74 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.5.3` |
+| Versão da distribuição | `0.8.3` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 46 |
+| Testes automatizados | 56 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.8.3 — 31/08/2026
+
+**Tipo:** documentação didática dos fontes.
+
+- Elevado o padrão de comentários: módulos internos passam a servir também como material de estudo.
+- Documentados envelope e união discriminada no modelo intermediário.
+- Explicados scanner de estados, pilha condicional, tabela de símbolos, mapa de origem e detecção de ciclos no pré-processador.
+- Detalhados injeção de dependências, fronteira de efeitos, revisões concorrentes e deduplicação de diagnósticos no pipeline.
+- Mantida a suíte de 56 testes automatizados.
+
+### 0.8.2 — 31/08/2026
+
+**Tipo:** correção de diagnósticos do pipeline.
+
+- Eliminada a duplicação de diagnósticos presentes simultaneamente no núcleo e na análise assíncrona.
+- A advertência `PP0006` de `#include` passa a aparecer uma única vez na interface.
+- Mantida a suíte de 56 testes automatizados.
+
+### 0.8.1 — 31/08/2026
+
+**Tipo:** compatibilidade de fontes com includes.
+
+- `#include` passa a ser reconhecido e ignorado com advertência `PP0006`, sem fingir que o arquivo `.ch` foi carregado.
+- Restaurada a execução dos exemplos existentes que declaram `TOTVS.CH`.
+- Suíte ampliada de 55 para 56 testes automatizados.
+
+### 0.8.0 — 31/08/2026
+
+**Tipo:** pré-processador mínimo observável.
+
+- Criado pré-processador independente do DOM com contrato próprio `0.1`.
+- Implementados `#define`, `#undef`, `#ifdef`, `#ifndef`, `#else` e `#endif`, incluindo aninhamento.
+- Expansão de tokens passa a preservar strings, comentários de linha e comentários de bloco.
+- Adicionados diagnósticos de diretivas, redefinições, blocos não encerrados e ciclos de macros.
+- Gerado mapa de linhas entre o fonte processado e o original.
+- O pipeline assíncrono passa a pré-processar antes da análise TDS e bloqueia execução quando há erro nessa fase.
+- Suíte ampliada de 49 para 55 testes automatizados, mantendo os contratos públicos `0.1`.
+
+### 0.7.0 — 31/08/2026
+
+**Tipo:** contrato do modelo intermediário.
+
+- Versionado como `0.1` o envelope comum das saídas do emulador.
+- Unificados os discriminadores `message`, `console`, `dialog`, `grid` e `report` sem remover os payloads existentes.
+- Normalizadas as coleções `events`, `controls`, `diagnostics` e `variables` para todos os resultados bem-sucedidos.
+- Criado módulo independente do DOM para finalizar e validar modelos consumidos por backends.
+- Documentados os payloads específicos, eventos, compatibilidade e política de evolução do formato.
+- Suíte ampliada de 47 para 49 testes automatizados, mantendo o contrato público `0.1`.
+
+### 0.6.0 — 31/08/2026
+
+**Tipo:** fundação do catálogo de compatibilidade.
+
+- Publicada a matriz inicial de compatibilidade, cobrindo todas as capacidades anunciadas no README.
+- Classificados linguagem, runtime, saídas, editor, diálogos, browses, dados e impressão nos cinco estados arquiteturais.
+- Ligadas as capacidades aos testes existentes e declaradas as lacunas que ainda dependem de testes visuais ou calibração.
+- Separados explicitamente os recursos fora do contrato atual, incluindo banco Protheus, `.ch`, `VALID`, `WHEN`, `PICTURE`, LIB completa e binários APO.
+- Adicionado contrato automatizado para IDs únicos, estados válidos e campos obrigatórios da matriz.
+- Suíte ampliada de 46 para 47 testes automatizados, mantendo o contrato público `0.1`.
 
 ### 0.5.3 — 31/08/2026
 

@@ -14,10 +14,10 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 
 ## Prioridade imediata
 
-- [ ] Criar a matriz inicial de compatibilidade a partir das capacidades anunciadas no README e dos testes existentes.
-- [ ] Versionar o formato `0.1` do modelo intermediário unificado para mensagens, diálogos, grades, relatórios, console e eventos.
-- [ ] Iniciar o marco de pré-processamento controlado com `#define`, condicionais, diagnósticos e mapa de origem.
-- [ ] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
+- [x] Criar a matriz inicial de compatibilidade a partir das capacidades anunciadas no README e dos testes existentes.
+- [x] Versionar o formato `0.1` do modelo intermediário unificado para mensagens, diálogos, grades, relatórios, console e eventos.
+- [x] Iniciar o marco de pré-processamento controlado com `#define`, condicionais, diagnósticos e mapa de origem.
+- [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.
 - [ ] Calibrar `MSDialog`/`TDialog`: título, área útil, coordenadas, centralização, cores, fontes e ciclo de ativação.

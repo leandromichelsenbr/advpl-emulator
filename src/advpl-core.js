@@ -1,15 +1,20 @@
 (function (root, factory) {
-  const api = factory();
+  const model = typeof module === "object" && module.exports ? require("./advpl-model.js") : root.AdvPLModel;
+  const preprocessor = typeof module === "object" && module.exports ? require("./advpl-preprocessor.js") : root.AdvPLPreprocessor;
+  const api = factory(model, preprocessor);
   if (typeof module === "object" && module.exports) module.exports = api;
   root.AdvPLCore = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (AdvPLModel, AdvPLPreprocessor) {
   "use strict";
 
   // VERSION identifica o contrato público consumido por integrações existentes.
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.5.3";
+  const PACKAGE_VERSION = "0.8.3";
+
+  if (!AdvPLModel) throw new Error("AdvPLModel deve ser carregado antes de AdvPLCore.");
+  if (!AdvPLPreprocessor) throw new Error("AdvPLPreprocessor deve ser carregado antes de AdvPLCore.");
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
@@ -798,5 +803,33 @@
     return { version: VERSION, dialog, controls, variables, events: runtimeEvents };
   }
 
-  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, parseAxCadastro, parseFWMBrowse, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray, editorNewline, editorTab });
+  /**
+   * Adapta os produtores históricos ao pipeline novo sem reescrevê-los.
+   *
+   * Cada parser interno continua recebendo texto AdvPL simples e produzindo seu
+   * payload legado. Este adaptador executa o pré-processador antes, anexa o
+   * resultado completo para observabilidade, combina os diagnósticos das duas
+   * fases e, por fim, aplica o envelope do modelo intermediário. Concentrar a
+   * integração aqui garante o mesmo contrato para `parse`, `parseReport`,
+   * `parseAxCadastro` e `parseFWMBrowse`.
+   */
+  function executePreprocessed(parser, source, options = {}) {
+    const preprocessing = AdvPLPreprocessor.process(source, { defines: options.defines });
+    const result = parser(preprocessing.source, options);
+    if (result == null) return result;
+    result.preprocessor = preprocessing;
+    result.diagnostics = [...preprocessing.diagnostics, ...(result.diagnostics || [])];
+    return AdvPLModel.finalize(result);
+  }
+
+  return Object.freeze({
+    VERSION, API_VERSION, PACKAGE_VERSION, MODEL_VERSION: AdvPLModel.MODEL_VERSION,
+    parse: (source, options) => executePreprocessed(parse, source, options),
+    parseReport: (source, options) => executePreprocessed(parseReport, source, options),
+    parseAxCadastro: (source, options) => executePreprocessed(parseAxCadastro, source, options),
+    parseFWMBrowse: (source, options) => executePreprocessed(parseFWMBrowse, source, options),
+    preprocess: AdvPLPreprocessor.process,
+    validateModel: AdvPLModel.validate,
+    evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray, editorNewline, editorTab
+  });
 });
