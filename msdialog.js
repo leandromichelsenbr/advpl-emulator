@@ -37,7 +37,7 @@
 
   function highlightAdvPL(source) {
     const tokens = [];
-    const pattern = /(\/\/[^\r\n]*|^\s*#\s*\w+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\.(?:T|F)\.|\b\d+(?:\.\d+)?\b|\b(?:User\s+Function|Static\s+Function|Function|Return|Local|Private|Public|Static|If|ElseIf|Else|EndIf|For|Next|While|EndDo|Do\s+Case|Case|Otherwise|EndCase|DEFINE|ACTIVATE|DIALOG|MSDIALOG|TITLE|FROM|TO|PIXEL|CENTERED|SIZE|OF|PROMPT|VAR|ACTION|VALID|WHEN|PICTURE)\b|\b(?:MSDialog|TWBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Alert|Space|AllTrim|If)\b|:\s*\w+)/gim;
+    const pattern = /(\/\/[^\r\n]*|^\s*#\s*\w+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\.(?:T|F)\.|\b\d+(?:\.\d+)?\b|\b(?:User\s+Function|Static\s+Function|Function|Return|Local|Private|Public|Static|If|ElseIf|Else|EndIf|For|Next|While|EndDo|Do\s+Case|Case|Otherwise|EndCase|DEFINE|ACTIVATE|DIALOG|MSDIALOG|TITLE|FROM|TO|PIXEL|CENTERED|SIZE|OF|PROMPT|VAR|ACTION|VALID|WHEN|PICTURE)\b|\b(?:MSDialog|TWBrowse|FWMBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Alert|Space|AllTrim|If)\b|:\s*\w+)/gim;
     let lastIndex = 0;
     source.replace(pattern, (match, _capture, offset) => {
       tokens.push(escapeHtml(source.slice(lastIndex, offset)));
@@ -48,7 +48,7 @@
       else if (/^\.(?:T|F)\.$/i.test(match)) kind = "boolean";
       else if (/^\d/.test(match)) kind = "number";
       else if (/^:/.test(match)) kind = "method";
-      else if (/^(?:MSDialog|TWBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Alert|Space|AllTrim|If)$/i.test(match)) kind = "function";
+      else if (/^(?:MSDialog|TWBrowse|FWMBrowse|AxCadastro|AAdd|LoadBitmap|GetResources|MsgInfo|MsgStop|MsgAlert|Alert|Space|AllTrim|If)$/i.test(match)) kind = "function";
       else kind = "keyword";
       tokens.push(`<span class="syntax-${kind}">${escapeHtml(match)}</span>`);
       lastIndex = offset + match.length;
@@ -367,6 +367,10 @@
       renderAxCadastro(program);
       return;
     }
+    if (program.kind === "fwmbrowse") {
+      renderFWMBrowse(program);
+      return;
+    }
     if (program.kind === "report") {
       desktopEl.replaceChildren();
       if (program.setup?.enabled) showPrinterSetup(program);
@@ -606,6 +610,51 @@
     dialog.append(header, toolbar, grid, details, detailToggle); desktopEl.append(dialog); renderRows(); updateDetails();
     setStatus(`AxCadastro montado: ${program.rows.length} registro(s) de ${program.alias}.`, "success");
     playEventList(program.callbacks.pre);
+  }
+
+  /** Monta a navegação observada no WebApp sem criar ações não declaradas no fonte. */
+  function renderFWMBrowse(program) {
+    desktopEl.replaceChildren();
+    const dialog = document.createElement("wa-dialog");
+    dialog.dataset.advpl = "tdialog"; dialog.className = "fwmbrowse dict-msdialog";
+    dialog.setAttribute("frameless", ""); dialog.setAttribute("resizable", ""); dialog.setAttribute("opened", ""); dialog.tabIndex = -1;
+
+    const header = document.createElement("header"); header.className = "fwm-header";
+    const heading = document.createElement("h2"); heading.textContent = program.title;
+    const settings = document.createElement("button"); settings.type = "button"; settings.title = "Configurações"; settings.textContent = "⚙";
+    header.append(heading, settings);
+
+    const toolbar = document.createElement("div"); toolbar.className = "fwm-toolbar";
+    const print = document.createElement("button"); print.type = "button"; print.textContent = "Imprimir Browse";
+    const search = document.createElement("input"); search.type = "search"; search.placeholder = "Pesquisar"; search.setAttribute("aria-label", "Pesquisar");
+    const filter = document.createElement("button"); filter.type = "button"; filter.textContent = "Filtrar";
+    toolbar.append(print, search, filter);
+
+    const grid = document.createElement("wa-tgrid"); grid.dataset.advpl = "tgrid"; grid.className = "fwm-grid ax-grid dict-tgrid";
+    grid.setAttribute("selection-mode", "row"); grid.setAttribute("headerheight", "27"); grid.setAttribute("rowheight", "30"); grid.setAttribute("alternateinterval", "1");
+    const table = document.createElement("table"), thead = document.createElement("thead"), headerRow = document.createElement("tr"), tbody = document.createElement("tbody");
+    for (const column of program.columns) { const th = document.createElement("th"); th.textContent = column.label; headerRow.append(th); }
+    thead.append(headerRow); table.append(thead, tbody); grid.append(table);
+    let selectedIndex = program.rows.length ? 0 : -1;
+    const details = document.createElement("pre"); details.className = "fwm-details ax-details"; details.hidden = true;
+    const updateDetails = () => { details.textContent = selectedIndex >= 0 ? JSON.stringify(program.rows[selectedIndex], null, 2) : "Nenhum registro selecionado."; };
+    const renderRows = () => {
+      const term = search.value.trim().toLocaleLowerCase("pt-BR"); tbody.replaceChildren();
+      const visibleIndexes = program.rows.map((row, index) => ({ row, index })).filter(({ row }) => !term || Object.values(row).some(value => String(value).toLocaleLowerCase("pt-BR").includes(term)));
+      if (!visibleIndexes.some(item => item.index === selectedIndex)) selectedIndex = visibleIndexes[0]?.index ?? -1;
+      visibleIndexes.forEach(({ row, index }) => {
+        const tr = document.createElement("tr"); tr.tabIndex = 0; tr.classList.toggle("selected", index === selectedIndex);
+        for (const column of program.columns) { const td = document.createElement("td"); td.textContent = row[column.field] ?? ""; tr.append(td); }
+        tr.addEventListener("click", () => { selectedIndex = index; renderRows(); updateDetails(); }); tbody.append(tr);
+      });
+      updateDetails();
+    };
+    search.addEventListener("input", renderRows); filter.addEventListener("click", () => search.focus());
+    print.addEventListener("click", () => showStandaloneMessage({ kind: "info", title: program.title, text: `Browse preparado com ${program.rows.length} registro(s).` }));
+    const detailToggle = document.createElement("button"); detailToggle.type = "button"; detailToggle.className = "fwm-detail-toggle ax-detail-toggle"; detailToggle.textContent = "MOSTRAR DETALHES";
+    detailToggle.addEventListener("click", () => { details.hidden = !details.hidden; detailToggle.textContent = details.hidden ? "MOSTRAR DETALHES" : "OCULTAR DETALHES"; updateDetails(); });
+    dialog.append(header, toolbar, grid, details, detailToggle); desktopEl.append(dialog); renderRows(); updateDetails();
+    setStatus(`FWMBrowse montado: ${program.rows.length} registro(s) de ${program.alias}.`, "success");
   }
 
   function renderRuntimeDialog(program, hooks) {

@@ -6,14 +6,24 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.4.1` |
+| Versão da distribuição | `0.5.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 42 |
+| Testes automatizados | 44 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.5.0 — 30/08/2026
+
+**Tipo:** novo componente visual e dados fictícios.
+
+- Adicionado reconhecimento de `FWMBrowse():New()`, `SetAlias()`, `SetDescription()` e `Activate()`.
+- Criado modelo neutro `fwmbrowse`, alimentado somente pelas tabelas JSON da execução.
+- Reproduzida a estrutura observada no WebApp: janela sem moldura, título, pesquisa, filtro, `wa-tgrid`, seleção e detalhes recolhíveis.
+- Mantidas fora desta etapa as rotinas e metadados não declarados no fonte, evitando inventar comportamentos do Protheus.
+- Suíte ampliada de 42 para 44 testes automatizados.
 
 ### 0.4.1 — 30/08/2026
 

@@ -38,8 +38,11 @@ O campo `kind` diferencia as saídas que não são diálogos:
 - `console`: `console` contém as linhas registradas por `ConOut()`;
 - `report`: `report` contém página, orientação, elementos e dados do relatório.
 - `axcadastro`: contém `alias`, `title`, `rows`, `columns`, `callbacks`, `additionalActions` e `customButtons` para uma manutenção interativa.
+- `fwmbrowse`: contém `alias`, `title`, `rows`, `columns` e `activated` para navegação sobre uma tabela fictícia.
 
 No modelo `axcadastro`, os registros são obtidos de `options.tables[alias]`. Os callbacks já são normalizados como listas de eventos de mensagem, permitindo que outro renderizador reproduza `bPre`, confirmação, exclusão e as fases da transação sem interpretar novamente os blocos de código.
+
+No modelo `fwmbrowse`, `SetAlias()` escolhe a tabela JSON e `SetDescription()` define o título. A emulação não consulta SX3 nem banco real e não cria ações de manutenção que não estejam declaradas no fonte.
 
 Fontes executáveis também podem retornar `events`, uma lista ordenada preservando a sequência observável:
 

@@ -78,6 +78,7 @@ Cada entrega funcional ou correção publicada deve incrementar a versão do pac
 - callbacks de `TCBrowse` preservam suas ações reais, incluindo caixas críticas disparadas por `Alert()`;
 - `BrGetDDB():New()` com alias, colunas `TCColumn`, seleção por célula e callbacks de edição/exclusão;
 - `AxCadastro()` com grid baseado em alias, pesquisa, detalhes, inclusão, alteração, visualização, exclusão, ações adicionais, botões personalizados e callbacks transacionais;
+- `FWMBrowse()` com alias e descrição, pesquisa, filtro, seleção, detalhes e dados fictícios fornecidos por JSON;
 - base fictícia local com registros de exemplo para `SA1`, `SB1` e `SBM`, sem conexão externa;
 - realce de sintaxe AdvPL no editor;
 - `FWMSPrinter` com setup, preview, A4 retrato/paisagem e impressão pelo navegador;
