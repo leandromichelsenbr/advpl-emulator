@@ -15,10 +15,34 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("mantém o contrato público 0.1 na versão 0.5.1 do pacote", () => {
+test("mantém o contrato público 0.1 na versão 0.5.2 do pacote", () => {
   assert.equal(core.VERSION, "0.1.0");
   assert.equal(core.API_VERSION, "0.1");
-  assert.equal(core.PACKAGE_VERSION, "0.5.1");
+  assert.equal(core.PACKAGE_VERSION, "0.5.2");
+});
+
+test("+= soma números dentro de For sem converter o acumulador em texto", () => {
+  const program = core.parse(`User Function ExEvenNumbers()
+Local nNumber
+Local nSum := 0
+For nNumber := 0 To 100 Step 2
+    nSum += nNumber
+Next
+MsgInfo("Sum of even numbers: " + CValToChar(nSum), "Resultado")
+Return`);
+
+  assert.equal(program.kind, "message");
+  assert.equal(program.message.text, "Sum of even numbers: 2550");
+  assert.equal(program.variables.nSum, 2550);
+});
+
+test("+= preserva concatenação quando o acumulador é texto", () => {
+  const program = core.parse(`User Function Teste()
+Local cText := "A"
+cText += 10
+MsgInfo(cText, "Resultado")
+Return`);
+  assert.equal(program.message.text, "A10");
 });
 
 test("interpreta FWMBrowse com alias, descrição e dados JSON", () => {
