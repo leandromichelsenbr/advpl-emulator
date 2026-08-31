@@ -1,6 +1,8 @@
 # AdvPL Emulator
 
-Núcleo reutilizável para interpretar e emular componentes visuais e relatórios clássicos do AdvPL sem depender de AppServer ou SmartClient.
+Camada de compatibilidade educacional e visual para executar, no navegador, um subconjunto controlado de AdvPL/Protheus sem depender de AppServer, banco Protheus ou SmartClient.
+
+O direcionamento arquitetural, os limites da analogia com o Wine e o planejamento das camadas estão em [Camada de compatibilidade AdvPL/Protheus para Web](docs/compatibility-layer-roadmap.md).
 
 ## Executar a demonstração
 
@@ -23,6 +25,8 @@ O histórico consolidado de versões e entregas está no [Kardex do projeto](KAR
 ```text
 Fonte AdvPL
     ↓
+pré-processador controlado (planejado)  defines, includes virtuais e mapa de origem
+    ↓
 src/advpl-core.js      parser leve, execução controlada e diagnósticos
 src/tds-parser-adapter.js  adaptador opcional para AST sintática TDS
 src/tds-parser-worker.js   execução isolada do parser avançado
@@ -30,7 +34,9 @@ vendor/tds-parser.bundle.js bundle do analisador AdvPL oficial
     ↓
 modelo neutro          telas, mensagens, console, relatórios e ações
     ↓
-msdialog.js            renderizador HTML/CSS de telas e relatórios
+compatibilidade Protheus (evolução)     UI, browse, impressão, dados e runtime
+    ↓
+msdialog.js            backend HTML/CSS atual
 ```
 
 Sites de treinamento e plugins podem consumir somente `src/advpl-core.js` e criar seu próprio renderizador. Consulte [a documentação de integração](docs/integration.md).

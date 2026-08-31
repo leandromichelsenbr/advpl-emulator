@@ -15,10 +15,10 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("mantém o contrato público 0.1 na versão 0.5.2 do pacote", () => {
+test("mantém o contrato público 0.1 na versão 0.5.3 do pacote", () => {
   assert.equal(core.VERSION, "0.1.0");
   assert.equal(core.API_VERSION, "0.1");
-  assert.equal(core.PACKAGE_VERSION, "0.5.2");
+  assert.equal(core.PACKAGE_VERSION, "0.5.3");
 });
 
 test("+= soma números dentro de For sem converter o acumulador em texto", () => {

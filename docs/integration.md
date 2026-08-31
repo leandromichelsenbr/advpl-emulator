@@ -12,6 +12,8 @@ O núcleo não depende do DOM. Carregue-o antes do seu renderizador:
 
 A saída de `parse()` é um modelo neutro. A página pode renderizá-lo com HTML/CSS, React, Canvas ou uma biblioteca desktop.
 
+O contrato continuará evoluindo dentro da arquitetura de camada de compatibilidade descrita no [direcionamento do projeto](compatibility-layer-roadmap.md). Pré-processador, runtime, bibliotecas Protheus e backends devem permanecer separados para que integrações headless não dependam do renderizador HTML.
+
 ## API 0.1
 
 - `AdvPLCore.VERSION`: versão do contrato público;
