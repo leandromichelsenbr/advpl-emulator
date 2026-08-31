@@ -1,6 +1,6 @@
 # Próximos passos
 
-Este documento orienta a evolução do AdvPL Emulator. O objetivo não é somente prever caixas de diálogo: o projeto deve interpretar um subconjunto crescente de AdvPL e simular, no navegador, seus resultados visuais — interfaces, componentes, gráficos e relatórios.
+Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser desenvolvido como uma camada de compatibilidade educacional e visual AdvPL/Protheus para Web. A decisão, arquitetura-alvo e marcos estão em [`docs/compatibility-layer-roadmap.md`](docs/compatibility-layer-roadmap.md).
 
 ## Princípios do projeto
 
@@ -13,6 +13,11 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 - Manter comentários didáticos nos módulos internos, priorizando propósito, contratos e decisões não evidentes.
 
 ## Prioridade imediata
+
+- [ ] Criar a matriz inicial de compatibilidade a partir das capacidades anunciadas no README e dos testes existentes.
+- [ ] Versionar o formato `0.1` do modelo intermediário unificado para mensagens, diálogos, grades, relatórios, console e eventos.
+- [ ] Iniciar o marco de pré-processamento controlado com `#define`, condicionais, diagnósticos e mapa de origem.
+- [ ] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.
 - [ ] Calibrar `MSDialog`/`TDialog`: título, área útil, coordenadas, centralização, cores, fontes e ciclo de ativação.
@@ -109,7 +114,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [ ] Criar um adaptador opcional para TDS-Cli/Language Server que normalize diagnósticos oficiais por versão da LIB, sem expor AppServer ou credenciais ao navegador.
 - [ ] Exibir separadamente diagnósticos do emulador e do compilador TDS; os diagnósticos locais já mostram código, severidade, origem, linha e coluna.
 - [ ] Ampliar expressões, operadores, funções, arrays e blocos de código; já há suporte inicial a comparações, aritmética, arrays aninhados, `Abs`, `Len`, `Chr`, `ACopy` e `AClone`.
-- [ ] Implementar pré-processamento controlado de constantes e arquivos `.ch` relevantes.
+- [ ] Implementar o [pré-processador mínimo observável](docs/compatibility-layer-roadmap.md#marco-b--pré-processador-mínimo-observável) antes de ampliar comandos dependentes de `.ch`.
 - [ ] Melhorar resolução de variáveis `Local`, `Private`, `Public` e propriedades de objetos.
 - [ ] Completar chamadas encadeadas, atribuições, condicionais e laços; `+=`, `If/Else` e `For/To/Step/Next` possuem suporte inicial em fluxos independentes.
 - [ ] Produzir diagnósticos com linha, coluna e sugestão quando uma construção não for suportada.

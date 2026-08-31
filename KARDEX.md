@@ -6,7 +6,7 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.5.2` |
+| Versão da distribuição | `0.5.3` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
@@ -14,6 +14,17 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.5.3 — 31/08/2026
+
+**Tipo:** direcionamento arquitetural e planejamento.
+
+- Formalizado o AdvPL Emulator como camada de compatibilidade educacional e visual AdvPL/Protheus para Web.
+- Documentados os limites da analogia com o Wine, evitando promessas de compatibilidade binária ou substituição da infraestrutura Protheus.
+- Planejadas oito camadas: contexto, pré-processador, parser, AST neutra, runtime, bibliotecas de compatibilidade, modelo de saídas e backends.
+- Criados estados verificáveis de compatibilidade e oito marcos incrementais com critérios de aceite.
+- Priorizados a matriz de compatibilidade, o modelo intermediário e o pré-processador mínimo observável.
+- Mantidos o contrato público `0.1` e os 46 testes automatizados.
 
 ### 0.5.2 — 30/08/2026
 
