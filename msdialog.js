@@ -388,7 +388,7 @@
       empty.className = "empty-state";
       empty.textContent = "O código não gerou uma saída visual.";
       desktopEl.append(empty);
-      renderConsole(program.console || []);
+      renderConsole(program.console || [], true);
       setStatus(`Código executado: ${program.console.length} registro(s) no console.`, "success");
       return;
     }
@@ -451,11 +451,12 @@
     const consoleLines = [];
     let eventIndex = 0;
     let skipReportPreview = false;
+    const hasVisualEvents = program.events.some(event => ["message", "dialog", "report-preview"].includes(event.type));
     const warningCount = program.diagnostics?.filter(item => item.severity === "warning").length || 0;
 
     const refreshConsole = () => {
       desktopEl.querySelector(".emulator-console")?.remove();
-      renderConsole(consoleLines);
+      renderConsole(consoleLines, !hasVisualEvents);
     };
 
     const next = () => {
@@ -490,7 +491,7 @@
           return;
         }
       }
-      if (!program.events.some(event => ["message", "dialog", "report-preview"].includes(event.type))) {
+      if (!hasVisualEvents) {
         const empty = document.createElement("div");
         empty.className = "empty-state";
         empty.textContent = "O código não gerou uma saída visual.";
@@ -714,18 +715,18 @@
     button.focus();
   }
 
-  function renderConsole(lines) {
+  function renderConsole(lines, expanded = false) {
     if (!lines.length) return;
     const container = document.createElement("section");
     container.className = "emulator-console";
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "console-toggle";
-    toggle.textContent = `Mostrar console (${lines.length})`;
-    toggle.setAttribute("aria-expanded", "false");
+    toggle.textContent = expanded ? "Ocultar console" : `Mostrar console (${lines.length})`;
+    toggle.setAttribute("aria-expanded", String(expanded));
     const panel = document.createElement("pre");
     panel.className = "console-panel";
-    panel.hidden = true;
+    panel.hidden = !expanded;
     panel.textContent = lines.join("\n");
     toggle.addEventListener("click", () => {
       panel.hidden = !panel.hidden;

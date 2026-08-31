@@ -6,7 +6,7 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.5.0` |
+| Versão da distribuição | `0.5.1` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
@@ -14,6 +14,14 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.5.1 — 30/08/2026
+
+**Tipo:** experiência da saída de console.
+
+- O console passa a abrir automaticamente quando `ConOut()` é a única saída observável da execução.
+- Fluxos que também produzem mensagem, diálogo ou relatório mantêm o console recolhível para preservar a área visual.
+- Mantidos o contrato público `0.1` e os 44 testes automatizados.
 
 ### 0.5.0 — 30/08/2026
 
