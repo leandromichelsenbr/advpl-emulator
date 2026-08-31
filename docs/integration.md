@@ -12,6 +12,8 @@ O núcleo não depende do DOM. No navegador, carregue o modelo e o pré-processa
 </script>
 ```
 
+Integrações antigas que carregam somente `advpl-core.js` continuam operacionais em modo de compatibilidade. Nesse modo, o executor preserva o comportamento anterior, mas não oferece as diretivas condicionais do pré-processador completo. Para novos projetos, carregue sempre os três módulos na ordem acima.
+
 A saída de `parse()` é um modelo neutro. A página pode renderizá-lo com HTML/CSS, React, Canvas ou uma biblioteca desktop.
 
 O contrato continuará evoluindo dentro da arquitetura de camada de compatibilidade descrita no [direcionamento do projeto](compatibility-layer-roadmap.md). Pré-processador, runtime, bibliotecas Protheus e backends devem permanecer separados para que integrações headless não dependam do renderizador HTML.

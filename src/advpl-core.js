@@ -1,6 +1,40 @@
 (function (root, factory) {
-  const model = typeof module === "object" && module.exports ? require("./advpl-model.js") : root.AdvPLModel;
-  const preprocessor = typeof module === "object" && module.exports ? require("./advpl-preprocessor.js") : root.AdvPLPreprocessor;
+  /*
+   * Integrações publicadas antes da versão 0.7 carregavam somente este arquivo.
+   * Por isso a ausência dos módulos novos não pode impedir a criação de
+   * AdvPLCore. Os fallbacks abaixo preservam o contrato histórico; quando os
+   * módulos completos estão presentes, eles continuam sendo a implementação
+   * preferencial e habilitam validação e pré-processamento avançados.
+   */
+  const fallbackModel = {
+    MODEL_VERSION: "0.1",
+    finalize(program) {
+      if (program == null) return program;
+      const outputType = ["message", "console", "report"].includes(program.kind) ? program.kind :
+        ["axcadastro", "fwmbrowse"].includes(program.kind) ? "grid" : program.dialog ? "dialog" : null;
+      if (!outputType) throw new TypeError("O programa não possui uma família de saída reconhecida.");
+      return { ...program, modelVersion: "0.1", outputType, events: program.events || [], controls: program.controls || [], diagnostics: program.diagnostics || [], variables: program.variables || Object.create(null) };
+    },
+    validate(program) {
+      const errors = [];
+      if (!program || program.modelVersion !== "0.1") errors.push("modelVersion must be 0.1");
+      if (!program?.outputType) errors.push("outputType is invalid");
+      return { valid: errors.length === 0, errors };
+    }
+  };
+  const fallbackPreprocessor = {
+    process(source) {
+      const text = String(source ?? "");
+      return {
+        version: "legacy",
+        source: text,
+        map: text.split(/\r?\n/).map((_, index) => ({ generatedLine: index + 1, originalLine: index + 1, originalColumn: 1 })),
+        definitions: {}, diagnostics: []
+      };
+    }
+  };
+  const model = typeof module === "object" && module.exports ? require("./advpl-model.js") : root.AdvPLModel || fallbackModel;
+  const preprocessor = typeof module === "object" && module.exports ? require("./advpl-preprocessor.js") : root.AdvPLPreprocessor || fallbackPreprocessor;
   const api = factory(model, preprocessor);
   if (typeof module === "object" && module.exports) module.exports = api;
   root.AdvPLCore = api;
@@ -11,10 +45,7 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.8.3";
-
-  if (!AdvPLModel) throw new Error("AdvPLModel deve ser carregado antes de AdvPLCore.");
-  if (!AdvPLPreprocessor) throw new Error("AdvPLPreprocessor deve ser carregado antes de AdvPLCore.");
+  const PACKAGE_VERSION = "0.8.4";
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
