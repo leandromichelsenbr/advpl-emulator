@@ -4,6 +4,8 @@ Camada de compatibilidade educacional e visual para executar, no navegador, um s
 
 O direcionamento arquitetural, os limites da analogia com o Wine e o planejamento das camadas estão em [Camada de compatibilidade AdvPL/Protheus para Web](docs/compatibility-layer-roadmap.md).
 
+O estudo sobre a pré-compilação, o PPO, sua diferença para APO/RPO e as consequências arquiteturais para o emulador está em [PPO e o pipeline do AdvPL](docs/ppo-e-pipeline-advpl.md).
+
 ## Executar a demonstração
 
 Instale a dependência local e abra `index.html` em um navegador:
