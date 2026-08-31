@@ -1,6 +1,6 @@
 # Matriz de compatibilidade
 
-Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.8.3`, o perfil `protheus-default`, o contrato público `0.1` e o modelo intermediário `0.1`.
+Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.8.4`, o perfil `protheus-default`, o contrato público `0.1` e o modelo intermediário `0.1`.
 
 Os estados seguem o [direcionamento arquitetural](compatibility-layer-roadmap.md#matriz-de-compatibilidade):
 

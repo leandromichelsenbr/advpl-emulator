@@ -6,14 +6,24 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.8.3` |
+| Versão da distribuição | `0.8.4` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 56 |
+| Testes automatizados | 57 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.8.4 — 31/08/2026
+
+**Tipo:** correção de compatibilidade de integração.
+
+- Restaurado o carregamento isolado de `advpl-core.js` usado por páginas de treinamento anteriores à arquitetura modular.
+- Adicionados fallbacks de modelo e pré-processamento legado quando os módulos completos não estão presentes no navegador.
+- Mantido o uso preferencial de `advpl-model.js` e `advpl-preprocessor.js` nas integrações atualizadas.
+- Criado teste em contexto de navegador sem dependências, reproduzindo a integração real do site Usina BR.
+- Suíte ampliada de 56 para 57 testes automatizados.
 
 ### 0.8.3 — 31/08/2026
 
