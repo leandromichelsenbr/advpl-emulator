@@ -1,8 +1,10 @@
 # Integração em páginas de treinamento
 
-O núcleo não depende do DOM. Carregue-o antes do seu renderizador:
+O núcleo não depende do DOM. No navegador, carregue o modelo e o pré-processador antes do núcleo e do seu renderizador:
 
 ```html
+<script src="/advpl-emulator/src/advpl-model.js"></script>
+<script src="/advpl-emulator/src/advpl-preprocessor.js"></script>
 <script src="/advpl-emulator/src/advpl-core.js"></script>
 <script>
   const program = AdvPLCore.parse(source);
@@ -19,7 +21,10 @@ O contrato continuará evoluindo dentro da arquitetura de camada de compatibilid
 - `AdvPLCore.VERSION`: versão do contrato público;
 - `AdvPLCore.API_VERSION`: linha compatível da API (`0.1`);
 - `AdvPLCore.PACKAGE_VERSION`: versão atual da distribuição;
+- `AdvPLCore.MODEL_VERSION`: versão do modelo intermediário (`0.1`);
 - `AdvPLCore.parse(source, options)`: transforma AdvPL em um modelo de diálogo, mensagem, console, relatório ou cadastro;
+- `AdvPLCore.preprocess(source, options)`: processa diretivas e retorna fonte, definições, diagnósticos e mapa de origem;
+- `AdvPLCore.validateModel(program)`: valida o envelope intermediário produzido pelo núcleo;
 - `AdvPLCore.evaluate(expression, variables)`: avalia o subconjunto suportado;
 - `AdvPLCore.parseAction(action)`: converte uma ação em comandos ordenados;
 - `AdvPLCore.diagnose(source)`: retorna diagnósticos locais sem executar o fonte;
@@ -34,7 +39,7 @@ O renderizador deve manter as variáveis da sessão, refletir alterações dos c
 
 ### Tipos de saída
 
-O campo `kind` diferencia as saídas que não são diálogos:
+O campo `outputType` diferencia as famílias `message`, `console`, `dialog`, `grid` e `report`. O campo legado `kind` permanece disponível para distinguir variantes e preservar integrações existentes:
 
 - `message`: `message` contém a primeira modal e `messages` preserva toda a fila;
 - `console`: `console` contém as linhas registradas por `ConOut()`;
@@ -93,7 +98,7 @@ const result = await frame.contentWindow.AdvPLEmulator.runAsync(codigoAdvPL, dad
 
 `executed` é falso quando há erro sintático; nesse caso `program` é nulo e nenhum efeito visual é produzido. `stale` identifica uma análise descartada porque uma execução mais nova começou. `AdvPLEmulator.run()` permanece disponível como caminho síncrono legado e não aguarda a análise avançada.
 
-O arquivo `msdialog.js` aceita shells legados sem os elementos opcionais de realce de sintaxe e impressão. Para integrações novas, prefira consumir apenas `src/advpl-core.js` e manter um renderizador próprio.
+O arquivo `msdialog.js` aceita shells legados sem os elementos opcionais de realce de sintaxe e impressão. Para integrações novas, prefira consumir `src/advpl-model.js`, `src/advpl-preprocessor.js` e `src/advpl-core.js`, mantendo um renderizador próprio.
 
 ## Modo headless para incorporação
 
