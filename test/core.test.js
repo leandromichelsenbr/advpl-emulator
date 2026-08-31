@@ -15,10 +15,42 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("mantém o contrato público 0.1 na versão 0.4.1 do pacote", () => {
+test("mantém o contrato público 0.1 na versão 0.5.0 do pacote", () => {
   assert.equal(core.VERSION, "0.1.0");
   assert.equal(core.API_VERSION, "0.1");
-  assert.equal(core.PACKAGE_VERSION, "0.4.1");
+  assert.equal(core.PACKAGE_VERSION, "0.5.0");
+});
+
+test("interpreta FWMBrowse com alias, descrição e dados JSON", () => {
+  const program = core.parse(`User Function Teste()
+Local oBrowse
+Local cTitulo := "Teste de Browse"
+SetFunName("zTeste")
+oBrowse := FWMBrowse():New()
+oBrowse:SetAlias("SA1")
+oBrowse:SetDescription(cTitulo)
+oBrowse:Activate()
+Return Nil`, { tables: sampleData.tables });
+
+  assert.equal(program.kind, "fwmbrowse");
+  assert.equal(program.title, "Teste de Browse");
+  assert.equal(program.alias, "SA1");
+  assert.equal(program.activated, true);
+  assert.equal(program.rows.length, 5);
+  assert.deepEqual(program.columns.map(column => column.field), ["A1_COD", "A1_LOJA", "A1_NOME"]);
+});
+
+test("FWMBrowse não inventa registros quando o alias não foi fornecido", () => {
+  const program = core.parse(`User Function Teste()
+Local oBrowse := FWMBrowse():New()
+oBrowse:SetAlias("ZZ1")
+oBrowse:SetDescription("Sem dados")
+oBrowse:Activate()
+Return Nil`, { tables: sampleData.tables });
+
+  assert.equal(program.kind, "fwmbrowse");
+  assert.deepEqual(program.rows, []);
+  assert.deepEqual(program.columns, []);
 });
 
 test("Enter cria indentação após abertura de bloco AdvPL", () => {

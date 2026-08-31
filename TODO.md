@@ -27,6 +27,8 @@ Este documento orienta a evolução do AdvPL Emulator. O objetivo não é soment
 - [x] Implementar a primeira versão interativa de `AxCadastro()`, incluindo dados fictícios por alias e callbacks principais.
 - [ ] Calibrar formulários de inclusão/alteração de `AxCadastro()` a partir dos campos SX3 fornecidos em dados de exemplo.
 - [ ] Ampliar permissões, legendas, filtros avançados, detalhes e ações de menu de `AxCadastro()`.
+- [x] Implementar a primeira versão de `FWMBrowse()` com `SetAlias()`, `SetDescription()`, `Activate()`, pesquisa, seleção, detalhes e tabelas JSON.
+- [ ] Calibrar `FWMBrowse()` com ordens, legenda, menus, impressão do browse, navegação lateral e metadados SX3 fictícios.
 
 - [ ] `SAY`, `GET`, `MSGET`, `CHECKBOX` e `BUTTON`: completar `PICTURE`, `VALID`, `WHEN`, estados desabilitados e foco.
 - [ ] Botões de imagem, bitmaps, ícones e recursos retornados por `GetResources()`/`LoadBitmap()`.

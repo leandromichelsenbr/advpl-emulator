@@ -9,7 +9,7 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.4.1";
+  const PACKAGE_VERSION = "0.5.0";
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
@@ -589,7 +589,38 @@
     };
   }
 
+  /**
+   * Reconhece o ciclo mínimo de FWMBrowse sem simular AppServer ou SX3.
+   * O alias é ligado exclusivamente às tabelas JSON fornecidas à execução.
+   */
+  function parseFWMBrowse(source, options = {}) {
+    const lines = statements(source);
+    const constructor = lines.map(line => line.match(/^(?:Local\s+)?(\w+)\s*:=\s*FWMBrowse\s*\(\s*\)\s*:\s*New\s*\(\s*\)$/i)).find(Boolean);
+    if (!constructor) return null;
+    const objectVariable = constructor[1];
+    const variables = Object.create(null);
+    for (const line of lines) {
+      const local = line.match(/^Local\s+(\w+)(?:\s*:=\s*(.+))?$/i);
+      if (local) variables[local[1]] = local[2] == null ? null : evaluate(local[2], variables);
+    }
+    const methodArgument = method => {
+      const call = lines.map(line => line.match(new RegExp(`^${objectVariable}\\s*:\\s*${method}\\s*\\(([\\s\\S]*)\\)$`, "i"))).find(Boolean);
+      return call ? splitArguments(call[1])[0] : null;
+    };
+    const alias = String(evaluate(methodArgument("SetAlias") || "''", variables) || "");
+    const title = String(evaluate(methodArgument("SetDescription") || "'Browse'", variables) || "Browse");
+    const rows = tableRows(options.tables, alias);
+    const columns = rows.length ? Object.keys(rows[0]).map(field => ({ field, label: field.replace(/^\w\d?_/, "") })) : [];
+    return {
+      kind: "fwmbrowse", version: VERSION, objectVariable, title, alias, rows, columns,
+      activated: methodArgument("Activate") !== null || lines.some(line => new RegExp(`^${objectVariable}\\s*:\\s*Activate\\s*\\(`, "i").test(line)),
+      controls: [], variables, diagnostics: diagnose(source)
+    };
+  }
+
   function parse(source, options = {}) {
+    const fwMBrowseProgram = parseFWMBrowse(source, options);
+    if (fwMBrowseProgram) return fwMBrowseProgram;
     const axCadastroProgram = parseAxCadastro(source, options);
     if (axCadastroProgram) return axCadastroProgram;
     const reportProgram = parseReport(source);
@@ -757,5 +788,5 @@
     return { version: VERSION, dialog, controls, variables, events: runtimeEvents };
   }
 
-  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, parseAxCadastro, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray, editorNewline, editorTab });
+  return Object.freeze({ VERSION, API_VERSION, PACKAGE_VERSION, parse, parseReport, parseAxCadastro, parseFWMBrowse, evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray, editorNewline, editorTab });
 });
