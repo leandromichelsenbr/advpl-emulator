@@ -6,14 +6,23 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.5.1` |
+| Versão da distribuição | `0.5.2` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 44 |
+| Testes automatizados | 46 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.5.2 — 30/08/2026
+
+**Tipo:** correção do executor e aprimoramento do console.
+
+- Corrigido `+=` para somar operandos numéricos e concatenar somente quando houver texto.
+- Validada a soma dos pares de 0 a 100 com resultado `2550`, preservando os exemplos textuais existentes.
+- O console exclusivo passa a ocupar toda a área de saída, sem exibir um estado vazio concorrente.
+- Suíte ampliada de 44 para 46 testes automatizados.
 
 ### 0.5.1 — 30/08/2026
 

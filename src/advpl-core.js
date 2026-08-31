@@ -9,7 +9,7 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.5.1";
+  const PACKAGE_VERSION = "0.5.2";
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
@@ -331,7 +331,17 @@
         const parameters = line.match(/^Param(?:eter)?s?\s+(.+)$/i);
         if (parameters) { splitArguments(parameters[1]).forEach((name, index) => { variables[name] = args[index] ?? null; }); return true; }
         const append = line.match(/^(\w+)\s*\+=\s*(.+)$/i);
-        if (append) { variables[append[1]] = String(variables[append[1]] ?? "") + String(value(append[2])); return true; }
+        if (append) {
+          const key = Object.keys(variables).find(name => name.toLowerCase() === append[1].toLowerCase()) || append[1];
+          const currentValue = variables[key] ?? "";
+          const appendedValue = value(append[2]);
+          // AdvPL usa += tanto para soma quanto para concatenação; o tipo dos
+          // dois operandos decide a operação, sem converter números em texto.
+          variables[key] = typeof currentValue === "number" && typeof appendedValue === "number"
+            ? currentValue + appendedValue
+            : String(currentValue) + String(appendedValue);
+          return true;
+        }
         const assignment = line.match(/^(\w+)\s*:=\s*(.+)$/i);
         if (assignment) { variables[assignment[1]] = value(assignment[2]); return true; }
         const copy = line.match(/^ACopy\s*\(\s*(\w+)\s*,\s*(\w+)(?:\s*,[^)]*)?\)$/i);

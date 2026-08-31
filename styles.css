@@ -283,6 +283,9 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .console-toggle:hover { background: #2a3946; }
 .console-panel { width: min(520px, calc(100vw - 60px)); max-height: 190px; margin: 6px 0 0; overflow: auto; padding: 12px; border: 1px solid #506171; border-radius: 4px; background: #101820; color: #9ee6b1; box-shadow: 0 10px 28px rgba(0,0,0,.28); font: 12px/1.5 Consolas, "Courier New", monospace; text-align: left; white-space: pre-wrap; }
 .console-panel[hidden] { display: none; }
+.emulator-console.console-only { inset: 0; max-width: none; padding: 10px; align-items: stretch; background: #101820; }
+.console-only .console-toggle { align-self: flex-end; }
+.console-only .console-panel { box-sizing: border-box; width: 100%; max-height: none; min-height: 0; margin-top: 10px; flex: 1; border-color: #304251; border-radius: 0; box-shadow: none; }
 .run-again { position: absolute; left: 50%; top: 50%; z-index: 3200; min-width: 148px; height: 36px; padding: 0 16px; transform: translate(-50%,-50%); border: 2px solid #00659a; border-radius: 4px; background: #fbfbfb; color: #051f31; cursor: pointer; box-shadow: 0 8px 22px rgba(0,0,0,.2); font: 12px Arial, sans-serif; }
 .run-again:hover, .run-again:focus { border-color: #051f31; background: #afd3fa; outline: none; }
 

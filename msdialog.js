@@ -384,11 +384,7 @@
     }
     if (program.kind === "console") {
       desktopEl.replaceChildren();
-      const empty = document.createElement("div");
-      empty.className = "empty-state";
-      empty.textContent = "O código não gerou uma saída visual.";
-      desktopEl.append(empty);
-      renderConsole(program.console || [], true);
+      renderConsole(program.console || [], true, true);
       setStatus(`Código executado: ${program.console.length} registro(s) no console.`, "success");
       return;
     }
@@ -456,7 +452,7 @@
 
     const refreshConsole = () => {
       desktopEl.querySelector(".emulator-console")?.remove();
-      renderConsole(consoleLines, !hasVisualEvents);
+      renderConsole(consoleLines, !hasVisualEvents, !hasVisualEvents);
     };
 
     const next = () => {
@@ -490,12 +486,6 @@
           refreshConsole();
           return;
         }
-      }
-      if (!hasVisualEvents) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = "O código não gerou uma saída visual.";
-        desktopEl.prepend(empty);
       }
       setStatus(`Execução concluída · ${consoleLines.length} registro(s) no console${warningCount ? ` · ${warningCount} advertência(s) abaixo` : ""}.`, warningCount ? "warning" : "success");
       showRunAgain();
@@ -715,10 +705,10 @@
     button.focus();
   }
 
-  function renderConsole(lines, expanded = false) {
+  function renderConsole(lines, expanded = false, exclusive = false) {
     if (!lines.length) return;
     const container = document.createElement("section");
-    container.className = "emulator-console";
+    container.className = `emulator-console${exclusive ? " console-only" : ""}`;
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "console-toggle";
