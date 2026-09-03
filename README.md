@@ -63,7 +63,7 @@ Cada entrega funcional ou correção publicada deve incrementar a versão do pac
 - cláusulas `VAR`, `PROMPT`, `SIZE` e `OF`;
 - ligação direta de `MSGET` à variável informada;
 - expressões com concatenação, soma, subtração, comparações e acesso a arrays aninhados;
-- funções `Space()`, `AllTrim()`, `Abs()`, `cValToChar()`, `Chr()`, `Len()`, `ACopy()` e `AClone()`;
+- funções `Space()`, `AllTrim()`, `StrTran()`, `Abs()`, `cValToChar()`, `Chr()`, `Len()`, `ACopy()` e `AClone()`;
 - constantes simples declaradas com `#DEFINE`, incluindo combinações como `CRLF`;
 - declarações `Local` múltiplas, atribuição `+=`, `If`/`Else` e `For`/`To`/`Step`/`Next` no subconjunto executável;
 - chamadas a `User Function` e `Static Function`, inclusive com parâmetros, retorno e eventos produzidos pela função chamada;
