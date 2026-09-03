@@ -6,14 +6,24 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.9.0` |
+| Versão da distribuição | `0.10.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 60 |
+| Testes automatizados | 66 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.10.0 — 03/09/2026
+
+**Tipo:** nova função de compatibilidade de strings.
+
+- Implementado `StrTran(cString, cSearch, cReplace, nStart, nCount)` no avaliador seguro.
+- Cobertos os três exemplos publicados pela Usina.BR: documento, separador importado e telefone.
+- Suportadas substituição omitida, primeira ocorrência, limite de trocas e comparação case-sensitive.
+- Adicionado realce de sintaxe para `StrTran()` e atualizado o catálogo de compatibilidade.
+- Suíte ampliada de 60 para 66 testes automatizados.
 
 ### 0.9.0 — 03/09/2026
 

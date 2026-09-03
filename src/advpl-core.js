@@ -47,7 +47,7 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.9.0";
+  const PACKAGE_VERSION = "0.10.0";
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
@@ -282,6 +282,29 @@
     if (match) return String.fromCharCode(Number(evaluate(match[1], variables, callFunction)) || 0);
     match = token.match(/^Len\s*\((.*)\)$/i);
     if (match) return evaluate(match[1], variables, callFunction)?.length ?? 0;
+    match = token.match(/^StrTran\s*\(([\s\S]*)\)$/i);
+    if (match) {
+      const args = splitArguments(match[1]);
+      const source = String(evaluate(args[0], variables, callFunction));
+      const search = String(evaluate(args[1], variables, callFunction));
+      const replacement = args[2] ? String(evaluate(args[2], variables, callFunction)) : "";
+      const startOccurrence = Math.max(1, Math.trunc(Number(args[3] ? evaluate(args[3], variables, callFunction) : 1)) || 1);
+      const requestedCount = args[4] ? Math.max(0, Math.trunc(Number(evaluate(args[4], variables, callFunction)) || 0)) : Infinity;
+      if (!search || requestedCount === 0) return source;
+
+      // StrTran trabalha por ocorrência (não por posição de caractere). A
+      // varredura não reprocessa o texto inserido pela própria substituição.
+      let result = "", cursor = 0, occurrence = 0, replaced = 0, foundAt;
+      while ((foundAt = source.indexOf(search, cursor)) !== -1) {
+        occurrence += 1;
+        result += source.slice(cursor, foundAt);
+        const canReplace = occurrence >= startOccurrence && replaced < requestedCount;
+        result += canReplace ? replacement : search;
+        if (canReplace) replaced += 1;
+        cursor = foundAt + search.length;
+      }
+      return result + source.slice(cursor);
+    }
     match = token.match(/^AClone\s*\((.*)\)$/i);
     if (match) {
       const clone = value => Array.isArray(value) ? value.map(clone) : value;

@@ -117,6 +117,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [ ] Criar um adaptador opcional para TDS-Cli/Language Server que normalize diagnósticos oficiais por versão da LIB, sem expor AppServer ou credenciais ao navegador.
 - [ ] Exibir separadamente diagnósticos do emulador e do compilador TDS; os diagnósticos locais já mostram código, severidade, origem, linha e coluna.
 - [ ] Ampliar expressões, operadores, funções, arrays e blocos de código; já há suporte inicial a comparações, aritmética, arrays aninhados, `Abs`, `Len`, `Chr`, `ACopy` e `AClone`.
+- [x] Implementar `StrTran()` com remoção, substituição, primeira ocorrência (`nStart`), limite (`nCount`) e comparação sensível a maiúsculas/minúsculas.
 - [ ] Implementar o [pré-processador mínimo observável](docs/compatibility-layer-roadmap.md#marco-b--pré-processador-mínimo-observável) antes de ampliar comandos dependentes de `.ch`.
 - [ ] Melhorar resolução de variáveis `Local`, `Private`, `Public` e propriedades de objetos.
 - [ ] Completar chamadas encadeadas, atribuições, condicionais e laços; `+=`, `If/Else` e `For/To/Step/Next` possuem suporte inicial em fluxos independentes.

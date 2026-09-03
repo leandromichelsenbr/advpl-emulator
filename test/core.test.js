@@ -15,11 +15,56 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("mantém os contratos públicos na versão 0.9.0 do pacote", () => {
+test("mantém os contratos públicos na versão 0.10.0 do pacote", () => {
   assert.equal(core.VERSION, "0.1.0");
   assert.equal(core.API_VERSION, "0.1");
-  assert.equal(core.PACKAGE_VERSION, "0.9.0");
+  assert.equal(core.PACKAGE_VERSION, "0.10.0");
   assert.equal(core.MODEL_VERSION, "0.1");
+});
+
+test("StrTran remove a pontuação do exemplo de CPF/CNPJ", () => {
+  const program = core.parse(`User Function ExStrTranDoc()
+Local cDocumento := "12.345.678/0001-90"
+cDocumento := StrTran(cDocumento, ".", "")
+cDocumento := StrTran(cDocumento, "/", "")
+cDocumento := StrTran(cDocumento, "-", "")
+MsgInfo("Documento limpo: " + cDocumento)
+Return`);
+  assert.equal(program.message.text, "Documento limpo: 12345678000190");
+});
+
+test("StrTran troca o separador do exemplo de texto importado", () => {
+  const program = core.parse(`User Function ExStrTranSep()
+Local cLinha := "CODIGO;CLIENTE;VALOR"
+cLinha := StrTran(cLinha, ";", ",")
+MsgInfo("Linha ajustada: " + cLinha)
+Return`);
+  assert.equal(program.message.text, "Linha ajustada: CODIGO,CLIENTE,VALOR");
+});
+
+test("StrTran normaliza o telefone do exemplo publicado", () => {
+  const program = core.parse(`User Function ExStrTranFone()
+Local cTelefone := "(11) 99999-1234"
+cTelefone := StrTran(cTelefone, "(", "")
+cTelefone := StrTran(cTelefone, ")", "")
+cTelefone := StrTran(cTelefone, " ", "")
+cTelefone := StrTran(cTelefone, "-", "")
+MsgInfo("Telefone normalizado: " + cTelefone)
+Return`);
+  assert.equal(program.message.text, "Telefone normalizado: 11999991234");
+});
+
+test("StrTran remove ocorrências quando cReplace é omitido", () => {
+  assert.equal(core.evaluate('StrTran("A-B-C", "-")'), "ABC");
+});
+
+test("StrTran aplica nStart à ocorrência e nCount ao limite", () => {
+  assert.equal(core.evaluate('StrTran("um um um um", "um", "X", 2, 2)'), "um X X um");
+});
+
+test("StrTran é case-sensitive e preserva a origem quando a busca é vazia", () => {
+  assert.equal(core.evaluate('StrTran("AdvPL advpl AdvPL", "AdvPL", "X")'), "X advpl X");
+  assert.equal(core.evaluate('StrTran("AdvPL", "", "X")'), "AdvPL");
 });
 
 test("+= soma números dentro de For sem converter o acumulador em texto", () => {
