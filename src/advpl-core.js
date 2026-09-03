@@ -47,7 +47,7 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.10.0";
+  const PACKAGE_VERSION = "0.11.0";
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
@@ -305,6 +305,24 @@
       }
       return result + source.slice(cursor);
     }
+    match = token.match(/^SubStr\s*\(([\s\S]*)\)$/i);
+    if (match) {
+      const args = splitArguments(match[1]);
+      const source = String(evaluate(args[0], variables, callFunction));
+      const requestedStart = Math.trunc(Number(evaluate(args[1], variables, callFunction)) || 0);
+
+      // AdvPL numera o primeiro caractere como 1. Posições negativas contam a
+      // partir do final: -1 aponta para o último caractere. Zero permanece fora
+      // do subconjunto garantido e retorna vazio de forma segura no emulador.
+      const startIndex = requestedStart > 0
+        ? requestedStart - 1
+        : requestedStart < 0 ? source.length + requestedStart : source.length;
+      if (startIndex < 0 || startIndex >= source.length) return "";
+      if (!args[2]) return source.slice(startIndex);
+
+      const requestedLength = Math.trunc(Number(evaluate(args[2], variables, callFunction)) || 0);
+      return requestedLength > 0 ? source.slice(startIndex, startIndex + requestedLength) : "";
+    }
     match = token.match(/^AClone\s*\((.*)\)$/i);
     if (match) {
       const clone = value => Array.isArray(value) ? value.map(clone) : value;
@@ -331,14 +349,15 @@
 
   const SIGNATURES = Object.freeze({
     // Assinaturas de compatibilidade do emulador. Não substituem o compilador TDS.
-    msginfo: { minimum: 2, code: "W0008" }
+    msginfo: { minimum: 2, code: "W0008" },
+    substr: { minimum: 2, code: "W0008" }
   });
 
   /** Produz advertências aproximadas do emulador, separadas do parser e compilador TDS. */
   function diagnose(source) {
     const diagnostics = [];
     String(source ?? "").split(/\r?\n/).forEach((line, lineIndex) => {
-      for (const match of line.matchAll(/\b(MsgInfo)\s*\(([^)]*)\)/gi)) {
+      for (const match of line.matchAll(/\b(MsgInfo|SubStr)\s*\(([^)]*)\)/gi)) {
         const signature = SIGNATURES[match[1].toLowerCase()];
         const received = splitArguments(match[2]).filter(argument => argument !== "").length;
         if (signature && received < signature.minimum) diagnostics.push({

@@ -6,14 +6,24 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.10.0` |
+| Versão da distribuição | `0.11.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 66 |
+| Testes automatizados | 72 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.11.0 — 03/09/2026
+
+**Tipo:** nova função de compatibilidade de strings.
+
+- Implementado `SubStr(cString, nPosInicial, nCaracteres)` no avaliador seguro.
+- Suportados índice AdvPL baseado em 1, quantidade opcional e posição negativa contada a partir do fim.
+- Tratadas posições fora do texto e quantidades não positivas com retorno vazio; posição zero permanece fora do contrato garantido.
+- Adicionados diagnóstico aproximado `W0008`, realce de sintaxe, exemplos didáticos e registro na matriz de compatibilidade.
+- Suíte ampliada de 66 para 72 testes automatizados.
 
 ### 0.10.0 — 03/09/2026
 

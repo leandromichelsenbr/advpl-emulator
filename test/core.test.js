@@ -15,10 +15,10 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("mantém os contratos públicos na versão 0.10.0 do pacote", () => {
+test("mantém os contratos públicos na versão 0.11.0 do pacote", () => {
   assert.equal(core.VERSION, "0.1.0");
   assert.equal(core.API_VERSION, "0.1");
-  assert.equal(core.PACKAGE_VERSION, "0.10.0");
+  assert.equal(core.PACKAGE_VERSION, "0.11.0");
   assert.equal(core.MODEL_VERSION, "0.1");
 });
 
@@ -65,6 +65,47 @@ test("StrTran aplica nStart à ocorrência e nCount ao limite", () => {
 test("StrTran é case-sensitive e preserva a origem quando a busca é vazia", () => {
   assert.equal(core.evaluate('StrTran("AdvPL advpl AdvPL", "AdvPL", "X")'), "X advpl X");
   assert.equal(core.evaluate('StrTran("AdvPL", "", "X")'), "AdvPL");
+});
+
+test("SubStr extrai uma quantidade de caracteres a partir da posição AdvPL", () => {
+  assert.equal(core.evaluate('SubStr("FIL01PROD0001", 6, 8)'), "PROD0001");
+  assert.equal(core.evaluate('SubStr("ADVPL", 2, 3)'), "DVP");
+});
+
+test("SubStr sem quantidade retorna o restante do texto", () => {
+  assert.equal(core.evaluate('SubStr("Biff Styvesent", 6)'), "Styvesent");
+});
+
+test("SubStr aceita posição negativa contada a partir do fim", () => {
+  assert.equal(core.evaluate('SubStr("Biff Styvesent", -9)'), "Styvesent");
+  assert.equal(core.evaluate('SubStr("Biff Styvesent", -9, 3)'), "Sty");
+});
+
+test("SubStr trata limites sem vazar caracteres", () => {
+  assert.equal(core.evaluate('SubStr("ADVPL", 99)'), "");
+  assert.equal(core.evaluate('SubStr("ADVPL", -99)'), "");
+  assert.equal(core.evaluate('SubStr("ADVPL", 2, 0)'), "");
+  assert.equal(core.evaluate('SubStr("ADVPL", 2, -1)'), "");
+});
+
+test("SubStr funciona em atribuições e mensagens", () => {
+  const program = core.parse(`User Function ExSubStrDocumento()
+    Local cDocumento := "12345678000190"
+    Local cBase := SubStr(cDocumento, 1, 8)
+    Local cFilial := SubStr(cDocumento, 9, 4)
+
+    MsgInfo("Base: " + cBase + " / Filial: " + cFilial, "Documento")
+Return`);
+  assert.equal(program.message.text, "Base: 12345678 / Filial: 0001");
+});
+
+test("SubStr produz W0008 quando faltam parâmetros obrigatórios", () => {
+  assert.deepEqual(core.diagnose('SubStr("ADVPL")')[0], {
+    code: "W0008", severity: "warning", message: "Too few parameters calling SubStr",
+    line: 1, column: 1, functionName: "SubStr", expectedMinimum: 2, received: 1,
+    origin: "emulator-signatures"
+  });
+  assert.equal(core.diagnose('SubStr("ADVPL", 2)').length, 0);
 });
 
 test("+= soma números dentro de For sem converter o acumulador em texto", () => {
