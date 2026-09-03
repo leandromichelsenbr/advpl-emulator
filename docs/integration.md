@@ -25,7 +25,7 @@ O contrato continuará evoluindo dentro da arquitetura de camada de compatibilid
 - `AdvPLCore.PACKAGE_VERSION`: versão atual da distribuição;
 - `AdvPLCore.MODEL_VERSION`: versão do modelo intermediário (`0.1`);
 - `AdvPLCore.parse(source, options)`: transforma AdvPL em um modelo de diálogo, mensagem, console, relatório ou cadastro;
-- `AdvPLCore.preprocess(source, options)`: processa diretivas e retorna fonte, definições, diagnósticos e mapa de origem;
+- `AdvPLCore.preprocess(source, options)`: processa diretivas e retorna identificação do artefato, fonte, definições, diagnósticos e mapa de origem;
 - `AdvPLCore.validateModel(program)`: valida o envelope intermediário produzido pelo núcleo;
 - `AdvPLCore.evaluate(expression, variables)`: avalia o subconjunto suportado;
 - `AdvPLCore.parseAction(action)`: converte uma ação em comandos ordenados;
@@ -38,6 +38,27 @@ O contrato continuará evoluindo dentro da arquitetura de camada de compatibilid
 - `AdvPLEmulator.runAsync(source, data, options)`: analisa, aguarda o parser e só então executa o código quando não houver erro sintático.
 
 O renderizador deve manter as variáveis da sessão, refletir alterações dos campos e executar os comandos retornados por `parseAction()` na ordem apresentada.
+
+### Contrato do PPO didático
+
+A partir da distribuição `0.9.0`, o resultado de `preprocess()` acrescenta `artifact` ao contrato `0.1`, sem renomear campos existentes:
+
+```js
+const result = AdvPLCore.preprocess('#define VALOR 42\nConOut(VALOR)');
+// result.artifact:
+// { kind: "didactic-ppo",
+//   label: "PPO didático — subconjunto do emulador",
+//   compatibility: "partial" }
+// result.source: '\nConOut(42)'
+```
+
+`kind` é o discriminador para integrações; `label` é o rótulo destinado à apresentação; `compatibility` descreve o alcance da etapa de pré-processamento, não a validade daquele programa nem a compatibilidade do runtime. `partial` significa apenas o subconjunto documentado: não certifica equivalência com o PPO TOTVS. Includes são ignorados com advertência, e regras de comando/tradução não são implementadas.
+
+Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
+
+O mesmo campo está disponível em `program.preprocessor.artifact` no modelo retornado pelo núcleo e em `analysis.preprocessing.artifact` quando o pipeline usa o pré-processador do núcleo. Não há painel visual ou exportação de arquivo nesta etapa.
+
+No navegador legado sem `advpl-preprocessor.js`, o fallback retorna `artifact.kind: "original-source"`, `compatibility: "none"` e `label: "Fonte original — pré-processador não carregado"`. Ele repassa o texto original; não gera PPO. Consumidores de distribuições anteriores devem tolerar a ausência de `artifact`, sem inferir compatibilidade a partir dela.
 
 ### Tipos de saída
 

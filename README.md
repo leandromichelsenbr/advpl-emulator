@@ -6,6 +6,8 @@ O direcionamento arquitetural, os limites da analogia com o Wine e o planejament
 
 O estudo sobre a pré-compilação, o PPO, sua diferença para APO/RPO e as consequências arquiteturais para o emulador está em [PPO e o pipeline do AdvPL](docs/ppo-e-pipeline-advpl.md).
 
+A saída do pré-processador é identificada como **PPO didático — subconjunto do emulador**, sem equivalência declarada com o PPO TOTVS. O [contrato de integração](docs/integration.md#contrato-do-ppo-didático) expõe essa identificação em `artifact` e distingue o fallback legado, que apenas repassa o fonte original.
+
 ## Executar a demonstração
 
 Instale a dependência local e abra `index.html` em um navegador:

@@ -4,6 +4,49 @@ const preprocessor = require("../src/advpl-preprocessor.js");
 const core = require("../src/advpl-core.js");
 const pipeline = require("../src/execution-pipeline.js");
 
+test("identifica o PPO didático sem alterar o contrato textual e isola os metadados", () => {
+  const source = '#define VALOR 42\r\nConOut(VALOR)';
+  const result = core.preprocess(source);
+  assert.deepEqual(result.artifact, {
+    kind: "didactic-ppo",
+    label: "PPO didático — subconjunto do emulador",
+    compatibility: "partial"
+  });
+  assert.equal(result.version, "0.1");
+  assert.equal(result.source, '\r\nConOut(42)');
+  assert.equal(result.definitions.VALOR, "42");
+  assert.equal(result.map[1].originalLine, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(result)).artifact, result.artifact);
+  result.artifact.kind = "alterado";
+  assert.equal(core.preprocess("").artifact.kind, "didactic-ppo");
+});
+
+test("preserva o rótulo parcial em includes ignorados e erros de diretiva", () => {
+  const included = preprocessor.process('#include "TOTVS.CH"\nConOut("OK")');
+  const invalid = preprocessor.process('#command TEST => ConOut("TEST")');
+  for (const result of [included, invalid]) {
+    assert.equal(result.artifact.kind, "didactic-ppo");
+    assert.equal(result.artifact.compatibility, "partial");
+  }
+  assert.equal(included.diagnostics[0].code, "PP0006");
+  assert.equal(invalid.diagnostics[0].severity, "error");
+});
+
+test("expõe a identificação no modelo e na análise, inclusive quando a execução bloqueia", async () => {
+  const session = pipeline.create({
+    preprocess: core.preprocess,
+    analyze: async () => ({ parser: "test", diagnostics: [] }),
+    parse: core.parse
+  });
+  const result = await session.run('ConOut("OK")');
+  assert.equal(result.executed, true);
+  assert.equal(result.program.preprocessor.artifact.kind, "didactic-ppo");
+  assert.deepEqual(result.analysis.preprocessing.artifact, result.program.preprocessor.artifact);
+  const blocked = await session.run('#ifdef X');
+  assert.equal(blocked.executed, false);
+  assert.equal(blocked.analysis.preprocessing.artifact.kind, "didactic-ppo");
+});
+
 test("expande macros recursivas sem alterar strings e comentários", () => {
   const result = preprocessor.process('#define BASE 40\n#define TOTAL BASE + 2\nLocal n := TOTAL\nLocal c := "TOTAL" // TOTAL');
   assert.equal(result.source.split("\n")[2], "Local n := 40 + 2");
