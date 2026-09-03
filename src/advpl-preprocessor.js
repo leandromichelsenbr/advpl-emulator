@@ -161,7 +161,15 @@
     });
     // Qualquer quadro remanescente representa um `#if...` sem `#endif`.
     for (const frame of conditions) diagnostics.push(diagnostic("PP0004", "error", `Conditional opened at line ${frame.line} is not closed`, frame.line));
-    return { version: VERSION, source: output.join(input.includes("\r\n") ? "\r\n" : "\n"), map, definitions: Object.fromEntries([...definitions].map(([key, item]) => [key, item.value])), diagnostics };
+    // O discriminador identifica a natureza do texto, não o sucesso da fase.
+    // Mesmo com erros há uma saída inspecionável; diagnostics decide se ela
+    // pode seguir no pipeline. Cada chamada recebe metadados independentes.
+    const artifact = {
+      kind: "didactic-ppo",
+      label: "PPO didático — subconjunto do emulador",
+      compatibility: "partial"
+    };
+    return { version: VERSION, artifact, source: output.join(input.includes("\r\n") ? "\r\n" : "\n"), map, definitions: Object.fromEntries([...definitions].map(([key, item]) => [key, item.value])), diagnostics };
   }
   return Object.freeze({ VERSION, process });
 });

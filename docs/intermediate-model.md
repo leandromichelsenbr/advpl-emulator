@@ -26,7 +26,9 @@ Toda execução bem-sucedida retornada pelas APIs públicas `parse()`, `parseRep
 | `controls` | Controles de uma tela; vazio quando não aplicável. |
 | `diagnostics` | Erros e advertências associados ao fonte. |
 | `variables` | Estado calculado pelo subconjunto executável. |
-| `preprocessor` | Fonte processado pelo pipeline, definições, diagnósticos e mapa para o texto original. |
+| `preprocessor` | Fonte processado, definições, diagnósticos, mapa para o texto original e, desde a distribuição `0.9.0`, identificação `artifact` do PPO didático ou do fonte original no fallback legado. |
+
+O campo aditivo `preprocessor.artifact` não altera `modelVersion`. Consulte o [contrato do PPO didático](integration.md#contrato-do-ppo-didático) para discriminação, limitações e resultados com erros.
 
 As coleções comuns sempre existem. Um resultado inexistente continua sendo `null`; erros de interpretação continuam sendo exceções ou diagnósticos do pipeline e não são convertidos em uma falsa saída.
 

@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.8.4` |
+| Versão da distribuição | `0.9.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 57 |
+| Testes automatizados | 60 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.9.0 — 03/09/2026
+
+**Tipo:** contrato aditivo do PPO didático (P0 do estudo).
+
+- Identificada a saída do pré-processador com `artifact.kind`, `label` e `compatibility`, sem alegar compatibilidade integral com a TOTVS.
+- Diferenciado o fallback legado como fonte original sem pré-processamento.
+- Mantidos os contratos públicos `0.1` e o texto gerado, sem alteração de semântica.
+- Documentado o consumo pelo núcleo/modelo e pela análise do pipeline, inclusive quando há erros.
+- Acrescentados três testes de contrato, isolamento e propagação; ampliada a cobertura do fallback legado. Suíte com 60 testes.
+- Painel visual, `capabilities`, includes e regras de tradução continuam pendentes.
 
 ### 0.8.4 — 31/08/2026
 

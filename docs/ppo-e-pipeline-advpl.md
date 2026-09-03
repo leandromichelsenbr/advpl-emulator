@@ -1,5 +1,11 @@
 # PPO e o pipeline do AdvPL: conclusões para o emulador
 
+## Implementação do primeiro passo — 03/09/2026
+
+O P0 foi implementado na distribuição `0.9.0`: a API de pré-processamento identifica o texto com `artifact.kind: "didactic-ppo"`, `label: "PPO didático — subconjunto do emulador"` e `compatibility: "partial"`. O modo legado sem o módulo é identificado como `original-source`, com compatibilidade `none`, para não anunciar pré-processamento inexistente. O campo é preservado no modelo e na análise do pipeline, inclusive em análises bloqueadas por erro.
+
+O [contrato de integração](integration.md#contrato-do-ppo-didático) documenta o uso. Os demais itens abaixo continuam sendo propostas: não foram implementados painel visual, `capabilities`, includes ou regras de comando/tradução. A descrição da arquitetura do estudo permanece como registro do diagnóstico inicial.
+
 ## Resposta curta
 
 Sim. No fluxo tradicional do AdvPL, o **pré-processador gera um PPO** (*Pre-Processed Output*): uma representação textual do fonte depois da resolução das diretivas, dos includes e das traduções conhecidas pelo pré-processador. O PPO ainda é código-fonte AdvPL; ele **não é bytecode**, não é um APO e não é o RPO.
