@@ -6,14 +6,24 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.11.0` |
+| Versão da distribuição | `0.12.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 72 |
+| Testes automatizados | 78 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.12.0 — 03/09/2026
+
+**Tipo:** novas funções de compatibilidade de strings.
+
+- Implementados `Left(cString, nCaracteres)` e `Right(cString, nCaracteres)` sobre uma regra comum de extração.
+- Quantidades maiores que o texto devolvem o conteúdo completo; zero e valores negativos devolvem texto vazio.
+- Quantidades fracionárias são truncadas antes da extração, preservando um resultado determinístico no subconjunto.
+- Adicionados diagnóstico aproximado `W0008`, realce de sintaxe, exemplo combinado e registro na matriz de compatibilidade.
+- Suíte ampliada de 72 para 78 testes automatizados.
 
 ### 0.11.0 — 03/09/2026
 

@@ -15,10 +15,10 @@ DEFINE MSDIALOG oDlg TITLE "Cadastro" FROM 0,0 TO 120,300
 ACTIVATE MSDIALOG oDlg CENTERED
 Return`;
 
-test("mantém os contratos públicos na versão 0.11.0 do pacote", () => {
+test("mantém os contratos públicos na versão 0.12.0 do pacote", () => {
   assert.equal(core.VERSION, "0.1.0");
   assert.equal(core.API_VERSION, "0.1");
-  assert.equal(core.PACKAGE_VERSION, "0.11.0");
+  assert.equal(core.PACKAGE_VERSION, "0.12.0");
   assert.equal(core.MODEL_VERSION, "0.1");
 });
 
@@ -106,6 +106,48 @@ test("SubStr produz W0008 quando faltam parâmetros obrigatórios", () => {
     origin: "emulator-signatures"
   });
   assert.equal(core.diagnose('SubStr("ADVPL", 2)').length, 0);
+});
+
+test("Left retorna os primeiros caracteres", () => {
+  assert.equal(core.evaluate('Left("FIL01PROD0001", 5)'), "FIL01");
+  assert.equal(core.evaluate('Left("ADVPL", 3)'), "ADV");
+});
+
+test("Right retorna os últimos caracteres", () => {
+  assert.equal(core.evaluate('Right("FIL01PROD0001", 8)'), "PROD0001");
+  assert.equal(core.evaluate('Right("ADVPL", 2)'), "PL");
+});
+
+test("Left e Right tratam quantidades fora dos limites", () => {
+  assert.equal(core.evaluate('Left("ADVPL", 99)'), "ADVPL");
+  assert.equal(core.evaluate('Right("ADVPL", 99)'), "ADVPL");
+  assert.equal(core.evaluate('Left("ADVPL", 0)'), "");
+  assert.equal(core.evaluate('Right("ADVPL", -1)'), "");
+});
+
+test("Left e Right truncam quantidades fracionárias", () => {
+  assert.equal(core.evaluate('Left("ADVPL", 2.9)'), "AD");
+  assert.equal(core.evaluate('Right("ADVPL", 2.9)'), "PL");
+});
+
+test("Left e Right funcionam em atribuições e mensagens", () => {
+  const program = core.parse(`User Function ExExtremos()
+    Local cCodigo := "FIL01PROD0001"
+    Local cFilial := Left(cCodigo, 5)
+    Local cProduto := Right(cCodigo, 8)
+
+    MsgInfo("Filial: " + cFilial + " / Produto: " + cProduto, "Código")
+Return`);
+  assert.equal(program.message.text, "Filial: FIL01 / Produto: PROD0001");
+});
+
+test("Left e Right produzem W0008 quando faltam parâmetros", () => {
+  const diagnostics = core.diagnose('Left("ADVPL")\nRight("ADVPL")');
+  assert.deepEqual(diagnostics.map(item => [item.code, item.functionName, item.line, item.received]), [
+    ["W0008", "Left", 1, 1],
+    ["W0008", "Right", 2, 1]
+  ]);
+  assert.equal(core.diagnose('Left("ADVPL", 2)\nRight("ADVPL", 2)').length, 0);
 });
 
 test("+= soma números dentro de For sem converter o acumulador em texto", () => {
