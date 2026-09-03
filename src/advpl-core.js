@@ -47,7 +47,7 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.11.0";
+  const PACKAGE_VERSION = "0.12.0";
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
@@ -240,6 +240,17 @@
   }
 
   /**
+   * Implementa a regra comum de Left/Right: quantidades não positivas geram
+   * texto vazio e quantidades maiores que a origem devolvem o texto completo.
+   */
+  function extractEdge(value, requestedCount, fromRight = false) {
+    const source = String(value);
+    const count = Math.trunc(Number(requestedCount) || 0);
+    if (count <= 0) return "";
+    return fromRight ? source.slice(Math.max(0, source.length - count)) : source.slice(0, count);
+  }
+
+  /**
    * Avaliador seguro e deliberadamente limitado. Ele reconhece apenas funções
    * e operadores cadastrados abaixo; nunca encaminha texto AdvPL para `eval`.
    */
@@ -323,6 +334,15 @@
       const requestedLength = Math.trunc(Number(evaluate(args[2], variables, callFunction)) || 0);
       return requestedLength > 0 ? source.slice(startIndex, startIndex + requestedLength) : "";
     }
+    match = token.match(/^(Left|Right)\s*\(([\s\S]*)\)$/i);
+    if (match) {
+      const args = splitArguments(match[2]);
+      return extractEdge(
+        evaluate(args[0], variables, callFunction),
+        evaluate(args[1], variables, callFunction),
+        /^Right$/i.test(match[1])
+      );
+    }
     match = token.match(/^AClone\s*\((.*)\)$/i);
     if (match) {
       const clone = value => Array.isArray(value) ? value.map(clone) : value;
@@ -350,14 +370,16 @@
   const SIGNATURES = Object.freeze({
     // Assinaturas de compatibilidade do emulador. Não substituem o compilador TDS.
     msginfo: { minimum: 2, code: "W0008" },
-    substr: { minimum: 2, code: "W0008" }
+    substr: { minimum: 2, code: "W0008" },
+    left: { minimum: 2, code: "W0008" },
+    right: { minimum: 2, code: "W0008" }
   });
 
   /** Produz advertências aproximadas do emulador, separadas do parser e compilador TDS. */
   function diagnose(source) {
     const diagnostics = [];
     String(source ?? "").split(/\r?\n/).forEach((line, lineIndex) => {
-      for (const match of line.matchAll(/\b(MsgInfo|SubStr)\s*\(([^)]*)\)/gi)) {
+      for (const match of line.matchAll(/\b(MsgInfo|SubStr|Left|Right)\s*\(([^)]*)\)/gi)) {
         const signature = SIGNATURES[match[1].toLowerCase()];
         const received = splitArguments(match[2]).filter(argument => argument !== "").length;
         if (signature && received < signature.minimum) diagnostics.push({
