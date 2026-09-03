@@ -4,6 +4,10 @@ Camada de compatibilidade educacional e visual para executar, no navegador, um s
 
 O direcionamento arquitetural, os limites da analogia com o Wine e o planejamento das camadas estão em [Camada de compatibilidade AdvPL/Protheus para Web](docs/compatibility-layer-roadmap.md).
 
+O estudo sobre a pré-compilação, o PPO, sua diferença para APO/RPO e as consequências arquiteturais para o emulador está em [PPO e o pipeline do AdvPL](docs/ppo-e-pipeline-advpl.md).
+
+A saída do pré-processador é identificada como **PPO didático — subconjunto do emulador**, sem equivalência declarada com o PPO TOTVS. O [contrato de integração](docs/integration.md#contrato-do-ppo-didático) expõe essa identificação em `artifact` e distingue o fallback legado, que apenas repassa o fonte original.
+
 ## Executar a demonstração
 
 Instale a dependência local e abra `index.html` em um navegador:
@@ -25,13 +29,14 @@ O histórico consolidado de versões e entregas está no [Kardex do projeto](KAR
 ```text
 Fonte AdvPL
     ↓
-pré-processador controlado (planejado)  defines, includes virtuais e mapa de origem
+src/advpl-preprocessor.js  defines, condicionais, diagnósticos e mapa de origem
     ↓
 src/advpl-core.js      parser leve, execução controlada e diagnósticos
 src/tds-parser-adapter.js  adaptador opcional para AST sintática TDS
 src/tds-parser-worker.js   execução isolada do parser avançado
 vendor/tds-parser.bundle.js bundle do analisador AdvPL oficial
     ↓
+src/advpl-model.js     contrato 0.1 do modelo neutro e validação
 modelo neutro          telas, mensagens, console, relatórios e ações
     ↓
 compatibilidade Protheus (evolução)     UI, browse, impressão, dados e runtime
@@ -39,7 +44,9 @@ compatibilidade Protheus (evolução)     UI, browse, impressão, dados e runtim
 msdialog.js            backend HTML/CSS atual
 ```
 
-Sites de treinamento e plugins podem consumir somente `src/advpl-core.js` e criar seu próprio renderizador. Consulte [a documentação de integração](docs/integration.md).
+Sites de treinamento e plugins podem consumir o núcleo e seus módulos de modelo/pré-processamento sem carregar o renderizador visual. Consulte [a documentação de integração](docs/integration.md).
+
+Toda execução bem-sucedida expõe o contrato intermediário `0.1` com `modelVersion`, `outputType`, `events`, `controls`, `diagnostics` e `variables`. Consulte a [especificação do modelo intermediário](docs/intermediate-model.md).
 
 O laboratório completo carrega `@totvs/tds-parsers` sob demanda em um Web Worker. Se o bundle avançado não estiver disponível, a execução visual continua usando o parser leve.
 
@@ -56,6 +63,8 @@ Os módulos internos recebem comentários didáticos sobre propósito, contratos
 Cada entrega funcional ou correção publicada deve incrementar a versão do pacote seguindo versionamento semântico. Correções incrementam o *patch*, novas funcionalidades compatíveis incrementam o *minor* e mudanças incompatíveis incrementam o *major*. A marca exibida pelo emulador usa `AdvPLCore.PACKAGE_VERSION` e deve permanecer sincronizada com `package.json` e `package-lock.json`.
 
 ## Compatibilidade atual
+
+A classificação verificável, as limitações e os testes associados a cada capacidade estão na [matriz de compatibilidade](docs/compatibility-matrix.md). Os itens abaixo são um resumo e não significam compatibilidade integral com o Protheus.
 
 - `DEFINE MSDIALOG` com `TITLE`, `FROM`, `TO` e `PIXEL`;
 - `ACTIVATE MSDIALOG ... CENTERED`;
@@ -93,7 +102,7 @@ Cada entrega funcional ou correção publicada deve incrementar a versão do pac
 - códigos `EAN13` e `QRCode` válidos e gerados localmente;
 - orientação controlada por `SetPortrait()`, `SetLandscape()` ou pelo setup.
 
-O projeto interpreta um subconjunto controlado de AdvPL e não executa código arbitrário. Consultas ao banco Protheus não são executadas; exemplos que dependem de dados externos precisam fornecer dados de referência. O suporte a `#DEFINE` é intencionalmente limitado e não equivale ao pré-processador completo dos arquivos `.ch`. Ainda não estão implementados `VALID`, `WHEN`, máscaras `PICTURE`, recursos ou classes completas da LIB.
+O projeto interpreta um subconjunto controlado de AdvPL e não executa código arbitrário. Consultas ao banco Protheus não são executadas; exemplos que dependem de dados externos precisam fornecer dados de referência. O pré-processador suporta `#define`, `#undef`, `#ifdef`, `#ifndef`, `#else` e `#endif`, preservando strings e comentários durante a expansão. `#include` é reconhecido com advertência para manter fontes existentes executáveis, mas o arquivo `.ch` não é carregado. Ainda não estão implementados `VALID`, `WHEN`, máscaras `PICTURE`, recursos ou classes completas da LIB.
 
 Os diagnósticos identificados como `emulator-signatures` são aproximações locais e não substituem o compilador ou o linter oficial do TDS. A estratégia planejada para diagnósticos oficiais está no [TODO](TODO.md#interpretador).
 

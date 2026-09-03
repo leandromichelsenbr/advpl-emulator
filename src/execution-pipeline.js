@@ -1,7 +1,8 @@
 /*
- * Coordena as duas etapas da execução didática:
- * 1. o parser TDS verifica a sintaxe sem produzir efeitos;
- * 2. o parser leve interpreta o subconjunto suportado e monta a saída visual.
+ * Coordena as três etapas da execução didática:
+ * 1. o pré-processador seleciona ramos e expande macros;
+ * 2. o parser TDS verifica a sintaxe sem produzir efeitos;
+ * 3. o parser leve interpreta o subconjunto suportado e monta a saída visual.
  *
  * O módulo não conhece DOM, Web Worker ou AdvPLCore. As funções `analyze` e
  * `parse` são injetadas para que o fluxo possa ser reutilizado e testado.
@@ -14,20 +15,43 @@
   "use strict";
 
   /**
-   * Cria uma sessão de execução. Cada sessão mantém sua própria revisão para
-   * impedir que uma análise lenta substitua o resultado de uma execução nova.
+   * Cria uma sessão de execução.
+   *
+   * As dependências são injetadas para que o pipeline não conheça implementações
+   * concretas. Nos testes podemos fornecer analisadores controlados; no browser,
+   * `analyze` usa o Worker TDS e `parse` usa AdvPLCore.
+   *
+   * Cada sessão mantém uma revisão monotônica. Se o usuário executar A e logo
+   * depois B, o Worker de A pode terminar por último. Comparar a revisão antes
+   * de publicar cada resultado impede que A sobrescreva visualmente B.
    */
-  function create({ analyze, parse }) {
+  function create({ analyze, parse, preprocess = source => ({ source, diagnostics: [], map: [] }) }) {
     if (typeof analyze !== "function" || typeof parse !== "function") throw new TypeError("O pipeline exige analyze e parse.");
     let revision = 0;
 
     /**
-     * Analisa e, somente quando não há erro, interpreta o fonte. O retorno
-     * `stale: true` informa ao chamador que o resultado deve ser ignorado.
+     * Executa o pipeline respeitando a fronteira de efeitos.
+     *
+     * Pré-processamento e análise sintática são fases sem efeitos visuais. O
+     * parser leve só é chamado quando ambas não possuem diagnósticos de erro.
+     * Advertências são preservadas, mas não bloqueiam o exercício. O retorno
+     * `stale: true` é uma instrução para descartar o resultado silenciosamente,
+     * pois uma execução mais recente já representa a intenção atual do usuário.
      */
     async function run(source, options = {}) {
       const currentRevision = ++revision;
-      const analysis = await analyze(source, options.analysis || {});
+      // O TDS recebe o fonte processado: sintaxe inválida em um ramo inativo não
+      // deve bloquear o programa. O executor recebe o original e pré-processa
+      // internamente, preservando metadados e o mapa de origem no modelo final.
+      const preprocessing = preprocess(source, options.preprocessor || {});
+      const preprocessingErrors = (preprocessing.diagnostics || []).filter(diagnostic => diagnostic.severity === "error");
+      if (preprocessingErrors.length) {
+        const analysis = { parser: "preprocessor", ast: null, diagnostics: preprocessing.diagnostics, preprocessing };
+        return { executed: false, stale: false, program: null, analysis };
+      }
+      const analysis = await analyze(preprocessing.source, options.analysis || {});
+      analysis.preprocessing = preprocessing;
+      analysis.diagnostics = [...(preprocessing.diagnostics || []), ...(analysis.diagnostics || [])];
       if (currentRevision !== revision) return { executed: false, stale: true, program: null, analysis };
       // Advertências não bloqueiam o exercício; apenas severidade "error" interrompe.
       const errors = (analysis.diagnostics || []).filter(diagnostic => diagnostic.severity === "error");
@@ -35,7 +59,13 @@
       const program = parse(source, options.parser || {});
       if (currentRevision !== revision) return { executed: false, stale: true, program: null, analysis };
       program.parserAnalysis = analysis;
-      program.diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];
+      // O mesmo diagnóstico do pré-processador pode chegar pelos dois caminhos:
+      // anexado pelo núcleo e anexado à análise. A chave composta evita duplicar
+      // a advertência sem apagar ocorrências realmente distintas em outra linha.
+      const diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];
+      program.diagnostics = diagnostics.filter((item, index) => index === diagnostics.findIndex(candidate =>
+        candidate.code === item.code && candidate.origin === item.origin && candidate.line === item.line && candidate.column === item.column && candidate.message === item.message
+      ));
       return { executed: true, stale: false, program, analysis };
     }
 

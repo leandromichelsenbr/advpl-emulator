@@ -14,10 +14,13 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 
 ## Prioridade imediata
 
-- [ ] Criar a matriz inicial de compatibilidade a partir das capacidades anunciadas no README e dos testes existentes.
-- [ ] Versionar o formato `0.1` do modelo intermediário unificado para mensagens, diálogos, grades, relatórios, console e eventos.
-- [ ] Iniciar o marco de pré-processamento controlado com `#define`, condicionais, diagnósticos e mapa de origem.
-- [ ] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
+- [x] Criar a matriz inicial de compatibilidade a partir das capacidades anunciadas no README e dos testes existentes.
+- [x] Versionar o formato `0.1` do modelo intermediário unificado para mensagens, diálogos, grades, relatórios, console e eventos.
+- [x] Iniciar o marco de pré-processamento controlado com `#define`, condicionais, diagnósticos e mapa de origem.
+- [x] P0 do [estudo PPO](docs/ppo-e-pipeline-advpl.md): identificar a saída como PPO didático parcial na API e documentar o contrato, distinguindo o fallback sem pré-processamento.
+- [ ] P1 do estudo PPO: painel Fonte × PPO e declaração de capacidades (`capabilities`).
+- [ ] P1 do estudo PPO: resolução controlada de includes e proveniência por arquivo.
+- [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.
 - [ ] Calibrar `MSDialog`/`TDialog`: título, área útil, coordenadas, centralização, cores, fontes e ciclo de ativação.

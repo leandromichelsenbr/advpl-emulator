@@ -1047,7 +1047,8 @@
   };
   const executionPipeline = globalThis.AdvPLExecutionPipeline?.create({
     analyze: analyzeSource,
-    parse: (source, options) => AdvPLCore.parse(source, options)
+    parse: (source, options) => AdvPLCore.parse(source, options),
+    preprocess: (source, options) => AdvPLCore.preprocess(source, options)
   });
   let uiRunSequence = 0;
 

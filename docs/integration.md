@@ -1,14 +1,18 @@
 # Integração em páginas de treinamento
 
-O núcleo não depende do DOM. Carregue-o antes do seu renderizador:
+O núcleo não depende do DOM. No navegador, carregue o modelo e o pré-processador antes do núcleo e do seu renderizador:
 
 ```html
+<script src="/advpl-emulator/src/advpl-model.js"></script>
+<script src="/advpl-emulator/src/advpl-preprocessor.js"></script>
 <script src="/advpl-emulator/src/advpl-core.js"></script>
 <script>
   const program = AdvPLCore.parse(source);
   console.log(program.kind, program.dialog, program.controls, program.variables);
 </script>
 ```
+
+Integrações antigas que carregam somente `advpl-core.js` continuam operacionais em modo de compatibilidade. Nesse modo, o executor preserva o comportamento anterior, mas não oferece as diretivas condicionais do pré-processador completo. Para novos projetos, carregue sempre os três módulos na ordem acima.
 
 A saída de `parse()` é um modelo neutro. A página pode renderizá-lo com HTML/CSS, React, Canvas ou uma biblioteca desktop.
 
@@ -19,7 +23,10 @@ O contrato continuará evoluindo dentro da arquitetura de camada de compatibilid
 - `AdvPLCore.VERSION`: versão do contrato público;
 - `AdvPLCore.API_VERSION`: linha compatível da API (`0.1`);
 - `AdvPLCore.PACKAGE_VERSION`: versão atual da distribuição;
+- `AdvPLCore.MODEL_VERSION`: versão do modelo intermediário (`0.1`);
 - `AdvPLCore.parse(source, options)`: transforma AdvPL em um modelo de diálogo, mensagem, console, relatório ou cadastro;
+- `AdvPLCore.preprocess(source, options)`: processa diretivas e retorna identificação do artefato, fonte, definições, diagnósticos e mapa de origem;
+- `AdvPLCore.validateModel(program)`: valida o envelope intermediário produzido pelo núcleo;
 - `AdvPLCore.evaluate(expression, variables)`: avalia o subconjunto suportado;
 - `AdvPLCore.parseAction(action)`: converte uma ação em comandos ordenados;
 - `AdvPLCore.diagnose(source)`: retorna diagnósticos locais sem executar o fonte;
@@ -32,9 +39,30 @@ O contrato continuará evoluindo dentro da arquitetura de camada de compatibilid
 
 O renderizador deve manter as variáveis da sessão, refletir alterações dos campos e executar os comandos retornados por `parseAction()` na ordem apresentada.
 
+### Contrato do PPO didático
+
+A partir da distribuição `0.9.0`, o resultado de `preprocess()` acrescenta `artifact` ao contrato `0.1`, sem renomear campos existentes:
+
+```js
+const result = AdvPLCore.preprocess('#define VALOR 42\nConOut(VALOR)');
+// result.artifact:
+// { kind: "didactic-ppo",
+//   label: "PPO didático — subconjunto do emulador",
+//   compatibility: "partial" }
+// result.source: '\nConOut(42)'
+```
+
+`kind` é o discriminador para integrações; `label` é o rótulo destinado à apresentação; `compatibility` descreve o alcance da etapa de pré-processamento, não a validade daquele programa nem a compatibilidade do runtime. `partial` significa apenas o subconjunto documentado: não certifica equivalência com o PPO TOTVS. Includes são ignorados com advertência, e regras de comando/tradução não são implementadas.
+
+Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
+
+O mesmo campo está disponível em `program.preprocessor.artifact` no modelo retornado pelo núcleo e em `analysis.preprocessing.artifact` quando o pipeline usa o pré-processador do núcleo. Não há painel visual ou exportação de arquivo nesta etapa.
+
+No navegador legado sem `advpl-preprocessor.js`, o fallback retorna `artifact.kind: "original-source"`, `compatibility: "none"` e `label: "Fonte original — pré-processador não carregado"`. Ele repassa o texto original; não gera PPO. Consumidores de distribuições anteriores devem tolerar a ausência de `artifact`, sem inferir compatibilidade a partir dela.
+
 ### Tipos de saída
 
-O campo `kind` diferencia as saídas que não são diálogos:
+O campo `outputType` diferencia as famílias `message`, `console`, `dialog`, `grid` e `report`. O campo legado `kind` permanece disponível para distinguir variantes e preservar integrações existentes:
 
 - `message`: `message` contém a primeira modal e `messages` preserva toda a fila;
 - `console`: `console` contém as linhas registradas por `ConOut()`;
@@ -93,7 +121,7 @@ const result = await frame.contentWindow.AdvPLEmulator.runAsync(codigoAdvPL, dad
 
 `executed` é falso quando há erro sintático; nesse caso `program` é nulo e nenhum efeito visual é produzido. `stale` identifica uma análise descartada porque uma execução mais nova começou. `AdvPLEmulator.run()` permanece disponível como caminho síncrono legado e não aguarda a análise avançada.
 
-O arquivo `msdialog.js` aceita shells legados sem os elementos opcionais de realce de sintaxe e impressão. Para integrações novas, prefira consumir apenas `src/advpl-core.js` e manter um renderizador próprio.
+O arquivo `msdialog.js` aceita shells legados sem os elementos opcionais de realce de sintaxe e impressão. Para integrações novas, prefira consumir `src/advpl-model.js`, `src/advpl-preprocessor.js` e `src/advpl-core.js`, mantendo um renderizador próprio.
 
 ## Modo headless para incorporação
 
