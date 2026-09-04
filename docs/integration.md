@@ -104,7 +104,23 @@ window.ADVPL_EMULATOR_CONFIG = {
 };
 ```
 
-`includeCatalog` identifica versão, origem e commit do catálogo usado. `#command`, `#xcommand`, `#translate`, `#xtranslate` e macros parametrizadas existentes nesses headers geram advertências de reconhecimento; suas regras ainda não são aplicadas ao fonte. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
+`includeCatalog` identifica versão, origem e commit do catálogo usado. `#command`, `#xcommand`, `#translate` e `#xtranslate` existentes nesses headers geram advertências de reconhecimento; suas regras ainda não são aplicadas ao fonte. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
+
+### Macros parametrizadas
+
+Desde a distribuição `0.16.0`, o PPO expande macros com parâmetros:
+
+```advpl
+#define SOMA(a,b) ((a) + (b))
+#define ESCOLHA(c,t,f) If(c,t,f)
+
+MsgInfo(CValToChar(SOMA(2, SOMA(3,4))))
+MsgInfo(ESCOLHA(.T., "a,b", Len({1,2,3})))
+```
+
+Os argumentos aceitam strings com vírgulas, arrays, chamadas e parênteses aninhados. Eles são expandidos antes da substituição no corpo, e nomes formais são substituídos somente como tokens — não dentro de strings, identificadores maiores ou operadores/literais entre pontos. `applied` diferencia `parameter-macro-definition` e `parameter-macro-expansion`.
+
+Diagnósticos específicos: `PP0014` para aridade incorreta, `PP0015` para chamada sem `)`, `PP0016` para parâmetros inválidos e `PP0005` para ciclos. Esta etapa não implementa operadores avançados de macro, regras variádicas nem `#command`/`#translate`.
 
 Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
 

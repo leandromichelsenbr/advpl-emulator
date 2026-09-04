@@ -12,7 +12,7 @@ test("identifica o PPO didático sem alterar o contrato textual e isola os metad
     label: "PPO didático — subconjunto do emulador",
     compatibility: "partial"
   });
-  assert.equal(result.version, "0.3");
+  assert.equal(result.version, "0.4");
   assert.equal(result.source, '\r\nConOut(42)');
   assert.equal(result.definitions.VALOR, "42");
   assert.equal(result.map[1].originalLine, 2);
@@ -25,7 +25,7 @@ test("declara capacidades estáveis do pré-processador", () => {
   const result = preprocessor.process("");
   assert.deepEqual(result.capabilities, {
     objectMacros: "supported", conditionalCompilation: "supported", undef: "supported",
-    sourceMap: "line", includes: "supported", parameterMacros: "recognized",
+    sourceMap: "line", includes: "supported", parameterMacros: "supported",
     translations: "recognized", commands: "recognized", embeddedSql: "unsupported"
   });
   result.capabilities.objectMacros = "alterado";
@@ -107,7 +107,7 @@ test("reconhece include sem carregar arquivo e preserva a execução", () => {
 test("integra condicionais ao núcleo e bloqueia erros antes da análise assíncrona", async () => {
   const program = core.parse('#define TITULO "Correto"\n#ifdef ATIVO\nMsgInfo("Errado", "Teste")\n#else\nMsgInfo(TITULO, "Teste")\n#endif');
   assert.equal(program.message.text, "Correto");
-  assert.equal(program.preprocessor.version, "0.3");
+  assert.equal(program.preprocessor.version, "0.4");
   let analyzed = false;
   const session = pipeline.create({ preprocess: core.preprocess, analyze: async () => { analyzed = true; return { parser: "test", diagnostics: [] }; }, parse: core.parse });
   const execution = await session.run('#ifdef X\nConOut("X")');
@@ -177,12 +177,43 @@ test("aceita guardas vazias e remove comentários do valor de macros", () => {
   assert.match(result.source, /ConOut\(128\)/);
 });
 
-test("reconhece regras complexas de headers sem inseri-las no PPO", () => {
+test("reconhece regras de comando dos headers sem inseri-las no PPO", () => {
   const result = preprocessor.process('#include "REGRAS.CH"\nConOut(VALOR)', {
     includes: { "REGRAS.CH": '#xtranslate USER Function <n> => Function U_<n>\n#xcommand TEST <x> ;\n  SOMETHING <x> => <x>\n#define DOBRO(x) ((x)+(x))\n#define VALOR 10' }
   });
   assert.equal(result.diagnostics.every(item => item.severity === "warning"), true);
-  assert.deepEqual(result.diagnostics.map(item => item.code), ["PP0013", "PP0012", "PP0011"]);
+  assert.deepEqual(result.diagnostics.map(item => item.code), ["PP0013", "PP0012"]);
   assert.doesNotMatch(result.source, /SOMETHING|DOBRO/);
   assert.match(result.source, /ConOut\(10\)/);
+});
+
+test("expande macros parametrizadas com argumentos aninhados e strings", () => {
+  const result = preprocessor.process('#define SOMA(a,b) ((a) + (b))\n#define ESCOLHA(c,t,f) If(c,t,f)\nConOut(SOMA(2, SOMA(3,4)))\nConOut(ESCOLHA(.T., "a,b", Len({1,2,3})))');
+  assert.deepEqual(result.diagnostics, []);
+  assert.match(result.source, /ConOut\(\(\(2\) \+ \(\(\(3\) \+ \(4\)\)\)\)\)/);
+  assert.match(result.source, /ConOut\(If\(\.T\.,"a,b",Len\(\{1,2,3\}\)\)\)/);
+  assert.equal(result.applied.includes("parameter-macro-definition"), true);
+  assert.equal(result.applied.includes("parameter-macro-expansion"), true);
+});
+
+test("substitui parâmetros apenas como tokens e preserva strings", () => {
+  const result = preprocessor.process('#define TESTE(a) aa + a + "a"\nConOut(TESTE(10))');
+  assert.match(result.source, /ConOut\(aa \+ 10 \+ "a"\)/);
+});
+
+test("entrega macros parametrizadas expandidas ao executor", () => {
+  const program = core.parse('#define SOMA(a,b) ((a) + (b))\nMsgInfo("Total: " + CValToChar(SOMA(2,3)))');
+  assert.equal(program.message.text, "Total: 5");
+  assert.equal(program.preprocessor.applied.includes("parameter-macro-expansion"), true);
+});
+
+test("diagnostica aridade, fechamento, parâmetros inválidos e ciclos", () => {
+  const arity = preprocessor.process('#define SOMA(a,b) a+b\nConOut(SOMA(1))');
+  assert.equal(arity.diagnostics[0].code, "PP0014");
+  const unclosed = preprocessor.process('#define F(a) a\nConOut(F(1');
+  assert.equal(unclosed.diagnostics[0].code, "PP0015");
+  const invalid = preprocessor.process('#define F(a,a) a\nConOut(1)');
+  assert.equal(invalid.diagnostics[0].code, "PP0016");
+  const cyclic = preprocessor.process('#define F(a) F(a)\nConOut(F(1))');
+  assert.equal(cyclic.diagnostics.some(item => item.code === "PP0005"), true);
 });

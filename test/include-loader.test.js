@@ -52,4 +52,8 @@ test("o catálogo distribuído resolve TOTVS.CH e suas dependências sem erro", 
   assert.equal(result.map.some(item => item.originalFile.toLowerCase() === "protheus.ch"), true);
   assert.equal(result.applied.includes("command-recognition"), true);
   assert.equal(result.applied.includes("translation-recognition"), true);
+  const parameterized = preprocessor.process('#include "STDWIN.CH"\nConOut(_DFSET("DD/MM/YYYY", "DD/MM/YY"))', { filename: "macro-test.prw", includes, maxIncludeDepth: 32 });
+  assert.equal(parameterized.diagnostics.some(item => item.severity === "error"), false);
+  assert.match(parameterized.source, /ConOut\(Set\( 4, if\(__SetCentury\(\), "DD\/MM\/YYYY", "DD\/MM\/YY"\) \)\)/);
+  assert.equal(parameterized.applied.includes("parameter-macro-expansion"), true);
 });
