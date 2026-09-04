@@ -30,6 +30,21 @@
   diagnosticsEl.hidden = true;
   diagnosticsEl.setAttribute("aria-live", "polite");
   statusEl.insertAdjacentElement("afterend", diagnosticsEl);
+  const ppoInspectorEl = document.createElement("details");
+  ppoInspectorEl.className = "ppo-inspector";
+  ppoInspectorEl.innerHTML = '<summary>Fonte × PPO didático</summary><div class="ppo-columns"><section><strong>Fonte original</strong><pre data-ppo="source"></pre></section><section><strong>PPO didático</strong><pre data-ppo="output"></pre></section></div><div class="ppo-capabilities"></div>';
+  diagnosticsEl.insertAdjacentElement("afterend", ppoInspectorEl);
+
+  /** Atualiza a visão didática sem confundir o resultado com um PPO oficial. */
+  function renderPreprocessing(originalSource, preprocessing) {
+    if (!preprocessing) { ppoInspectorEl.hidden = true; return; }
+    ppoInspectorEl.hidden = false;
+    ppoInspectorEl.querySelector('[data-ppo="source"]').textContent = String(originalSource ?? "");
+    ppoInspectorEl.querySelector('[data-ppo="output"]').textContent = String(preprocessing.source ?? "");
+    const supported = Object.entries(preprocessing.capabilities || {}).filter(([, state]) => state === "supported" || state === "line").map(([name]) => name);
+    const applied = preprocessing.applied || [];
+    ppoInspectorEl.querySelector(".ppo-capabilities").textContent = `Capacidades: ${supported.join(", ") || "fallback legado"} · Aplicadas: ${applied.join(", ") || "nenhuma transformação"}`;
+  }
 
   function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1060,6 +1075,7 @@
     try {
       const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
       const program = AdvPLCore.parse(sourceEl.value, { tables });
+      renderPreprocessing(sourceEl.value, program.preprocessor);
       render(program);
       runButtonEl.disabled = false;
       return program;
@@ -1097,6 +1113,7 @@
         result = { executed: !hasErrors, stale: false, analysis, program };
       }
       if (sequence !== uiRunSequence || result.stale) return result;
+      renderPreprocessing(sourceEl.value, result.analysis?.preprocessing || result.program?.preprocessor);
       if (!result.executed) {
         desktopEl.replaceChildren();
         const empty = document.createElement("div");

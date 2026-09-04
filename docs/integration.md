@@ -50,15 +50,17 @@ const result = AdvPLCore.preprocess('#define VALOR 42\nConOut(VALOR)');
 //   label: "PPO didático — subconjunto do emulador",
 //   compatibility: "partial" }
 // result.source: '\nConOut(42)'
+// result.capabilities.objectMacros: "supported"
+// result.applied: ["object-macro-definition", "object-macro-expansion"]
 ```
 
 `kind` é o discriminador para integrações; `label` é o rótulo destinado à apresentação; `compatibility` descreve o alcance da etapa de pré-processamento, não a validade daquele programa nem a compatibilidade do runtime. `partial` significa apenas o subconjunto documentado: não certifica equivalência com o PPO TOTVS. Includes são ignorados com advertência, e regras de comando/tradução não são implementadas.
 
 Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
 
-O mesmo campo está disponível em `program.preprocessor.artifact` no modelo retornado pelo núcleo e em `analysis.preprocessing.artifact` quando o pipeline usa o pré-processador do núcleo. Não há painel visual ou exportação de arquivo nesta etapa.
+`capabilities` declara o alcance estável do pré-processador: `supported`, `recognized`, `unsupported` ou, no mapa, granularidade `line`. `applied` lista somente transformações realmente observadas naquela execução. O mesmo contrato está disponível em `program.preprocessor` e `analysis.preprocessing`. O laboratório apresenta esses dados no painel recolhível **Fonte × PPO didático**; exportação de arquivo ainda não faz parte desta etapa.
 
-No navegador legado sem `advpl-preprocessor.js`, o fallback retorna `artifact.kind: "original-source"`, `compatibility: "none"` e `label: "Fonte original — pré-processador não carregado"`. Ele repassa o texto original; não gera PPO. Consumidores de distribuições anteriores devem tolerar a ausência de `artifact`, sem inferir compatibilidade a partir dela.
+No navegador legado sem `advpl-preprocessor.js`, o fallback retorna `artifact.kind: "original-source"`, `compatibility: "none"`, `capabilities: {}` e `applied: []`. Ele repassa o texto original; não gera PPO. Consumidores de distribuições anteriores devem tolerar a ausência desses campos, sem inferir compatibilidade a partir dela.
 
 ### Tipos de saída
 
