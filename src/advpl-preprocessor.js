@@ -26,16 +26,16 @@
   root.AdvPLPreprocessor = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
-  const VERSION = "0.2";
+  const VERSION = "0.3";
   const CAPABILITIES = Object.freeze({
     objectMacros: "supported",
     conditionalCompilation: "supported",
     undef: "supported",
     sourceMap: "line",
     includes: "supported",
-    parameterMacros: "unsupported",
-    translations: "unsupported",
-    commands: "unsupported",
+    parameterMacros: "recognized",
+    translations: "recognized",
+    commands: "recognized",
     embeddedSql: "unsupported"
   });
   // Todos os diagnósticos recebem a mesma origem para não serem confundidos
@@ -66,6 +66,25 @@
   function parseInclude(argument) {
     const match = String(argument).trim().match(/^(?:"([^"]+)"|<([^>]+)>)$/);
     return match ? normalizeIncludeName(match[1] || match[2]) : null;
+  }
+
+  // Comentários pertencem à diretiva, não ao texto substituído pela macro.
+  function cleanMacroValue(value) {
+    let quote = null;
+    for (let index = 0; index < value.length; index += 1) {
+      const char = value[index], next = value[index + 1];
+      if (quote) {
+        if (char === quote) {
+          if (next === quote) { index += 1; continue; }
+          quote = null;
+        }
+        continue;
+      }
+      if (char === '"' || char === "'") quote = char;
+      else if (char === "/" && next === "/") return value.slice(0, index).trimEnd();
+      else if (char === "/" && next === "*") return value.slice(0, index).trimEnd();
+    }
+    return value.trimEnd();
   }
 
   /**
@@ -169,10 +188,18 @@
 
     function processFile(content, file, includeStack) {
       const lines = String(content).split(/\r?\n/), conditions = [];
-      let blockComment = false;
+      let blockComment = false, ignoredDirectiveContinuation = false;
       const active = () => conditions.every(frame => frame.active);
       lines.forEach((raw, index) => {
         const line = index + 1, context = { file, includeStack: [...includeStack] };
+        // Regras #command/#translate podem ocupar várias linhas terminadas por
+        // `;`. Enquanto a gramática não for implementada, todo o corpo precisa
+        // desaparecer do PPO; deixar as continuações produziria AdvPL inválido.
+        if (ignoredDirectiveContinuation) {
+          ignoredDirectiveContinuation = /;\s*$/.test(raw);
+          emit("", file, line);
+          return;
+        }
         const directive = raw.match(/^\s*#\s*([A-Za-z]+)(?:\s+(.*?))?\s*$/);
         if (directive && !blockComment) {
           const command = directive[1].toLowerCase(), argument = directive[2] || "", identifier = argument.match(/^([A-Za-z_]\w*)/)?.[1] || null;
@@ -197,9 +224,13 @@
           } else if (command === "define") {
             if (active()) {
               applied.add("object-macro-definition");
-              const match = argument.match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/);
-              if (!match || !match[2]) diagnostics.push(diagnostic("PP0001", "error", "Invalid #define directive", line, 1, context));
-              else { const key = match[1].toUpperCase(); if (definitions.has(key)) diagnostics.push(diagnostic("PP0002", "warning", `Macro redefined: ${match[1]}`, line, 1, context)); definitions.set(key, { name: match[1], value: match[2], line, file }); }
+              const parameterMacro = argument.match(/^([A-Za-z_]\w*)\s*\(/);
+              const match = parameterMacro ? null : argument.match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/);
+              if (parameterMacro && file !== entryName) {
+                applied.add("parameter-macro-recognition");
+                if (!diagnostics.some(item => item.code === "PP0011" && item.file === file)) diagnostics.push(diagnostic("PP0011", "warning", `Parameterized macros recognized but not expanded in ${file}`, line, 1, context));
+              } else if (!match) diagnostics.push(diagnostic("PP0001", "error", "Invalid #define directive", line, 1, context));
+              else { const key = match[1].toUpperCase(), value = cleanMacroValue(match[2] || ""); if (definitions.has(key)) diagnostics.push(diagnostic("PP0002", "warning", `Macro redefined: ${match[1]}`, line, 1, context)); definitions.set(key, { name: match[1], value, line, file }); }
             }
             emit("", file, line);
           } else if (command === "undef") {
@@ -233,6 +264,12 @@
                 }
               }
             }
+          } else if (["command", "xcommand", "translate", "xtranslate"].includes(command) && file !== entryName) {
+            applied.add(command.includes("command") ? "command-recognition" : "translation-recognition");
+            const code = command.includes("command") ? "PP0012" : "PP0013";
+            if (!diagnostics.some(item => item.code === code && item.file === file)) diagnostics.push(diagnostic(code, "warning", `#${command} rules recognized but not applied in ${file}`, line, 1, context));
+            ignoredDirectiveContinuation = /;\s*$/.test(raw);
+            emit("", file, line);
           } else {
             diagnostics.push(diagnostic("PP0001", "error", `Unsupported directive: #${directive[1]}`, line, 1, context));
             emit("", file, line);
@@ -262,6 +299,7 @@
       artifact,
       capabilities: { ...CAPABILITIES },
       applied: [...applied],
+      includeCatalog: options.includeCatalog || null,
       source: output.join(input.includes("\r\n") ? "\r\n" : "\n"),
       map,
       definitions: Object.fromEntries([...definitions].map(([key, item]) => [key, item.value])),

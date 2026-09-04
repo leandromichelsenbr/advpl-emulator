@@ -20,6 +20,7 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] P0 do [estudo PPO](docs/ppo-e-pipeline-advpl.md): identificar a saída como PPO didático parcial na API e documentar o contrato, distinguindo o fallback sem pré-processamento.
 - [x] P1 do estudo PPO: painel Fonte × PPO e declaração de capacidades (`capabilities`) e transformações aplicadas (`applied`).
 - [x] P1 do estudo PPO: resolução controlada de includes e proveniência por arquivo.
+- [x] Incorporar catálogo educacional de headers com procedência fixada, índice e carregamento sob demanda.
 - [ ] P2 do estudo PPO: macros parametrizadas, com scanner de argumentos e proteção contra expansão recursiva.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 

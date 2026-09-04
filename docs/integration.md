@@ -84,6 +84,28 @@ window.ADVPL_EMULATOR_CONFIG = {
 
 `map` passa a incluir `originalFile`, além da linha e coluna. Diagnósticos sintáticos produzidos sobre o PPO são remapeados para `file` e `line`; `generatedLine` preserva a posição no PPO. Caminhos absolutos e segmentos `..` são recusados. Ciclos e profundidade excessiva bloqueiam a execução. Headers não fornecidos continuam não bloqueantes por meio de `PP0006`.
 
+#### Catálogo distribuído
+
+Desde a versão `0.15.0`, `runAsync()` carrega automaticamente headers conhecidos do catálogo `imsys/Protheus-Include`. O índice é pequeno e cada `.CH` é solicitado somente quando pertence à árvore iniciada pelo fonte. Conteúdos já obtidos são mantidos em cache durante a sessão.
+
+Um manifesto informado por `options.preprocessor.includes` tem prioridade total e impede o carregamento automático. Para executar sem o catálogo incorporado:
+
+```js
+await AdvPLEmulator.runAsync(source, dados, {
+  preprocessor: { builtinIncludes: false }
+});
+```
+
+Para hospedar o catálogo em outro caminho relativo à página:
+
+```js
+window.ADVPL_EMULATOR_CONFIG = {
+  preprocessor: { catalogUrl: "/assets/protheus-includes" }
+};
+```
+
+`includeCatalog` identifica versão, origem e commit do catálogo usado. `#command`, `#xcommand`, `#translate`, `#xtranslate` e macros parametrizadas existentes nesses headers geram advertências de reconhecimento; suas regras ainda não são aplicadas ao fonte. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
+
 Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
 
 `capabilities` declara o alcance estável do pré-processador: `supported`, `recognized`, `unsupported` ou, no mapa, granularidade `line`. `applied` lista somente transformações realmente observadas naquela execução. O mesmo contrato está disponível em `program.preprocessor` e `analysis.preprocessing`. O laboratório apresenta esses dados no painel recolhível **Fonte × PPO didático**; exportação de arquivo ainda não faz parte desta etapa.

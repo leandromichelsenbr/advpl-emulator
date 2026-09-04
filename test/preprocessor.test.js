@@ -12,7 +12,7 @@ test("identifica o PPO didático sem alterar o contrato textual e isola os metad
     label: "PPO didático — subconjunto do emulador",
     compatibility: "partial"
   });
-  assert.equal(result.version, "0.2");
+  assert.equal(result.version, "0.3");
   assert.equal(result.source, '\r\nConOut(42)');
   assert.equal(result.definitions.VALOR, "42");
   assert.equal(result.map[1].originalLine, 2);
@@ -25,8 +25,8 @@ test("declara capacidades estáveis do pré-processador", () => {
   const result = preprocessor.process("");
   assert.deepEqual(result.capabilities, {
     objectMacros: "supported", conditionalCompilation: "supported", undef: "supported",
-    sourceMap: "line", includes: "supported", parameterMacros: "unsupported",
-    translations: "unsupported", commands: "unsupported", embeddedSql: "unsupported"
+    sourceMap: "line", includes: "supported", parameterMacros: "recognized",
+    translations: "recognized", commands: "recognized", embeddedSql: "unsupported"
   });
   result.capabilities.objectMacros = "alterado";
   assert.equal(preprocessor.process("").capabilities.objectMacros, "supported");
@@ -107,7 +107,7 @@ test("reconhece include sem carregar arquivo e preserva a execução", () => {
 test("integra condicionais ao núcleo e bloqueia erros antes da análise assíncrona", async () => {
   const program = core.parse('#define TITULO "Correto"\n#ifdef ATIVO\nMsgInfo("Errado", "Teste")\n#else\nMsgInfo(TITULO, "Teste")\n#endif');
   assert.equal(program.message.text, "Correto");
-  assert.equal(program.preprocessor.version, "0.2");
+  assert.equal(program.preprocessor.version, "0.3");
   let analyzed = false;
   const session = pipeline.create({ preprocess: core.preprocess, analyze: async () => { analyzed = true; return { parser: "test", diagnostics: [] }; }, parse: core.parse });
   const execution = await session.run('#ifdef X\nConOut("X")');
@@ -169,4 +169,20 @@ test("remapeia diagnóstico sintático do PPO para o include de origem", async (
     code: "SYN", severity: "error", message: "erro", line: 1, column: 2,
     generatedLine: 1, file: "ERRO.CH"
   });
+});
+
+test("aceita guardas vazias e remove comentários do valor de macros", () => {
+  const result = preprocessor.process('#define _HEADER_CH\n#define COR 128 // comentário\n#ifdef _HEADER_CH\nConOut(COR)\n#endif');
+  assert.deepEqual(result.diagnostics, []);
+  assert.match(result.source, /ConOut\(128\)/);
+});
+
+test("reconhece regras complexas de headers sem inseri-las no PPO", () => {
+  const result = preprocessor.process('#include "REGRAS.CH"\nConOut(VALOR)', {
+    includes: { "REGRAS.CH": '#xtranslate USER Function <n> => Function U_<n>\n#xcommand TEST <x> ;\n  SOMETHING <x> => <x>\n#define DOBRO(x) ((x)+(x))\n#define VALOR 10' }
+  });
+  assert.equal(result.diagnostics.every(item => item.severity === "warning"), true);
+  assert.deepEqual(result.diagnostics.map(item => item.code), ["PP0013", "PP0012", "PP0011"]);
+  assert.doesNotMatch(result.source, /SOMETHING|DOBRO/);
+  assert.match(result.source, /ConOut\(10\)/);
 });

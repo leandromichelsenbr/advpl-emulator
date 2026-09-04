@@ -6,14 +6,26 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.14.0` |
+| Versão da distribuição | `0.15.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 84 |
+| Testes automatizados | 89 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.15.0 — 04/09/2026
+
+**Tipo:** catálogo educacional de headers Protheus.
+
+- Incorporados 103 arquivos `.CH` do repositório `imsys/Protheus-Include`, fixados no commit `7b56abf` e acompanhados do README original e nota de procedência.
+- Adicionado catálogo indexado e carregador que busca somente a árvore de includes usada pelo fonte.
+- `runAsync()` passa a carregar automaticamente headers conhecidos; manifests explícitos continuam prioritários e o recurso pode ser desativado.
+- Guardas vazias e comentários em macros passam a ser tratados corretamente.
+- Regras `#command`/`#xcommand`/`#translate`/`#xtranslate` e macros parametrizadas em headers são reconhecidas com advertência, sem serem falsamente expandidas.
+- O teste integrado confirma `TOTVS.CH → PROTHEUS.CH` e a expansão de `CLR_RED` sem erros bloqueantes.
+- Suíte ampliada de 84 para 89 testes automatizados.
 
 ### 0.14.0 — 04/09/2026
 
