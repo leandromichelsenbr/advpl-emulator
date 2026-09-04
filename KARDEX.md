@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.17.0` |
+| Versão da distribuição | `0.18.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 97 |
+| Testes automatizados | 100 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.18.0 — 04/09/2026
+
+**Tipo:** ampliação segura do motor de traduções.
+
+- `#translate` e `#xtranslate` passam a aceitar sequências literais de palavras e marcadores que capturam um identificador.
+- A regra real `BYREF <name> => <name>` de `APWEBSRV.CH` foi validada com o catálogo distribuído.
+- Traduções compostas somente por palavras, como `BEGIN WSMETHOD`, também são reconhecidas e aplicadas.
+- A captura não recorta membros e expressões com `->`, `:`, ou `.`, preservando o código até uma gramática apropriada.
+- Strings e comentários continuam protegidos e regras mais específicas têm precedência pelo número de partes.
+- Versão do pacote elevada para `0.18.0`, pré-processador para `0.6` e suíte ampliada de 97 para 100 testes.
 
 ### 0.17.0 — 04/09/2026
 

@@ -26,7 +26,7 @@
   root.AdvPLPreprocessor = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
-  const VERSION = "0.5";
+  const VERSION = "0.6";
   const CAPABILITIES = Object.freeze({
     objectMacros: "supported",
     conditionalCompilation: "supported",
@@ -175,11 +175,26 @@
     if (separator < 0) return null;
     const matchSide = argument.slice(0, separator).trim(), replacement = cleanMacroValue(argument.slice(separator + 2).trim());
     const call = matchSide.match(/^([A-Za-z_]\w*)\s*\((.*)\)$/);
-    if (!call || /[\[\]]/.test(matchSide)) return null;
-    const rawParameters = call[2].trim();
-    const parameters = rawParameters ? rawParameters.split(",").map(item => item.trim().match(/^<([A-Za-z_]\w*)>$/)?.[1] || null) : [];
-    if (parameters.some(item => !item) || new Set(parameters.map(item => item.toUpperCase())).size !== parameters.length) return null;
-    return { command, name: call[1], parameters, replacement, line, file };
+    if (call && !/[\[\]]/.test(matchSide)) {
+      const rawParameters = call[2].trim();
+      const parameters = rawParameters ? rawParameters.split(",").map(item => item.trim().match(/^<([A-Za-z_]\w*)>$/)?.[1] || null) : [];
+      if (!parameters.some(item => !item) && new Set(parameters.map(item => item.toUpperCase())).size === parameters.length) {
+        return { kind: "call", command, name: call[1], parameters, replacement, line, file };
+      }
+    }
+    // Segundo recorte: uma sequência de palavras e marcadores que capturam um
+    // único identificador. Ex.: `BYREF <name>` ou `BEGIN WSMETHOD`. Pontuação,
+    // opcionais e listas ficam de fora para evitar correspondência ambígua.
+    if (/[\[\],()]/.test(matchSide)) return null;
+    const tokens = matchSide.split(/\s+/).filter(Boolean), parts = tokens.map(token => {
+      const marker = token.match(/^<([A-Za-z_]\w*)>$/);
+      if (marker) return { kind: "marker", value: marker[1] };
+      return /^[A-Za-z_]\w*$/.test(token) ? { kind: "literal", value: token } : null;
+    });
+    if (!parts.length || parts.some(part => !part) || parts[0].kind !== "literal") return null;
+    const parameters = parts.filter(part => part.kind === "marker").map(part => part.value);
+    if (new Set(parameters.map(item => item.toUpperCase())).size !== parameters.length) return null;
+    return { kind: "tokens", command, name: parts[0].value, parameters, parts, replacement, line, file };
   }
 
   // A substituição dos marcadores também percorre tokens. Assim, <v> não
@@ -187,6 +202,29 @@
   function materializeTranslation(rule, args) {
     const values = new Map(rule.parameters.map((parameter, index) => [parameter.toUpperCase(), args[index]]));
     return rule.replacement.replace(/<([A-Za-z_]\w*)>/g, (whole, name) => values.has(name.toUpperCase()) ? values.get(name.toUpperCase()) : whole);
+  }
+
+  /** Tenta casar uma regra literal a partir do identificador corrente. */
+  function matchTokenTranslation(text, start, rule) {
+    const values = [], captures = new Map();
+    let index = start;
+    for (let partIndex = 0; partIndex < rule.parts.length; partIndex += 1) {
+      if (partIndex > 0) {
+        const whitespace = text.slice(index).match(/^\s+/)?.[0];
+        if (!whitespace) return null;
+        index += whitespace.length;
+      }
+      const token = text.slice(index).match(/^[A-Za-z_]\w*/)?.[0];
+      if (!token) return null;
+      const part = rule.parts[partIndex];
+      if (part.kind === "literal" && token.toUpperCase() !== part.value.toUpperCase()) return null;
+      if (part.kind === "marker") { captures.set(part.value.toUpperCase(), token); values.push(token); }
+      index += token.length;
+    }
+    // Não recortamos silenciosamente um membro ou alias (`name:value`,
+    // `alias->field`, `object.property`) como se fosse apenas `name`.
+    if (/[A-Za-z0-9_:.]/.test(text[index] || "") || text.slice(index, index + 2) === "->") return null;
+    return { end: index, args: rule.parameters.map(parameter => captures.get(parameter.toUpperCase())) || values };
   }
 
   /** Aplica traduções de chamada somente fora de strings e comentários. */
@@ -213,15 +251,25 @@
         const name = text.slice(index, end), rules = translations.get(name.toUpperCase());
         let open = end;
         while (open < text.length && /\s/.test(text[open])) open += 1;
-        if (rules?.length && text[open] === "(") {
+        const tokenMatch = rules?.filter(rule => rule.kind === "tokens")
+          .sort((left, right) => right.parts.length - left.parts.length)
+          .map(rule => ({ rule, match: matchTokenTranslation(text, index, rule) }))
+          .find(candidate => candidate.match);
+        if (tokenMatch) {
+          metrics.translationExpanded = true;
+          result += materializeTranslation(tokenMatch.rule, tokenMatch.match.args);
+          index = tokenMatch.match.end; continue;
+        }
+        const callRules = rules?.filter(rule => rule.kind === "call") || [];
+        if (callRules.length && text[open] === "(") {
           const call = parseMacroArguments(text, open);
           if (!call) {
             diagnostics.push(diagnostic("PP0018", "error", `Unclosed invocation of translation ${name}`, line, index + 1, context));
             result += text.slice(index); break;
           }
-          const rule = rules.find(candidate => candidate.parameters.length === call.args.length);
+          const rule = callRules.find(candidate => candidate.parameters.length === call.args.length);
           if (!rule) {
-            const expected = [...new Set(rules.map(candidate => candidate.parameters.length))].sort((a, b) => a - b).join(" or ");
+            const expected = [...new Set(callRules.map(candidate => candidate.parameters.length))].sort((a, b) => a - b).join(" or ");
             diagnostics.push(diagnostic("PP0019", "error", `Translation ${name} expects ${expected} argument(s), received ${call.args.length}`, line, index + 1, context));
             result += text.slice(index, call.end); index = call.end; continue;
           }
@@ -419,7 +467,8 @@
                 const key = rule.name.toUpperCase(), overloads = translations.get(key) || [];
                 // Uma regra posterior com a mesma aridade substitui a anterior;
                 // aridades diferentes convivem, como ocorre em headers reais.
-                translations.set(key, [...overloads.filter(item => item.parameters.length !== rule.parameters.length), rule]);
+                const signature = rule.kind === "call" ? `call:${rule.parameters.length}` : `tokens:${rule.parts.map(part => `${part.kind}:${part.value.toUpperCase()}`).join("|")}`;
+                translations.set(key, [...overloads.filter(item => item.signature !== signature), { ...rule, signature }]);
                 applied.add("translation-definition");
               } else if (!diagnostics.some(item => item.code === "PP0017" && item.file === file)) {
                 diagnostics.push(diagnostic("PP0017", "warning", `#${command} rule uses syntax outside the supported translation subset in ${file}`, line, 1, context));

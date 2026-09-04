@@ -104,7 +104,7 @@ window.ADVPL_EMULATOR_CONFIG = {
 };
 ```
 
-`includeCatalog` identifica versão, origem e commit do catálogo usado. Desde a distribuição `0.17.0`, regras `#translate` e `#xtranslate` em formato de chamada, como `ISNUMBER(<value>)`, são aplicadas. Padrões com grupos opcionais/listas e regras `#command`/`#xcommand` continuam gerando advertências de reconhecimento. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
+`includeCatalog` identifica versão, origem e commit do catálogo usado. Desde a distribuição `0.17.0`, regras `#translate` e `#xtranslate` em formato de chamada, como `ISNUMBER(<value>)`, são aplicadas. A `0.18.0` acrescenta sequências literais de palavras e marcadores de identificador, como `BYREF <name>`. Padrões com pontuação, expressões, grupos opcionais/listas e regras `#command`/`#xcommand` continuam gerando advertências de reconhecimento. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
 
 ### Macros parametrizadas
 
@@ -132,6 +132,15 @@ ConOut(ISNUMBER(10))
 ```
 
 O resultado é `ConOut(( ValType(10) == "N" ))`. Os argumentos respeitam parênteses, arrays, índices, strings e vírgulas internas. `PP0017` identifica sintaxe fora do subconjunto, `PP0018` uma chamada sem fechamento e `PP0019` aridade incompatível. Grupos opcionais (`[...]`), listas (`<x,...>`), operadores avançados e regras `#command` ainda não são expandidos.
+
+Na distribuição `0.18.0`, o lado esquerdo também pode ser uma sequência de palavras e marcadores que capturam um identificador:
+
+```advpl
+#xtranslate BYREF <name> => <name>
+Local destination := BYREF source
+```
+
+O resultado é `Local destination := source`. Também são aceitas traduções formadas apenas por palavras, como `BEGIN WSMETHOD`. O recorte não captura membros ou expressões: `BYREF alias->field`, `BYREF object:property` e `BYREF object.member` permanecem inalterados até que a gramática de expressões seja implementada.
 
 Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
 

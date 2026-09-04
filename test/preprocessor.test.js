@@ -12,7 +12,7 @@ test("identifica o PPO didático sem alterar o contrato textual e isola os metad
     label: "PPO didático — subconjunto do emulador",
     compatibility: "partial"
   });
-  assert.equal(result.version, "0.5");
+  assert.equal(result.version, "0.6");
   assert.equal(result.source, '\r\nConOut(42)');
   assert.equal(result.definitions.VALOR, "42");
   assert.equal(result.map[1].originalLine, 2);
@@ -107,7 +107,7 @@ test("reconhece include sem carregar arquivo e preserva a execução", () => {
 test("integra condicionais ao núcleo e bloqueia erros antes da análise assíncrona", async () => {
   const program = core.parse('#define TITULO "Correto"\n#ifdef ATIVO\nMsgInfo("Errado", "Teste")\n#else\nMsgInfo(TITULO, "Teste")\n#endif');
   assert.equal(program.message.text, "Correto");
-  assert.equal(program.preprocessor.version, "0.5");
+  assert.equal(program.preprocessor.version, "0.6");
   let analyzed = false;
   const session = pipeline.create({ preprocess: core.preprocess, analyze: async () => { analyzed = true; return { parser: "test", diagnostics: [] }; }, parse: core.parse });
   const execution = await session.run('#ifdef X\nConOut("X")');
@@ -182,7 +182,7 @@ test("reconhece regras de comando dos headers sem inseri-las no PPO", () => {
     includes: { "REGRAS.CH": '#xtranslate USER Function <n> => Function U_<n>\n#xcommand TEST <x> ;\n  SOMETHING <x> => <x>\n#define DOBRO(x) ((x)+(x))\n#define VALOR 10' }
   });
   assert.equal(result.diagnostics.every(item => item.severity === "warning"), true);
-  assert.deepEqual(result.diagnostics.map(item => item.code), ["PP0017", "PP0012"]);
+  assert.deepEqual(result.diagnostics.map(item => item.code), ["PP0012"]);
   assert.doesNotMatch(result.source, /SOMETHING|DOBRO/);
   assert.match(result.source, /ConOut\(10\)/);
 });
@@ -250,4 +250,25 @@ test("mantém sobrecargas de tradução separadas por aridade", () => {
   assert.deepEqual(result.diagnostics, []);
   assert.match(result.source, /ConOut\(Empty\(cName\)\)/);
   assert.match(result.source, /ConOut\(If\(Empty\(cName\), "N\/A", cName\)\)/);
+});
+
+test("aplica traduções literais com marcador de identificador", () => {
+  const result = preprocessor.process('#xtranslate BYREF <name> => <name>\nLocal value := BYREF source\nConOut("BYREF source") // BYREF ignored');
+  assert.deepEqual(result.diagnostics, []);
+  assert.match(result.source, /Local value := source/);
+  assert.match(result.source, /ConOut\("BYREF source"\) \/\/ BYREF ignored/);
+  assert.equal(result.applied.includes("translation-expansion"), true);
+});
+
+test("aplica tradução formada somente por palavras literais", () => {
+  const result = preprocessor.process('#xtranslate BEGIN WSMETHOD => WsMethodBegin() ; BEGIN SEQUENCE\nBEGIN WSMETHOD');
+  assert.deepEqual(result.diagnostics, []);
+  assert.match(result.source, /WsMethodBegin\(\) ; BEGIN SEQUENCE/);
+});
+
+test("não aceita pontuação nem captura expressões no subconjunto literal", () => {
+  const punctuation = preprocessor.process('#translate GETPROP -> <name> => <name>');
+  assert.equal(punctuation.diagnostics[0].code, "PP0017");
+  const expression = preprocessor.process('#xtranslate BYREF <name> => <name>\nConOut(BYREF source:value)');
+  assert.match(expression.source, /ConOut\(BYREF source:value\)/);
 });
