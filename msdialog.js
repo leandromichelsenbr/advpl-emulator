@@ -1067,6 +1067,19 @@
   });
   let uiRunSequence = 0;
 
+  async function preparePreprocessor(source, options = {}) {
+    const configured = { ...(emulatorConfig.preprocessor || {}), ...(options.preprocessor || {}) };
+    if (configured.includes !== undefined || configured.builtinIncludes === false || !globalThis.AdvPLIncludeLoader) return configured;
+    try {
+      const loaded = await globalThis.AdvPLIncludeLoader.load(source, { baseUrl: configured.catalogUrl });
+      return { ...configured, includes: loaded.includes, includeCatalog: loaded.catalog };
+    } catch (_error) {
+      // Indisponibilidade do catálogo não derruba exemplos antigos: o PPO gera
+      // PP0006 e segue com a mesma compatibilidade usada antes do catálogo.
+      return configured;
+    }
+  }
+
   function runSource(source, data, options = {}) {
     uiRunSequence += 1;
     executionPipeline?.cancel();
@@ -1096,17 +1109,18 @@
     setStatus("Analisando sintaxe…", "");
     try {
       const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
+      const preprocessor = await preparePreprocessor(sourceEl.value, options);
       let result;
       if (executionPipeline) {
         result = await executionPipeline.run(sourceEl.value, {
           analysis: options.analysis,
           parser: { tables },
-          preprocessor: options.preprocessor || emulatorConfig.preprocessor || {}
+          preprocessor
         });
       } else {
         const analysis = await analyzeSource(sourceEl.value, options.analysis);
         const hasErrors = (analysis.diagnostics || []).some(diagnostic => diagnostic.severity === "error");
-        const program = hasErrors ? null : AdvPLCore.parse(sourceEl.value, { tables, preprocessor: options.preprocessor || emulatorConfig.preprocessor || {} });
+        const program = hasErrors ? null : AdvPLCore.parse(sourceEl.value, { tables, preprocessor });
         if (program) {
           program.parserAnalysis = analysis;
           program.diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];
