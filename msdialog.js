@@ -1067,14 +1067,14 @@
   });
   let uiRunSequence = 0;
 
-  function runSource(source, data) {
+  function runSource(source, data, options = {}) {
     uiRunSequence += 1;
     executionPipeline?.cancel();
     if (typeof source === "string") sourceEl.value = source;
     updateHighlighting();
     try {
       const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
-      const program = AdvPLCore.parse(sourceEl.value, { tables });
+      const program = AdvPLCore.parse(sourceEl.value, { tables, preprocessor: options.preprocessor || emulatorConfig.preprocessor || {} });
       renderPreprocessing(sourceEl.value, program.preprocessor);
       render(program);
       runButtonEl.disabled = false;
@@ -1100,12 +1100,13 @@
       if (executionPipeline) {
         result = await executionPipeline.run(sourceEl.value, {
           analysis: options.analysis,
-          parser: { tables }
+          parser: { tables },
+          preprocessor: options.preprocessor || emulatorConfig.preprocessor || {}
         });
       } else {
         const analysis = await analyzeSource(sourceEl.value, options.analysis);
         const hasErrors = (analysis.diagnostics || []).some(diagnostic => diagnostic.severity === "error");
-        const program = hasErrors ? null : AdvPLCore.parse(sourceEl.value, { tables });
+        const program = hasErrors ? null : AdvPLCore.parse(sourceEl.value, { tables, preprocessor: options.preprocessor || emulatorConfig.preprocessor || {} });
         if (program) {
           program.parserAnalysis = analysis;
           program.diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];

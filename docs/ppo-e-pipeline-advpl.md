@@ -4,7 +4,7 @@
 
 O P0 foi implementado na distribuição `0.9.0`: a API de pré-processamento identifica o texto com `artifact.kind: "didactic-ppo"`, `label: "PPO didático — subconjunto do emulador"` e `compatibility: "partial"`. O modo legado sem o módulo é identificado como `original-source`, com compatibilidade `none`, para não anunciar pré-processamento inexistente. O campo é preservado no modelo e na análise do pipeline, inclusive em análises bloqueadas por erro.
 
-O [contrato de integração](integration.md#contrato-do-ppo-didático) documenta o uso. O painel visual Fonte × PPO, `capabilities` e `applied` foram implementados na versão 0.13.0. Includes e regras de comando/tradução continuam sendo propostas. A descrição da arquitetura do estudo permanece como registro do diagnóstico inicial.
+O [contrato de integração](integration.md#contrato-do-ppo-didático) documenta o uso. O painel visual Fonte × PPO, `capabilities` e `applied` foram implementados na versão 0.13.0; a resolução controlada de includes e a proveniência por arquivo chegaram na 0.14.0. Regras de comando/tradução continuam sendo propostas. A descrição da arquitetura do estudo permanece como registro do diagnóstico inicial.
 
 ## Resposta curta
 

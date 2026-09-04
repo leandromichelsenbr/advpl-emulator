@@ -6,7 +6,7 @@ O direcionamento arquitetural, os limites da analogia com o Wine e o planejament
 
 O estudo sobre a pré-compilação, o PPO, sua diferença para APO/RPO e as consequências arquiteturais para o emulador está em [PPO e o pipeline do AdvPL](docs/ppo-e-pipeline-advpl.md).
 
-A saída do pré-processador é identificada como **PPO didático — subconjunto do emulador**, sem equivalência declarada com o PPO TOTVS. O [contrato de integração](docs/integration.md#contrato-do-ppo-didático) expõe essa identificação em `artifact` e distingue o fallback legado, que apenas repassa o fonte original.
+A saída do pré-processador é identificada como **PPO didático — subconjunto do emulador**, sem equivalência declarada com o PPO TOTVS. O [contrato de integração](docs/integration.md#contrato-do-ppo-didático) expõe essa identificação em `artifact`, distingue o fallback legado e documenta os manifests de includes virtuais.
 
 O resultado também declara `capabilities`, com o estado de cada família de transformação, e `applied`, com as transformações efetivamente usadas naquela execução. O laboratório oferece o painel recolhível **Fonte × PPO didático** para comparar a entrada com o texto enviado ao parser.
 
@@ -104,7 +104,7 @@ A classificação verificável, as limitações e os testes associados a cada ca
 - códigos `EAN13` e `QRCode` válidos e gerados localmente;
 - orientação controlada por `SetPortrait()`, `SetLandscape()` ou pelo setup.
 
-O projeto interpreta um subconjunto controlado de AdvPL e não executa código arbitrário. Consultas ao banco Protheus não são executadas; exemplos que dependem de dados externos precisam fornecer dados de referência. O pré-processador suporta `#define`, `#undef`, `#ifdef`, `#ifndef`, `#else` e `#endif`, preservando strings e comentários durante a expansão. `#include` é reconhecido com advertência para manter fontes existentes executáveis, mas o arquivo `.ch` não é carregado. Ainda não estão implementados `VALID`, `WHEN`, máscaras `PICTURE`, recursos ou classes completas da LIB.
+O projeto interpreta um subconjunto controlado de AdvPL e não executa código arbitrário. Consultas ao banco Protheus não são executadas; exemplos que dependem de dados externos precisam fornecer dados de referência. O pré-processador suporta `#define`, `#undef`, `#ifdef`, `#ifndef`, `#else`, `#endif` e includes virtuais fornecidos explicitamente pela integração, preservando strings, comentários e a origem por arquivo durante a expansão. Sem manifesto, `#include` continua gerando uma advertência não bloqueante. Ainda não estão implementados `VALID`, `WHEN`, máscaras `PICTURE`, recursos ou classes completas da LIB.
 
 Os diagnósticos identificados como `emulator-signatures` são aproximações locais e não substituem o compilador ou o linter oficial do TDS. A estratégia planejada para diagnósticos oficiais está no [TODO](TODO.md#interpretador).
 

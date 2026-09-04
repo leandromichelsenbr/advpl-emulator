@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.13.0` |
+| Versão da distribuição | `0.14.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 80 |
+| Testes automatizados | 84 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.14.0 — 04/09/2026
+
+**Tipo:** resolução controlada de includes virtuais.
+
+- `#include` passa a expandir headers fornecidos explicitamente por manifesto, sem acessar disco ou rede.
+- Includes aninhados compartilham macros e preservam proveniência por arquivo e linha no mapa do PPO.
+- Adicionadas proteções para caminho absoluto/travessia, ciclo e profundidade máxima.
+- Diagnósticos do parser executados sobre o PPO são remapeados ao arquivo virtual de origem.
+- API headless aceita o manifesto em `options.preprocessor.includes` e na configuração do frame.
+- Suíte ampliada de 80 para 84 testes automatizados.
 
 ### 0.13.0 — 03/09/2026
 
