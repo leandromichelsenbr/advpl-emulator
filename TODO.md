@@ -24,7 +24,8 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] P2 do estudo PPO: macros parametrizadas, com scanner de argumentos e proteção contra expansão recursiva.
 - [x] P3 do estudo PPO: implementar traduções em formato de chamada (`NOME(<arg>)`) guiadas pelo `COMMON.CH`, com argumentos balanceados e diagnósticos próprios.
 - [x] Ampliar `#translate`/`#xtranslate` para sequências literais de palavras e marcadores de identificador, validando `BYREF <nome>` de `APWEBSRV.CH`.
-- [ ] Ampliar `#translate`/`#xtranslate` para pontuação, expressões capturadas e grupos opcionais/listas, antes de iniciar `#command`/`#xcommand`.
+- [x] Ampliar `#translate`/`#xtranslate` para pontuação, expressões balanceadas, diretivas multilinha e encadeamento protegido, validando `DWDEFS.CH`.
+- [ ] Implementar grupos opcionais e listas em `#translate`/`#xtranslate`, antes de iniciar `#command`/`#xcommand`.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.

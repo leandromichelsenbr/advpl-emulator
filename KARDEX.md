@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.18.0` |
+| Versão da distribuição | `0.19.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 100 |
+| Testes automatizados | 103 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.19.0 — 04/09/2026
+
+**Tipo:** expressões, pontuação e segurança no motor de traduções.
+
+- Padrões de `#translate`/`#xtranslate` passam a tokenizar pontuação estrutural, incluindo `->`, `:=`, `:`, `.`, delimitadores e operadores comuns.
+- Marcadores capturam expressões respeitando parênteses, chaves, índices, strings e vírgulas internas.
+- Diretivas físicas continuadas por `;` são remontadas, preservando uma linha no mapa do PPO para cada linha original.
+- Regras reais `isNull()` e `DWGetProp()` de `DWDEFS.CH` foram carregadas e expandidas sem erros.
+- Expansões podem ser encadeadas; `PP0020` bloqueia ciclos e `PP0021` limita o processamento a 64 passagens por linha.
+- Versão do pacote elevada para `0.19.0`, pré-processador para `0.7` e suíte ampliada de 100 para 103 testes.
 
 ### 0.18.0 — 04/09/2026
 
@@ -33,7 +44,7 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 - Implementado o primeiro subconjunto de `#translate` e `#xtranslate`: chamadas como `ISNIL(<v1>)` e `ISNUMBER(<v1>)`.
 - Argumentos respeitam parênteses, arrays, índices, strings e vírgulas internas; strings e comentários permanecem protegidos.
 - Regras reais do `COMMON.CH` foram usadas como prova de integração com o catálogo distribuído.
-- Adicionados `PP0017` (sintaxe fora do subconjunto), `PP0018` (chamada sem fechamento) e `PP0019` (aridade).
+- Adicionados `PP0017` (sintaxe fora do subconjunto) e `PP0018` (chamada sem fechamento); aridade diferente é tratada como padrão não correspondente.
 - A capacidade `translations` passou de `recognized` para `partial`; opcionais, listas e comandos continuam explicitamente fora do recorte.
 - Versão do pacote elevada para `0.17.0`, versão interna do pré-processador para `0.5` e suíte ampliada de 93 para 97 testes.
 

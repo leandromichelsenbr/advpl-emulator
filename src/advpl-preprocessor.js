@@ -26,7 +26,7 @@
   root.AdvPLPreprocessor = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
-  const VERSION = "0.6";
+  const VERSION = "0.7";
   const CAPABILITIES = Object.freeze({
     objectMacros: "supported",
     conditionalCompilation: "supported",
@@ -182,15 +182,20 @@
         return { kind: "call", command, name: call[1], parameters, replacement, line, file };
       }
     }
-    // Segundo recorte: uma sequência de palavras e marcadores que capturam um
-    // único identificador. Ex.: `BYREF <name>` ou `BEGIN WSMETHOD`. Pontuação,
-    // opcionais e listas ficam de fora para evitar correspondência ambígua.
-    if (/[\[\],()]/.test(matchSide)) return null;
-    const tokens = matchSide.split(/\s+/).filter(Boolean), parts = tokens.map(token => {
-      const marker = token.match(/^<([A-Za-z_]\w*)>$/);
-      if (marker) return { kind: "marker", value: marker[1] };
-      return /^[A-Za-z_]\w*$/.test(token) ? { kind: "literal", value: token } : null;
-    });
+    // Terceiro recorte: palavras, marcadores e pontuação estrutural. O scanner
+    // mantém `->` e `:=` como tokens únicos e rejeita opcionais/listas.
+    if (/[\[\]]|<[^>]*\.\.\.[^>]*>/.test(matchSide)) return null;
+    const parts = [], operators = ["->", ":=", "==", "!=", "<=", ">=", "+=", "-=", "++", "--", ";", ",", ":", ".", "=", "+", "-", "*", "/", "(", ")", "{", "}"];
+    let patternIndex = 0;
+    while (patternIndex < matchSide.length) {
+      if (/\s/.test(matchSide[patternIndex])) { patternIndex += 1; continue; }
+      const rest = matchSide.slice(patternIndex), marker = rest.match(/^<([A-Za-z_]\w*)>/), word = rest.match(/^([A-Za-z_]\w*)/);
+      if (marker) { parts.push({ kind: "marker", value: marker[1] }); patternIndex += marker[0].length; continue; }
+      if (word) { parts.push({ kind: "literal", value: word[1], word: true }); patternIndex += word[0].length; continue; }
+      const operator = operators.find(candidate => rest.startsWith(candidate));
+      if (!operator) return null;
+      parts.push({ kind: "literal", value: operator, word: false }); patternIndex += operator.length;
+    }
     if (!parts.length || parts.some(part => !part) || parts[0].kind !== "literal") return null;
     const parameters = parts.filter(part => part.kind === "marker").map(part => part.value);
     if (new Set(parameters.map(item => item.toUpperCase())).size !== parameters.length) return null;
@@ -204,31 +209,58 @@
     return rule.replacement.replace(/<([A-Za-z_]\w*)>/g, (whole, name) => values.has(name.toUpperCase()) ? values.get(name.toUpperCase()) : whole);
   }
 
-  /** Tenta casar uma regra literal a partir do identificador corrente. */
-  function matchTokenTranslation(text, start, rule) {
-    const values = [], captures = new Map();
-    let index = start;
-    for (let partIndex = 0; partIndex < rule.parts.length; partIndex += 1) {
-      if (partIndex > 0) {
-        const whitespace = text.slice(index).match(/^\s+/)?.[0];
-        if (!whitespace) return null;
-        index += whitespace.length;
-      }
-      const token = text.slice(index).match(/^[A-Za-z_]\w*/)?.[0];
-      if (!token) return null;
-      const part = rule.parts[partIndex];
-      if (part.kind === "literal" && token.toUpperCase() !== part.value.toUpperCase()) return null;
-      if (part.kind === "marker") { captures.set(part.value.toUpperCase(), token); values.push(token); }
-      index += token.length;
-    }
-    // Não recortamos silenciosamente um membro ou alias (`name:value`,
-    // `alias->field`, `object.property`) como se fosse apenas `name`.
-    if (/[A-Za-z0-9_:.]/.test(text[index] || "") || text.slice(index, index + 2) === "->") return null;
-    return { end: index, args: rule.parameters.map(parameter => captures.get(parameter.toUpperCase())) || values };
+  function skipSpaces(text, index) { while (index < text.length && /\s/.test(text[index])) index += 1; return index; }
+
+  function matchLiteralPart(text, index, part) {
+    index = skipSpaces(text, index);
+    if (!part.word) return text.startsWith(part.value, index) ? index + part.value.length : -1;
+    const token = text.slice(index).match(/^[A-Za-z_]\w*/)?.[0];
+    return token && token.toUpperCase() === part.value.toUpperCase() ? index + token.length : -1;
   }
 
-  /** Aplica traduções de chamada somente fora de strings e comentários. */
-  function applyTranslations(text, translations, diagnostics, line, context, metrics, state = {}) {
+  /** Localiza o delimitador seguinte sem parar dentro de estruturas aninhadas. */
+  function captureUntilPart(text, start, delimiter) {
+    let quote = null, round = 0, braces = 0, brackets = 0;
+    for (let index = start; index <= text.length; index += 1) {
+      const char = text[index], next = text[index + 1];
+      if (quote) { if (char === quote) { if (next === quote) index += 1; else quote = null; } continue; }
+      if (char === '"' || char === "'") { quote = char; continue; }
+      if (!delimiter && round === 0 && braces === 0 && brackets === 0 && (index === text.length || [")", ",", ";"].includes(char) || (char === "/" && next === "/"))) {
+        return { value: text.slice(start, index).trim(), end: index };
+      }
+      if (delimiter && round === 0 && braces === 0 && brackets === 0) {
+        const end = matchLiteralPart(text, index, delimiter);
+        if (end >= 0) return { value: text.slice(start, index).trim(), end: index };
+      }
+      if (char === "(") round += 1; else if (char === ")") round = Math.max(0, round - 1);
+      else if (char === "{") braces += 1; else if (char === "}") braces = Math.max(0, braces - 1);
+      else if (char === "[") brackets += 1; else if (char === "]") brackets = Math.max(0, brackets - 1);
+      if (round || braces || brackets) continue;
+    }
+    return null;
+  }
+
+  /** Tenta casar uma regra literal/pontuada a partir do identificador corrente. */
+  function matchTokenTranslation(text, start, rule) {
+    const captures = new Map();
+    let index = start;
+    for (let partIndex = 0; partIndex < rule.parts.length; partIndex += 1) {
+      const part = rule.parts[partIndex];
+      if (part.kind === "literal") {
+        index = matchLiteralPart(text, index, part);
+        if (index < 0) return null;
+      } else {
+        const captured = captureUntilPart(text, skipSpaces(text, index), rule.parts[partIndex + 1]);
+        if (!captured?.value) return null;
+        captures.set(part.value.toUpperCase(), captured.value); index = captured.end;
+      }
+    }
+    if (/[A-Za-z0-9_]/.test(text[index] || "")) return null;
+    return { end: index, args: rule.parameters.map(parameter => captures.get(parameter.toUpperCase())) };
+  }
+
+  /** Executa uma passagem de traduções somente fora de strings e comentários. */
+  function applyTranslationPass(text, translations, diagnostics, line, context, metrics, state = {}) {
     let result = "", index = 0, quote = null, blockComment = state.blockComment === true;
     while (index < text.length) {
       const char = text[index], next = text[index + 1];
@@ -269,9 +301,10 @@
           }
           const rule = callRules.find(candidate => candidate.parameters.length === call.args.length);
           if (!rule) {
-            const expected = [...new Set(callRules.map(candidate => candidate.parameters.length))].sort((a, b) => a - b).join(" or ");
-            diagnostics.push(diagnostic("PP0019", "error", `Translation ${name} expects ${expected} argument(s), received ${call.args.length}`, line, index + 1, context));
-            result += text.slice(index, call.end); index = call.end; continue;
+            // Em #translate, aridade diferente significa apenas que o padrão
+            // não casou. A chamada pode ser a função real gerada pela própria
+            // regra, como DWGetProp(<name>) -> DWGetProp(<name>, ProcName(0)).
+            result += name; index = end; continue;
           }
           metrics.translationExpanded = true;
           result += materializeTranslation(rule, call.args);
@@ -282,6 +315,30 @@
       result += char; index += 1;
     }
     return { text: result, blockComment };
+  }
+
+  /**
+   * Repete traduções para que o resultado de uma regra possa acionar outra.
+   * O conjunto `seen` detecta A→B→A; o teto protege contra cadeias enormes
+   * mesmo quando cada estágio produz um texto diferente.
+   */
+  function applyTranslations(text, translations, diagnostics, line, context, metrics, state = {}) {
+    const seen = new Set([text]);
+    let current = text, finalState = state.blockComment === true;
+    for (let pass = 0; pass < 64; pass += 1) {
+      const passMetrics = { translationExpanded: false };
+      const result = applyTranslationPass(current, translations, diagnostics, line, context, passMetrics, { blockComment: state.blockComment === true });
+      finalState = result.blockComment;
+      if (passMetrics.translationExpanded) metrics.translationExpanded = true;
+      if (result.text === current) return { text: current, blockComment: finalState };
+      if (seen.has(result.text)) {
+        diagnostics.push(diagnostic("PP0020", "error", "Cyclic translation expansion detected", line, 1, context));
+        return { text: result.text, blockComment: finalState };
+      }
+      seen.add(result.text); current = result.text;
+    }
+    diagnostics.push(diagnostic("PP0021", "error", "Maximum translation expansion passes exceeded: 64", line, 1, context));
+    return { text: current, blockComment: finalState };
   }
 
   /**
@@ -372,11 +429,28 @@
     };
 
     function processFile(content, file, includeStack) {
-      const lines = String(content).split(/\r?\n/), conditions = [];
+      const lines = String(content).split(/\r?\n/), conditions = [], joinedDirectives = new Map(), consumedDirectiveLines = new Set();
+      // Algumas bibliotecas colocam `=>` na linha seguinte. Unimos somente
+      // diretivas de tradução e mantemos as linhas físicas consumidas vazias.
+      for (let index = 0; index < lines.length; index += 1) {
+        if (!/^\s*#\s*x?translate\b/i.test(lines[index]) || lines[index].includes("=>")) continue;
+        // O `;` no fim da linha física é continuação AdvPL, não um símbolo do
+        // padrão. Ele desaparece quando a diretiva lógica é remontada.
+        let joined = lines[index].replace(/;\s*$/, ""), cursor = index + 1;
+        while (cursor < lines.length && cursor <= index + 8) {
+          joined += ` ${lines[cursor].trim().replace(/;\s*$/, "")}`; consumedDirectiveLines.add(cursor);
+          if (lines[cursor].includes("=>")) break;
+          cursor += 1;
+        }
+        if (joined.includes("=>")) joinedDirectives.set(index, joined);
+        else for (let consumed = index + 1; consumed < cursor; consumed += 1) consumedDirectiveLines.delete(consumed);
+      }
       let blockComment = false, ignoredDirectiveContinuation = false;
       const active = () => conditions.every(frame => frame.active);
-      lines.forEach((raw, index) => {
+      lines.forEach((physicalRaw, index) => {
+        const raw = joinedDirectives.get(index) || physicalRaw;
         const line = index + 1, context = { file, includeStack: [...includeStack] };
+        if (consumedDirectiveLines.has(index)) { emit("", file, line); return; }
         // Regras #command/#translate podem ocupar várias linhas terminadas por
         // `;`. Enquanto a gramática não for implementada, todo o corpo precisa
         // desaparecer do PPO; deixar as continuações produziria AdvPL inválido.
