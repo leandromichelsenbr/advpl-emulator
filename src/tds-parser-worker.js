@@ -2,7 +2,7 @@
 "use strict";
 
 // O bundle é separado do laboratório para ser baixado apenas no modo avançado.
-importScripts("../vendor/tds-parser.bundle.js?v=0.15.0");
+importScripts("../vendor/tds-parser.bundle.js?v=0.16.0");
 
 /*
  * Recebe apenas dados serializáveis. A AST é convertida para objeto simples

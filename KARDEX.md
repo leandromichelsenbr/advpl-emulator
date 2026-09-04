@@ -6,14 +6,26 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.15.0` |
+| Versão da distribuição | `0.16.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 89 |
+| Testes automatizados | 93 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.16.0 — 04/09/2026
+
+**Tipo:** macros parametrizadas no PPO didático.
+
+- `#define NOME(a,b) ...` passa a registrar parâmetros formais e expandir chamadas no fonte e nos headers virtuais.
+- Scanner de argumentos preserva strings, arrays, chamadas e parênteses aninhados.
+- Argumentos são pré-expandidos, permitindo chamadas aninhadas da mesma macro sem falso ciclo.
+- Substituição ocorre somente em tokens, preservando strings, nomes maiores e literais/operadores `.T.`, `.F.`, `.AND.`, `.OR.` e `.NOT.`.
+- Adicionados diagnósticos para aridade incorreta, chamada sem fechamento, parâmetros inválidos e ciclos.
+- Corpus real valida `_DFSET(x,y)` de `STDWIN.CH`, incluindo expansão posterior de `_SET_DATEFORMAT`.
+- Suíte ampliada de 89 para 93 testes automatizados.
 
 ### 0.15.0 — 04/09/2026
 

@@ -21,7 +21,8 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] P1 do estudo PPO: painel Fonte × PPO e declaração de capacidades (`capabilities`) e transformações aplicadas (`applied`).
 - [x] P1 do estudo PPO: resolução controlada de includes e proveniência por arquivo.
 - [x] Incorporar catálogo educacional de headers com procedência fixada, índice e carregamento sob demanda.
-- [ ] P2 do estudo PPO: macros parametrizadas, com scanner de argumentos e proteção contra expansão recursiva.
+- [x] P2 do estudo PPO: macros parametrizadas, com scanner de argumentos e proteção contra expansão recursiva.
+- [ ] P3 do estudo PPO: implementar o primeiro subconjunto de `#translate`/`#xtranslate` guiado pelo corpus dos headers.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.

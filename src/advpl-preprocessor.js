@@ -26,14 +26,14 @@
   root.AdvPLPreprocessor = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
-  const VERSION = "0.3";
+  const VERSION = "0.4";
   const CAPABILITIES = Object.freeze({
     objectMacros: "supported",
     conditionalCompilation: "supported",
     undef: "supported",
     sourceMap: "line",
     includes: "supported",
-    parameterMacros: "recognized",
+    parameterMacros: "supported",
     translations: "recognized",
     commands: "recognized",
     embeddedSql: "unsupported"
@@ -103,15 +103,59 @@
    * Quando há ciclo, preservamos o identificador em vez de produzir texto
    * parcial imprevisível, e registramos somente um diagnóstico equivalente.
    */
-  function expandIdentifier(name, definitions, diagnostics, line, trail = []) {
+  function expandIdentifier(name, definitions, diagnostics, line, trail = [], context = {}, metrics = { parameterExpanded: false }) {
     const key = name.toUpperCase(), definition = definitions.get(key);
-    if (!definition) return name;
+    if (!definition || definition.parameters) return name;
     if (trail.includes(key)) {
       const cycle = [...trail.slice(trail.indexOf(key)), key].join(" -> ");
-      if (!diagnostics.some(item => item.code === "PP0005" && item.line === line && item.message.includes(cycle))) diagnostics.push(diagnostic("PP0005", "error", `Cyclic macro expansion: ${cycle}`, line));
+      if (!diagnostics.some(item => item.code === "PP0005" && item.line === line && item.message.includes(cycle))) diagnostics.push(diagnostic("PP0005", "error", `Cyclic macro expansion: ${cycle}`, line, 1, context));
       return name;
     }
-    return expandText(definition.value, definitions, diagnostics, line, [...trail, key]).text;
+    return expandText(definition.value, definitions, diagnostics, line, { trail: [...trail, key], context, metrics }).text;
+  }
+
+  /** Separa argumentos de uma chamada de macro sem confundir estruturas internas. */
+  function parseMacroArguments(text, openIndex) {
+    const args = [];
+    let start = openIndex + 1, depth = 0, quote = null, blockComment = false;
+    for (let index = start; index < text.length; index += 1) {
+      const char = text[index], next = text[index + 1];
+      if (blockComment) { if (char === "*" && next === "/") { blockComment = false; index += 1; } continue; }
+      if (quote) { if (char === quote) { if (next === quote) index += 1; else quote = null; } continue; }
+      if (char === '"' || char === "'") { quote = char; continue; }
+      if (char === "/" && next === "*") { blockComment = true; index += 1; continue; }
+      if (char === "(") depth += 1;
+      else if (char === ")") {
+        if (depth === 0) {
+          const final = text.slice(start, index).trim();
+          if (final || args.length) args.push(final);
+          return { args, end: index + 1 };
+        }
+        depth -= 1;
+      } else if (char === "," && depth === 0) { args.push(text.slice(start, index).trim()); start = index + 1; }
+    }
+    return null;
+  }
+
+  function expandParameterized(name, definition, call, definitions, diagnostics, line, trail, context, metrics) {
+    const key = name.toUpperCase();
+    if (trail.includes(key)) {
+      const cycle = [...trail.slice(trail.indexOf(key)), key].join(" -> ");
+      diagnostics.push(diagnostic("PP0005", "error", `Cyclic macro expansion: ${cycle}`, line, 1, context));
+      return name;
+    }
+    if (call.args.length !== definition.parameters.length) {
+      diagnostics.push(diagnostic("PP0014", "error", `Macro ${name} expects ${definition.parameters.length} argument(s), received ${call.args.length}`, line, 1, context));
+      return `${name}(${call.args.join(", ")})`;
+    }
+    // Argumentos são expandidos antes de entrarem no corpo. Isso permite
+    // `SOMA(1, SOMA(2, 3))` sem confundir a chamada interna com recursão do
+    // corpo externo; somente depois a macro corrente entra na trilha de ciclo.
+    const expandedArgs = call.args.map(argument => expandText(argument, definitions, diagnostics, line, { trail, context, metrics }).text);
+    const scoped = new Map(definitions);
+    definition.parameters.forEach((parameter, index) => scoped.set(parameter.toUpperCase(), { name: parameter, value: expandedArgs[index], line, parameters: null }));
+    metrics.parameterExpanded = true;
+    return expandText(definition.value, scoped, diagnostics, line, { trail: [...trail, key], context, metrics }).text;
   }
 
   /**
@@ -129,7 +173,7 @@
    */
   function expandText(text, definitions, diagnostics, line, state = []) {
     let result = "", index = 0, quote = null, blockComment = state.blockComment === true;
-    const trail = Array.isArray(state) ? state : [];
+    const trail = Array.isArray(state) ? state : state.trail || [], context = Array.isArray(state) ? {} : state.context || {}, metrics = Array.isArray(state) ? { parameterExpanded: false } : state.metrics || { parameterExpanded: false };
     while (index < text.length) {
       const char = text[index], next = text[index + 1];
       if (blockComment) {
@@ -151,12 +195,27 @@
       if (/[A-Za-z_]/.test(char)) {
         let end = index + 1;
         while (end < text.length && /[A-Za-z0-9_]/.test(text[end])) end += 1;
-        result += expandIdentifier(text.slice(index, end), definitions, diagnostics, line, trail);
+        const name = text.slice(index, end), definition = definitions.get(name.toUpperCase());
+        // Literais e operadores AdvPL (`.T.`, `.F.`, `.AND.`, `.OR.`, `.NOT.`)
+        // usam palavras entre pontos, mas não são identificadores substituíveis.
+        if (text[index - 1] === "." && text[end] === ".") { result += name; index = end; continue; }
+        let open = end;
+        while (open < text.length && /\s/.test(text[open])) open += 1;
+        if (definition?.parameters && text[open] === "(") {
+          const call = parseMacroArguments(text, open);
+          if (!call) {
+            diagnostics.push(diagnostic("PP0015", "error", `Unclosed invocation of macro ${name}`, line, index + 1, context));
+            result += text.slice(index); break;
+          }
+          result += expandParameterized(name, definition, call, definitions, diagnostics, line, trail, context, metrics);
+          index = call.end; continue;
+        }
+        result += expandIdentifier(name, definitions, diagnostics, line, trail, context, metrics);
         index = end; continue;
       }
       result += char; index += 1;
     }
-    return { text: result, blockComment };
+    return { text: result, blockComment, parameterExpanded: metrics.parameterExpanded };
   }
 
   /**
@@ -224,13 +283,23 @@
           } else if (command === "define") {
             if (active()) {
               applied.add("object-macro-definition");
-              const parameterMacro = argument.match(/^([A-Za-z_]\w*)\s*\(/);
+              // Assim como no pré-processador C/AdvPL, a lista formal precisa
+              // começar imediatamente após o nome. `#define LISTA ({...})` é
+              // uma macro de objeto cujo valor apenas começa com parênteses.
+              const parameterMacro = argument.match(/^([A-Za-z_]\w*)\(([^)]*)\)\s*(.*)$/);
               const match = parameterMacro ? null : argument.match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/);
-              if (parameterMacro && file !== entryName) {
-                applied.add("parameter-macro-recognition");
-                if (!diagnostics.some(item => item.code === "PP0011" && item.file === file)) diagnostics.push(diagnostic("PP0011", "warning", `Parameterized macros recognized but not expanded in ${file}`, line, 1, context));
+              if (parameterMacro) {
+                const parameters = parameterMacro[2].trim() ? parameterMacro[2].split(",").map(item => item.trim()) : [];
+                const valid = parameters.every(item => /^[A-Za-z_]\w*$/.test(item)) && new Set(parameters.map(item => item.toUpperCase())).size === parameters.length;
+                if (!valid) diagnostics.push(diagnostic("PP0016", "error", `Invalid parameters in macro ${parameterMacro[1]}`, line, 1, context));
+                else {
+                  const key = parameterMacro[1].toUpperCase();
+                  if (definitions.has(key)) diagnostics.push(diagnostic("PP0002", "warning", `Macro redefined: ${parameterMacro[1]}`, line, 1, context));
+                  definitions.set(key, { name: parameterMacro[1], parameters, value: cleanMacroValue(parameterMacro[3]), line, file });
+                  applied.add("parameter-macro-definition");
+                }
               } else if (!match) diagnostics.push(diagnostic("PP0001", "error", "Invalid #define directive", line, 1, context));
-              else { const key = match[1].toUpperCase(), value = cleanMacroValue(match[2] || ""); if (definitions.has(key)) diagnostics.push(diagnostic("PP0002", "warning", `Macro redefined: ${match[1]}`, line, 1, context)); definitions.set(key, { name: match[1], value, line, file }); }
+              else { const key = match[1].toUpperCase(), value = cleanMacroValue(match[2] || ""); if (definitions.has(key)) diagnostics.push(diagnostic("PP0002", "warning", `Macro redefined: ${match[1]}`, line, 1, context)); definitions.set(key, { name: match[1], parameters: null, value, line, file }); }
             }
             emit("", file, line);
           } else if (command === "undef") {
@@ -276,8 +345,9 @@
           }
         } else if (!active()) emit("", file, line);
         else {
-          const expanded = expandText(raw, definitions, diagnostics, line, { blockComment });
+          const expanded = expandText(raw, definitions, diagnostics, line, { blockComment, context });
           if (expanded.text !== raw) applied.add("object-macro-expansion");
+          if (expanded.parameterExpanded) applied.add("parameter-macro-expansion");
           emit(expanded.text, file, line);
           blockComment = expanded.blockComment;
         }
