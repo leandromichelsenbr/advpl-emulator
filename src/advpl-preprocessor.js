@@ -26,7 +26,7 @@
   root.AdvPLPreprocessor = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
-  const VERSION = "0.4";
+  const VERSION = "0.5";
   const CAPABILITIES = Object.freeze({
     objectMacros: "supported",
     conditionalCompilation: "supported",
@@ -34,7 +34,7 @@
     sourceMap: "line",
     includes: "supported",
     parameterMacros: "supported",
-    translations: "recognized",
+    translations: "partial",
     commands: "recognized",
     embeddedSql: "unsupported"
   });
@@ -117,7 +117,7 @@
   /** Separa argumentos de uma chamada de macro sem confundir estruturas internas. */
   function parseMacroArguments(text, openIndex) {
     const args = [];
-    let start = openIndex + 1, depth = 0, quote = null, blockComment = false;
+    let start = openIndex + 1, depth = 0, braceDepth = 0, bracketDepth = 0, quote = null, blockComment = false;
     for (let index = start; index < text.length; index += 1) {
       const char = text[index], next = text[index + 1];
       if (blockComment) { if (char === "*" && next === "/") { blockComment = false; index += 1; } continue; }
@@ -132,7 +132,11 @@
           return { args, end: index + 1 };
         }
         depth -= 1;
-      } else if (char === "," && depth === 0) { args.push(text.slice(start, index).trim()); start = index + 1; }
+      } else if (char === "{") braceDepth += 1;
+      else if (char === "}") braceDepth = Math.max(0, braceDepth - 1);
+      else if (char === "[") bracketDepth += 1;
+      else if (char === "]") bracketDepth = Math.max(0, bracketDepth - 1);
+      else if (char === "," && depth === 0 && braceDepth === 0 && bracketDepth === 0) { args.push(text.slice(start, index).trim()); start = index + 1; }
     }
     return null;
   }
@@ -156,6 +160,80 @@
     definition.parameters.forEach((parameter, index) => scoped.set(parameter.toUpperCase(), { name: parameter, value: expandedArgs[index], line, parameters: null }));
     metrics.parameterExpanded = true;
     return expandText(definition.value, scoped, diagnostics, line, { trail: [...trail, key], context, metrics }).text;
+  }
+
+  /**
+   * Compila o primeiro subconjunto de #translate/#xtranslate.
+   *
+   * O recorte aceita uma chamada cujo lado esquerdo contenha apenas marcadores
+   * posicionais, por exemplo `ISNIL(<value>)`. É pequeno de propósito: os
+   * headers também usam grupos opcionais, listas e operadores de stringificação,
+   * que exigem uma gramática própria e não devem ser aproximados por regex.
+   */
+  function compileTranslation(command, argument, line, file) {
+    const separator = argument.indexOf("=>");
+    if (separator < 0) return null;
+    const matchSide = argument.slice(0, separator).trim(), replacement = cleanMacroValue(argument.slice(separator + 2).trim());
+    const call = matchSide.match(/^([A-Za-z_]\w*)\s*\((.*)\)$/);
+    if (!call || /[\[\]]/.test(matchSide)) return null;
+    const rawParameters = call[2].trim();
+    const parameters = rawParameters ? rawParameters.split(",").map(item => item.trim().match(/^<([A-Za-z_]\w*)>$/)?.[1] || null) : [];
+    if (parameters.some(item => !item) || new Set(parameters.map(item => item.toUpperCase())).size !== parameters.length) return null;
+    return { command, name: call[1], parameters, replacement, line, file };
+  }
+
+  // A substituição dos marcadores também percorre tokens. Assim, <v> não
+  // interfere em <value> e textos literais do lado direito ficam intactos.
+  function materializeTranslation(rule, args) {
+    const values = new Map(rule.parameters.map((parameter, index) => [parameter.toUpperCase(), args[index]]));
+    return rule.replacement.replace(/<([A-Za-z_]\w*)>/g, (whole, name) => values.has(name.toUpperCase()) ? values.get(name.toUpperCase()) : whole);
+  }
+
+  /** Aplica traduções de chamada somente fora de strings e comentários. */
+  function applyTranslations(text, translations, diagnostics, line, context, metrics, state = {}) {
+    let result = "", index = 0, quote = null, blockComment = state.blockComment === true;
+    while (index < text.length) {
+      const char = text[index], next = text[index + 1];
+      if (blockComment) {
+        result += char;
+        if (char === "*" && next === "/") { result += next; index += 2; blockComment = false; } else index += 1;
+        continue;
+      }
+      if (quote) {
+        result += char;
+        if (char === quote) { if (next === quote) { result += next; index += 2; continue; } quote = null; }
+        index += 1; continue;
+      }
+      if (char === "/" && next === "/") { result += text.slice(index); break; }
+      if (char === "/" && next === "*") { result += "/*"; index += 2; blockComment = true; continue; }
+      if (char === '"' || char === "'") { quote = char; result += char; index += 1; continue; }
+      if (/[A-Za-z_]/.test(char)) {
+        let end = index + 1;
+        while (end < text.length && /[A-Za-z0-9_]/.test(text[end])) end += 1;
+        const name = text.slice(index, end), rules = translations.get(name.toUpperCase());
+        let open = end;
+        while (open < text.length && /\s/.test(text[open])) open += 1;
+        if (rules?.length && text[open] === "(") {
+          const call = parseMacroArguments(text, open);
+          if (!call) {
+            diagnostics.push(diagnostic("PP0018", "error", `Unclosed invocation of translation ${name}`, line, index + 1, context));
+            result += text.slice(index); break;
+          }
+          const rule = rules.find(candidate => candidate.parameters.length === call.args.length);
+          if (!rule) {
+            const expected = [...new Set(rules.map(candidate => candidate.parameters.length))].sort((a, b) => a - b).join(" or ");
+            diagnostics.push(diagnostic("PP0019", "error", `Translation ${name} expects ${expected} argument(s), received ${call.args.length}`, line, index + 1, context));
+            result += text.slice(index, call.end); index = call.end; continue;
+          }
+          metrics.translationExpanded = true;
+          result += materializeTranslation(rule, call.args);
+          index = call.end; continue;
+        }
+        result += name; index = end; continue;
+      }
+      result += char; index += 1;
+    }
+    return { text: result, blockComment };
   }
 
   /**
@@ -234,7 +312,7 @@
    * - `line`: local da abertura, usado no diagnóstico de bloco incompleto.
    */
   function process(source, options = {}) {
-    const input = String(source ?? ""), definitions = normalizeDefines(options.defines), includes = normalizeIncludes(options.includes);
+    const input = String(source ?? ""), definitions = normalizeDefines(options.defines), includes = normalizeIncludes(options.includes), translations = new Map();
     const diagnostics = [], output = [], map = [], applied = new Set(), entryName = normalizeIncludeName(options.filename || "<source>");
     const maxIncludeDepth = Number.isFinite(options.maxIncludeDepth) ? Math.max(0, Math.trunc(options.maxIncludeDepth)) : 16;
 
@@ -333,10 +411,25 @@
                 }
               }
             }
-          } else if (["command", "xcommand", "translate", "xtranslate"].includes(command) && file !== entryName) {
-            applied.add(command.includes("command") ? "command-recognition" : "translation-recognition");
-            const code = command.includes("command") ? "PP0012" : "PP0013";
-            if (!diagnostics.some(item => item.code === code && item.file === file)) diagnostics.push(diagnostic(code, "warning", `#${command} rules recognized but not applied in ${file}`, line, 1, context));
+          } else if (["translate", "xtranslate"].includes(command)) {
+            if (active()) {
+              applied.add("translation-recognition");
+              const rule = compileTranslation(command, argument, line, file);
+              if (rule) {
+                const key = rule.name.toUpperCase(), overloads = translations.get(key) || [];
+                // Uma regra posterior com a mesma aridade substitui a anterior;
+                // aridades diferentes convivem, como ocorre em headers reais.
+                translations.set(key, [...overloads.filter(item => item.parameters.length !== rule.parameters.length), rule]);
+                applied.add("translation-definition");
+              } else if (!diagnostics.some(item => item.code === "PP0017" && item.file === file)) {
+                diagnostics.push(diagnostic("PP0017", "warning", `#${command} rule uses syntax outside the supported translation subset in ${file}`, line, 1, context));
+              }
+            }
+            ignoredDirectiveContinuation = /;\s*$/.test(raw);
+            emit("", file, line);
+          } else if (["command", "xcommand"].includes(command) && file !== entryName) {
+            applied.add("command-recognition");
+            if (!diagnostics.some(item => item.code === "PP0012" && item.file === file)) diagnostics.push(diagnostic("PP0012", "warning", `#${command} rules recognized but not applied in ${file}`, line, 1, context));
             ignoredDirectiveContinuation = /;\s*$/.test(raw);
             emit("", file, line);
           } else {
@@ -345,8 +438,11 @@
           }
         } else if (!active()) emit("", file, line);
         else {
-          const expanded = expandText(raw, definitions, diagnostics, line, { blockComment, context });
-          if (expanded.text !== raw) applied.add("object-macro-expansion");
+          const translationMetrics = { translationExpanded: false };
+          const translated = applyTranslations(raw, translations, diagnostics, line, context, translationMetrics, { blockComment });
+          const expanded = expandText(translated.text, definitions, diagnostics, line, { blockComment: translated.blockComment, context });
+          if (translationMetrics.translationExpanded) applied.add("translation-expansion");
+          if (expanded.text !== translated.text) applied.add("object-macro-expansion");
           if (expanded.parameterExpanded) applied.add("parameter-macro-expansion");
           emit(expanded.text, file, line);
           blockComment = expanded.blockComment;

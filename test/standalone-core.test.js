@@ -11,7 +11,7 @@ test("carrega advpl-core sozinho em integrações legadas do navegador", () => {
   vm.runInNewContext(source, context, { filename: "advpl-core.js" });
 
   assert.equal(typeof context.AdvPLCore?.parse, "function");
-  assert.equal(context.AdvPLCore.PACKAGE_VERSION, "0.16.0");
+  assert.equal(context.AdvPLCore.PACKAGE_VERSION, "0.17.0");
   const program = context.AdvPLCore.parse('#include "TOTVS.CH"\nUser Function T()\nMsgInfo("OK", "Teste")\nReturn');
   assert.equal(program.message.text, "OK");
   assert.equal(program.modelVersion, "0.1");
