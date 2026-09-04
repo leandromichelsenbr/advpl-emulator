@@ -104,7 +104,7 @@ window.ADVPL_EMULATOR_CONFIG = {
 };
 ```
 
-`includeCatalog` identifica versão, origem e commit do catálogo usado. `#command`, `#xcommand`, `#translate` e `#xtranslate` existentes nesses headers geram advertências de reconhecimento; suas regras ainda não são aplicadas ao fonte. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
+`includeCatalog` identifica versão, origem e commit do catálogo usado. Desde a distribuição `0.17.0`, regras `#translate` e `#xtranslate` em formato de chamada, como `ISNUMBER(<value>)`, são aplicadas. Padrões com grupos opcionais/listas e regras `#command`/`#xcommand` continuam gerando advertências de reconhecimento. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
 
 ### Macros parametrizadas
 
@@ -120,7 +120,18 @@ MsgInfo(ESCOLHA(.T., "a,b", Len({1,2,3})))
 
 Os argumentos aceitam strings com vírgulas, arrays, chamadas e parênteses aninhados. Eles são expandidos antes da substituição no corpo, e nomes formais são substituídos somente como tokens — não dentro de strings, identificadores maiores ou operadores/literais entre pontos. `applied` diferencia `parameter-macro-definition` e `parameter-macro-expansion`.
 
-Diagnósticos específicos: `PP0014` para aridade incorreta, `PP0015` para chamada sem `)`, `PP0016` para parâmetros inválidos e `PP0005` para ciclos. Esta etapa não implementa operadores avançados de macro, regras variádicas nem `#command`/`#translate`.
+Diagnósticos específicos: `PP0014` para aridade incorreta, `PP0015` para chamada sem `)`, `PP0016` para parâmetros inválidos e `PP0005` para ciclos.
+
+### Traduções em formato de chamada
+
+Na distribuição `0.17.0`, o PPO aceita o primeiro recorte de `#translate` e `#xtranslate`:
+
+```advpl
+#xtranslate ISNUMBER(<value>) => ( ValType(<value>) == "N" )
+ConOut(ISNUMBER(10))
+```
+
+O resultado é `ConOut(( ValType(10) == "N" ))`. Os argumentos respeitam parênteses, arrays, índices, strings e vírgulas internas. `PP0017` identifica sintaxe fora do subconjunto, `PP0018` uma chamada sem fechamento e `PP0019` aridade incompatível. Grupos opcionais (`[...]`), listas (`<x,...>`), operadores avançados e regras `#command` ainda não são expandidos.
 
 Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
 

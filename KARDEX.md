@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.16.0` |
+| Versão da distribuição | `0.17.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 93 |
+| Testes automatizados | 97 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.17.0 — 04/09/2026
+
+**Tipo:** traduções no PPO didático.
+
+- Implementado o primeiro subconjunto de `#translate` e `#xtranslate`: chamadas como `ISNIL(<v1>)` e `ISNUMBER(<v1>)`.
+- Argumentos respeitam parênteses, arrays, índices, strings e vírgulas internas; strings e comentários permanecem protegidos.
+- Regras reais do `COMMON.CH` foram usadas como prova de integração com o catálogo distribuído.
+- Adicionados `PP0017` (sintaxe fora do subconjunto), `PP0018` (chamada sem fechamento) e `PP0019` (aridade).
+- A capacidade `translations` passou de `recognized` para `partial`; opcionais, listas e comandos continuam explicitamente fora do recorte.
+- Versão do pacote elevada para `0.17.0`, versão interna do pré-processador para `0.5` e suíte ampliada de 93 para 97 testes.
 
 ### 0.16.0 — 04/09/2026
 

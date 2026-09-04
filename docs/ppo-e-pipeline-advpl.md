@@ -4,7 +4,7 @@
 
 O P0 foi implementado na distribuição `0.9.0`: a API de pré-processamento identifica o texto com `artifact.kind: "didactic-ppo"`, `label: "PPO didático — subconjunto do emulador"` e `compatibility: "partial"`. O modo legado sem o módulo é identificado como `original-source`, com compatibilidade `none`, para não anunciar pré-processamento inexistente. O campo é preservado no modelo e na análise do pipeline, inclusive em análises bloqueadas por erro.
 
-O [contrato de integração](integration.md#contrato-do-ppo-didático) documenta o uso. O painel visual Fonte × PPO, `capabilities` e `applied` foram implementados na versão 0.13.0; a resolução controlada de includes e a proveniência por arquivo chegaram na 0.14.0; a 0.15.0 incorporou um catálogo educacional com carregamento sob demanda; e a 0.16.0 implementou macros parametrizadas. Regras de comando/tradução já são reconhecidas nos headers, mas sua expansão continua sendo a próxima etapa. A descrição da arquitetura do estudo permanece como registro do diagnóstico inicial.
+O [contrato de integração](integration.md#contrato-do-ppo-didático) documenta o uso. O painel visual Fonte × PPO, `capabilities` e `applied` foram implementados na versão 0.13.0; a resolução controlada de includes e a proveniência por arquivo chegaram na 0.14.0; a 0.15.0 incorporou um catálogo educacional com carregamento sob demanda; a 0.16.0 implementou macros parametrizadas; e a 0.17.0 passou a aplicar traduções em formato de chamada, validadas com regras reais do `COMMON.CH`. Padrões opcionais/listas e regras de comando permanecem como próximas etapas. A descrição da arquitetura do estudo permanece como registro do diagnóstico inicial.
 
 ## Resposta curta
 
@@ -79,7 +79,7 @@ O retorno atual de `src/advpl-preprocessor.js` já é um **precursor de um artef
 
 Também está correta a decisão do pipeline de enviar o texto processado ao analisador sintático. Um erro localizado em um ramo condicional inativo não deve bloquear o programa. A preservação de linhas vazias onde havia diretivas ou código excluído mantém diagnósticos simples alinhados ao fonte original.
 
-Entretanto, **a saída atual não deve ser apresentada como PPO compatível com a TOTVS**. Ela implementa somente `#define`, `#undef`, `#ifdef`, `#ifndef`, `#else` e `#endif`. O `#include` é reconhecido, mas o arquivo não é carregado. Não há expansão de `#command`, `#xcommand`, `#translate`, `#xtranslate`, Embedded SQL ou outras regras fornecidas pelos `.ch`. Chamar o resultado atual de “PPO” sem esse qualificador criaria uma expectativa falsa.
+Entretanto, **a saída atual não deve ser apresentada como PPO integralmente compatível com a TOTVS**. O emulador já resolve includes virtuais, macros simples e parametrizadas, condicionais e traduções em formato de chamada. Ainda não há expansão de grupos opcionais/listas de `#translate`, `#command`, `#xcommand`, Embedded SQL ou de todas as demais regras fornecidas pelos `.ch`. Chamar o resultado atual de “PPO TOTVS” sem o qualificador didático criaria uma expectativa falsa.
 
 ## Como os conceitos enriquecem o projeto
 

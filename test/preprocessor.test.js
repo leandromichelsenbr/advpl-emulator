@@ -12,7 +12,7 @@ test("identifica o PPO didático sem alterar o contrato textual e isola os metad
     label: "PPO didático — subconjunto do emulador",
     compatibility: "partial"
   });
-  assert.equal(result.version, "0.4");
+  assert.equal(result.version, "0.5");
   assert.equal(result.source, '\r\nConOut(42)');
   assert.equal(result.definitions.VALOR, "42");
   assert.equal(result.map[1].originalLine, 2);
@@ -26,7 +26,7 @@ test("declara capacidades estáveis do pré-processador", () => {
   assert.deepEqual(result.capabilities, {
     objectMacros: "supported", conditionalCompilation: "supported", undef: "supported",
     sourceMap: "line", includes: "supported", parameterMacros: "supported",
-    translations: "recognized", commands: "recognized", embeddedSql: "unsupported"
+    translations: "partial", commands: "recognized", embeddedSql: "unsupported"
   });
   result.capabilities.objectMacros = "alterado";
   assert.equal(preprocessor.process("").capabilities.objectMacros, "supported");
@@ -107,7 +107,7 @@ test("reconhece include sem carregar arquivo e preserva a execução", () => {
 test("integra condicionais ao núcleo e bloqueia erros antes da análise assíncrona", async () => {
   const program = core.parse('#define TITULO "Correto"\n#ifdef ATIVO\nMsgInfo("Errado", "Teste")\n#else\nMsgInfo(TITULO, "Teste")\n#endif');
   assert.equal(program.message.text, "Correto");
-  assert.equal(program.preprocessor.version, "0.4");
+  assert.equal(program.preprocessor.version, "0.5");
   let analyzed = false;
   const session = pipeline.create({ preprocess: core.preprocess, analyze: async () => { analyzed = true; return { parser: "test", diagnostics: [] }; }, parse: core.parse });
   const execution = await session.run('#ifdef X\nConOut("X")');
@@ -182,7 +182,7 @@ test("reconhece regras de comando dos headers sem inseri-las no PPO", () => {
     includes: { "REGRAS.CH": '#xtranslate USER Function <n> => Function U_<n>\n#xcommand TEST <x> ;\n  SOMETHING <x> => <x>\n#define DOBRO(x) ((x)+(x))\n#define VALOR 10' }
   });
   assert.equal(result.diagnostics.every(item => item.severity === "warning"), true);
-  assert.deepEqual(result.diagnostics.map(item => item.code), ["PP0013", "PP0012"]);
+  assert.deepEqual(result.diagnostics.map(item => item.code), ["PP0017", "PP0012"]);
   assert.doesNotMatch(result.source, /SOMETHING|DOBRO/);
   assert.match(result.source, /ConOut\(10\)/);
 });
@@ -216,4 +216,38 @@ test("diagnostica aridade, fechamento, parâmetros inválidos e ciclos", () => {
   assert.equal(invalid.diagnostics[0].code, "PP0016");
   const cyclic = preprocessor.process('#define F(a) F(a)\nConOut(F(1))');
   assert.equal(cyclic.diagnostics.some(item => item.code === "PP0005"), true);
+});
+
+test("aplica o subconjunto de traduções de chamada com argumentos balanceados", () => {
+  const result = preprocessor.process('#xtranslate ISNIL(<v1>) => ( <v1> == NIL )\n#translate ISARRAY(<value>) => ( ValType(<value>) == "A" )\nConOut(ISNIL(Foo(1, 2)))\nConOut(ISARRAY({1, 2, 3}))');
+  assert.deepEqual(result.diagnostics, []);
+  assert.match(result.source, /ConOut\(\( Foo\(1, 2\) == NIL \)\)/);
+  assert.match(result.source, /ConOut\(\( ValType\(\{1, 2, 3\}\) == "A" \)\)/);
+  assert.equal(result.applied.includes("translation-definition"), true);
+  assert.equal(result.applied.includes("translation-expansion"), true);
+});
+
+test("expande traduções reais de COMMON.CH e preserva textos e comentários", () => {
+  const result = preprocessor.process('#include "COMMON.CH"\nConOut(ISNUMBER(10))\nConOut("ISNUMBER(20)") // ISNUMBER(30)', {
+    includes: { "COMMON.CH": '#xtranslate ISNIL( <v1> ) => ( <v1> == NIL )\n#xtranslate ISNUMBER( <v1> ) => ( valtype( <v1> ) == "N" )' }
+  });
+  assert.deepEqual(result.diagnostics, []);
+  assert.match(result.source, /ConOut\(\( valtype\( 10 \) == "N" \)\)/);
+  assert.match(result.source, /ConOut\("ISNUMBER\(20\)"\) \/\/ ISNUMBER\(30\)/);
+});
+
+test("diagnostica traduções fora do subconjunto, aridade e fechamento", () => {
+  const unsupported = preprocessor.process('#xtranslate TEST [<value>] => <value>');
+  assert.equal(unsupported.diagnostics[0].code, "PP0017");
+  const arity = preprocessor.process('#translate F(<a>, <b>) => <a> + <b>\nConOut(F(1))');
+  assert.equal(arity.diagnostics[0].code, "PP0019");
+  const unclosed = preprocessor.process('#translate F(<a>) => <a>\nLocal value := F(1');
+  assert.equal(unclosed.diagnostics[0].code, "PP0018");
+});
+
+test("mantém sobrecargas de tradução separadas por aridade", () => {
+  const result = preprocessor.process('#translate EMPTY(<a>) => Empty(<a>)\n#translate EMPTY(<a>, <fallback>) => If(Empty(<a>), <fallback>, <a>)\nConOut(EMPTY(cName))\nConOut(EMPTY(cName, "N/A"))');
+  assert.deepEqual(result.diagnostics, []);
+  assert.match(result.source, /ConOut\(Empty\(cName\)\)/);
+  assert.match(result.source, /ConOut\(If\(Empty\(cName\), "N\/A", cName\)\)/);
 });
