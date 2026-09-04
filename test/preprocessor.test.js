@@ -12,7 +12,7 @@ test("identifica o PPO didático sem alterar o contrato textual e isola os metad
     label: "PPO didático — subconjunto do emulador",
     compatibility: "partial"
   });
-  assert.equal(result.version, "0.1");
+  assert.equal(result.version, "0.2");
   assert.equal(result.source, '\r\nConOut(42)');
   assert.equal(result.definitions.VALOR, "42");
   assert.equal(result.map[1].originalLine, 2);
@@ -25,7 +25,7 @@ test("declara capacidades estáveis do pré-processador", () => {
   const result = preprocessor.process("");
   assert.deepEqual(result.capabilities, {
     objectMacros: "supported", conditionalCompilation: "supported", undef: "supported",
-    sourceMap: "line", includes: "recognized", parameterMacros: "unsupported",
+    sourceMap: "line", includes: "supported", parameterMacros: "unsupported",
     translations: "unsupported", commands: "unsupported", embeddedSql: "unsupported"
   });
   result.capabilities.objectMacros = "alterado";
@@ -84,7 +84,7 @@ test("processa undef e condicionais aninhadas", () => {
 test("aceita símbolos fornecidos pelo perfil e preserva o mapa de linhas", () => {
   const result = preprocessor.process('#ifdef PROTHEUS\nConOut("Ativo")\n#endif', { defines: { PROTHEUS: 1 } });
   assert.equal(result.source.split("\n")[1], 'ConOut("Ativo")');
-  assert.deepEqual(result.map[1], { generatedLine: 2, originalLine: 2, originalColumn: 1 });
+  assert.deepEqual(result.map[1], { generatedLine: 2, originalFile: "<source>", originalLine: 2, originalColumn: 1 });
 });
 
 test("diagnostica diretivas inválidas e condicionais não encerradas", () => {
@@ -107,7 +107,7 @@ test("reconhece include sem carregar arquivo e preserva a execução", () => {
 test("integra condicionais ao núcleo e bloqueia erros antes da análise assíncrona", async () => {
   const program = core.parse('#define TITULO "Correto"\n#ifdef ATIVO\nMsgInfo("Errado", "Teste")\n#else\nMsgInfo(TITULO, "Teste")\n#endif');
   assert.equal(program.message.text, "Correto");
-  assert.equal(program.preprocessor.version, "0.1");
+  assert.equal(program.preprocessor.version, "0.2");
   let analyzed = false;
   const session = pipeline.create({ preprocess: core.preprocess, analyze: async () => { analyzed = true; return { parser: "test", diagnostics: [] }; }, parse: core.parse });
   const execution = await session.run('#ifdef X\nConOut("X")');
@@ -118,4 +118,55 @@ test("integra condicionais ao núcleo e bloqueia erros antes da análise assínc
   const successful = pipeline.create({ preprocess: core.preprocess, analyze: async () => ({ parser: "test", diagnostics: [] }), parse: core.parse });
   const included = await successful.run('#include "TOTVS.CH"\nConOut("OK")');
   assert.equal(included.program.diagnostics.filter(item => item.code === "PP0006").length, 1);
+});
+
+test("expande includes virtuais aninhados e preserva a proveniência", () => {
+  const result = preprocessor.process('#include "TOTVS.CH"\nConOut(TITULO)', {
+    filename: "exemplo.prw",
+    includes: {
+      "TOTVS.CH": '#include "CORES.CH"\n#define TITULO "Usina.BR"',
+      "CORES.CH": "#define CLR_TESTE 123"
+    }
+  });
+  assert.deepEqual(result.diagnostics, []);
+  assert.match(result.source, /ConOut\("Usina\.BR"\)/);
+  assert.deepEqual(result.applied, ["include-recognition", "include-expansion", "object-macro-definition", "object-macro-expansion"]);
+  assert.equal(result.map[0].originalFile, "CORES.CH");
+  assert.equal(result.map.at(-1).originalFile, "exemplo.prw");
+  assert.equal(result.definitions.CLR_TESTE, "123");
+});
+
+test("executa o fonte principal com macros fornecidas por include virtual", () => {
+  const program = core.parse('#include "TITULOS.CH"\nMsgInfo(TEXTO, TITULO)', {
+    preprocessor: {
+      filename: "mensagem.prw",
+      includes: { "TITULOS.CH": '#define TEXTO "Conteúdo do header"\n#define TITULO "Include virtual"' }
+    }
+  });
+  assert.equal(program.message.text, "Conteúdo do header");
+  assert.equal(program.message.title, "Include virtual");
+  assert.equal(program.preprocessor.map[0].originalFile, "TITULOS.CH");
+});
+
+test("bloqueia ciclos, travessia de raiz e profundidade excessiva", () => {
+  const cyclic = preprocessor.process('#include "A.CH"', { includes: { "A.CH": '#include "B.CH"', "B.CH": '#include "A.CH"' } });
+  assert.equal(cyclic.diagnostics.some(item => item.code === "PP0008" && item.file === "B.CH"), true);
+  const unsafe = preprocessor.process('#include "../segredo.ch"', { includes: {} });
+  assert.equal(unsafe.diagnostics[0].code, "PP0007");
+  const deep = preprocessor.process('#include "A.CH"', { maxIncludeDepth: 0, includes: { "A.CH": "ConOut(1)" } });
+  assert.equal(deep.diagnostics[0].code, "PP0009");
+});
+
+test("remapeia diagnóstico sintático do PPO para o include de origem", async () => {
+  const session = pipeline.create({
+    preprocess: core.preprocess,
+    analyze: async () => ({ parser: "test", diagnostics: [{ code: "SYN", severity: "error", message: "erro", line: 1, column: 2 }] }),
+    parse: core.parse
+  });
+  const result = await session.run('#include "ERRO.CH"', { preprocessor: { filename: "main.prw", includes: { "ERRO.CH": "ConOut(" } } });
+  assert.equal(result.executed, false);
+  assert.deepEqual(result.analysis.diagnostics[0], {
+    code: "SYN", severity: "error", message: "erro", line: 1, column: 2,
+    generatedLine: 1, file: "ERRO.CH"
+  });
 });

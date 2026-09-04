@@ -1,6 +1,6 @@
 # Matriz de compatibilidade
 
-Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.13.0`, o perfil `protheus-default`, o contrato público `0.1` e o modelo intermediário `0.1`.
+Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.14.0`, o perfil `protheus-default`, o contrato público `0.1` e o modelo intermediário `0.1`.
 
 Os estados seguem o [direcionamento arquitetural](compatibility-layer-roadmap.md#matriz-de-compatibilidade):
 
@@ -20,7 +20,7 @@ Os estados seguem o [direcionamento arquitetural](compatibility-layer-roadmap.md
 |---|---|---|---|---|---|
 | LNG-001 | Expressões | `partial` | Concatenação, soma e subtração, comparações e arrays aninhados. | Não é um avaliador completo de expressões AdvPL; coerções e operadores fora do subconjunto não são garantidos. | `core.test.js`: soma numérica, concatenação, `Space`/`AllTrim`. |
 | LNG-002 | Funções escalares e de array | `partial` | `Space`, `AllTrim`, `StrTran`, `SubStr`, `Left`, `Right`, `Abs`, `cValToChar`, `Chr`, `Len`, `ACopy` e `AClone`; as extrações cobrem posição, extremos e limites. | Assinaturas, tipos e erros cobrem apenas os exemplos testados; posição zero de `SubStr` não integra o contrato garantido. | `core.test.js`: exemplos de `StrTran`, `SubStr`, `Left`, `Right`, `If/Else`, `ACopy`, `AClone` e expressões. |
-| LNG-003 | Pré-processamento controlado | `partial` | `#define`, `#undef`, `#ifdef`, `#ifndef`, `#else`, `#endif`, expansão fora de strings/comentários, ciclos, diagnósticos, mapa de linhas, `capabilities`, `applied` e painel Fonte × PPO. | Sem resolução de `#include`, macros com parâmetros, expressões em condicionais ou pré-processador completo de `.ch`. | `preprocessor.test.js` e mensagem multilinha com `CRLF` em `core.test.js`. |
+| LNG-003 | Pré-processamento controlado | `partial` | `#define`, `#undef`, condicionais, includes virtuais aninhados, expansão fora de strings/comentários, ciclos, diagnósticos, proveniência por arquivo, `capabilities`, `applied` e painel Fonte × PPO. | Sem macros com parâmetros, expressões condicionais completas, `#command`, `#translate` ou acesso automático aos `.ch` da LIB. | `preprocessor.test.js` e mensagem multilinha com `CRLF` em `core.test.js`. |
 | LNG-004 | Declarações e controle de fluxo | `partial` | `Local` múltiplo, `+=`, `If`/`Else` e `For`/`To`/`Step`/`Next`. | Demais declarações, escopos, laços, desvios e semântica completa não são suportados. | `core.test.js`: soma em `For`, `If/Else` e filas em `For`. |
 | LNG-005 | Funções AdvPL | `partial` | Chamadas a `User Function` e `Static Function`, parâmetros, retorno e propagação ordenada de eventos. | Resolução de símbolos, escopos e formas de chamada fora dos casos testados não são garantidos. | `core.test.js`: função auxiliar, eventos e função não chamada. |
 | LNG-006 | Ações e callbacks | `partial` | Sequências como `(MsgInfo(...), oDlg:End())`, `ACTION MsgInfo(...)` e `ACTION oDlg:End()`. | Codeblocks e expressões arbitrárias de callback não são executados. | `core.test.js`: ações compostas e callbacks com console. |
@@ -69,7 +69,7 @@ Os estados seguem o [direcionamento arquitetural](compatibility-layer-roadmap.md
 | ID | Recurso | Estado | Comportamento esperado atual |
 |---|---|---|---|
 | UNS-001 | Consultas e banco Protheus | `unsupported` | Não são executados; os exemplos devem receber dados JSON de referência. |
-| UNS-002 | Arquivos `.ch` | `recognized` | `#include` é identificado e ignorado com `PP0006`; o arquivo não é localizado nem carregado. |
+| UNS-002 | Arquivos `.ch` externos | `partial` | `#include` resolve apenas headers entregues no manifesto; arquivos ausentes recebem `PP0006`, sem leitura automática do disco, AppServer ou rede. |
 | UNS-003 | `VALID`, `WHEN` e máscaras `PICTURE` | `unsupported` | Não são executados como contratos AdvPL; permanecem no backlog de controles. |
 | UNS-004 | Recursos e classes completas da LIB | `unsupported` | Apenas as APIs inventariadas nesta matriz possuem comportamento emulado. |
 | UNS-005 | Código AdvPL arbitrário e binários APO | `unsupported` | O emulador interpreta somente o subconjunto controlado; não carrega nem executa APO. |

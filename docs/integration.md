@@ -54,7 +54,35 @@ const result = AdvPLCore.preprocess('#define VALOR 42\nConOut(VALOR)');
 // result.applied: ["object-macro-definition", "object-macro-expansion"]
 ```
 
-`kind` é o discriminador para integrações; `label` é o rótulo destinado à apresentação; `compatibility` descreve o alcance da etapa de pré-processamento, não a validade daquele programa nem a compatibilidade do runtime. `partial` significa apenas o subconjunto documentado: não certifica equivalência com o PPO TOTVS. Includes são ignorados com advertência, e regras de comando/tradução não são implementadas.
+`kind` é o discriminador para integrações; `label` é o rótulo destinado à apresentação; `compatibility` descreve o alcance da etapa de pré-processamento, não a validade daquele programa nem a compatibilidade do runtime. `partial` significa apenas o subconjunto documentado: não certifica equivalência com o PPO TOTVS. Includes ausentes geram advertência, e regras de comando/tradução ainda não são implementadas.
+
+### Includes virtuais por execução
+
+Na distribuição `0.14.0`, headers podem ser fornecidos por um manifesto em memória. O pré-processador nunca lê o sistema de arquivos nem a rede:
+
+```js
+const preprocessor = {
+  filename: "exemplo.prw",
+  maxIncludeDepth: 16,
+  includes: {
+    "TOTVS.CH": '#include "CORES.CH"\n#define TITULO "Usina.BR"',
+    "CORES.CH": "#define CLR_DESTAQUE 16711680"
+  }
+};
+
+const result = await AdvPLEmulator.runAsync(source, dados, { preprocessor });
+```
+
+O mesmo objeto pode ser enviado em `options.preprocessor` pelo protocolo `postMessage`, ou definido para todas as execuções do frame:
+
+```js
+window.ADVPL_EMULATOR_CONFIG = {
+  headless: true,
+  preprocessor: { filename: "exercicio.prw", includes: headers }
+};
+```
+
+`map` passa a incluir `originalFile`, além da linha e coluna. Diagnósticos sintáticos produzidos sobre o PPO são remapeados para `file` e `line`; `generatedLine` preserva a posição no PPO. Caminhos absolutos e segmentos `..` são recusados. Ciclos e profundidade excessiva bloqueiam a execução. Headers não fornecidos continuam não bloqueantes por meio de `PP0006`.
 
 Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
 

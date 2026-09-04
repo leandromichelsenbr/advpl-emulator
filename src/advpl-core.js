@@ -49,7 +49,7 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.13.0";
+  const PACKAGE_VERSION = "0.14.0";
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
@@ -913,7 +913,15 @@
    * `parseAxCadastro` e `parseFWMBrowse`.
    */
   function executePreprocessed(parser, source, options = {}) {
-    const preprocessing = AdvPLPreprocessor.process(source, { defines: options.defines });
+    // Opções de pré-processamento podem ser agrupadas em `preprocessor` para
+    // integrações novas. Os campos de topo permanecem aceitos por compatibilidade.
+    const preprocessing = AdvPLPreprocessor.process(source, {
+      defines: options.defines,
+      includes: options.includes,
+      filename: options.filename,
+      maxIncludeDepth: options.maxIncludeDepth,
+      ...(options.preprocessor || {})
+    });
     const result = parser(preprocessing.source, options);
     if (result == null) return result;
     result.preprocessor = preprocessing;

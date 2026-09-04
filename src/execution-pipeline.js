@@ -51,12 +51,19 @@
       }
       const analysis = await analyze(preprocessing.source, options.analysis || {});
       analysis.preprocessing = preprocessing;
+      // O parser analisa o PPO. Reassociamos cada posição ao arquivo virtual e
+      // à linha de origem para que um erro dentro de um .CH não pareça pertencer
+      // ao fonte principal. A posição gerada continua disponível para depuração.
+      analysis.diagnostics = (analysis.diagnostics || []).map(item => {
+        const origin = preprocessing.map?.[Math.max(0, Number(item.line || 1) - 1)];
+        return origin ? { ...item, generatedLine: item.line, file: origin.originalFile, line: origin.originalLine } : item;
+      });
       analysis.diagnostics = [...(preprocessing.diagnostics || []), ...(analysis.diagnostics || [])];
       if (currentRevision !== revision) return { executed: false, stale: true, program: null, analysis };
       // Advertências não bloqueiam o exercício; apenas severidade "error" interrompe.
       const errors = (analysis.diagnostics || []).filter(diagnostic => diagnostic.severity === "error");
       if (errors.length) return { executed: false, stale: false, program: null, analysis };
-      const program = parse(source, options.parser || {});
+      const program = parse(source, { ...(options.parser || {}), preprocessor: options.preprocessor || {} });
       if (currentRevision !== revision) return { executed: false, stale: true, program: null, analysis };
       program.parserAnalysis = analysis;
       // O mesmo diagnóstico do pré-processador pode chegar pelos dois caminhos:
