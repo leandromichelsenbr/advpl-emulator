@@ -56,4 +56,9 @@ test("o catálogo distribuído resolve TOTVS.CH e suas dependências sem erro", 
   assert.equal(parameterized.diagnostics.some(item => item.severity === "error"), false);
   assert.match(parameterized.source, /ConOut\(Set\( 4, if\(__SetCentury\(\), "DD\/MM\/YYYY", "DD\/MM\/YY"\) \)\)/);
   assert.equal(parameterized.applied.includes("parameter-macro-expansion"), true);
+  const translated = preprocessor.process('#include "DWDEFS.CH"\nConOut(isNull(Foo(1, 2)))\nConOut(DWGetProp("code"))', { filename: "translation-test.prw", includes, maxIncludeDepth: 32 });
+  assert.equal(translated.diagnostics.some(item => item.severity === "error"), false);
+  assert.match(translated.source, /ConOut\(\(valType\(Foo\(1, 2\)\)=="U"\)\)/);
+  assert.match(translated.source, /ConOut\(DWGetProp\("code", procname\(0\)\)\)/);
+  assert.equal(translated.applied.includes("translation-expansion"), true);
 });

@@ -12,7 +12,7 @@ test("identifica o PPO didático sem alterar o contrato textual e isola os metad
     label: "PPO didático — subconjunto do emulador",
     compatibility: "partial"
   });
-  assert.equal(result.version, "0.6");
+  assert.equal(result.version, "0.7");
   assert.equal(result.source, '\r\nConOut(42)');
   assert.equal(result.definitions.VALOR, "42");
   assert.equal(result.map[1].originalLine, 2);
@@ -107,7 +107,7 @@ test("reconhece include sem carregar arquivo e preserva a execução", () => {
 test("integra condicionais ao núcleo e bloqueia erros antes da análise assíncrona", async () => {
   const program = core.parse('#define TITULO "Correto"\n#ifdef ATIVO\nMsgInfo("Errado", "Teste")\n#else\nMsgInfo(TITULO, "Teste")\n#endif');
   assert.equal(program.message.text, "Correto");
-  assert.equal(program.preprocessor.version, "0.6");
+  assert.equal(program.preprocessor.version, "0.7");
   let analyzed = false;
   const session = pipeline.create({ preprocess: core.preprocess, analyze: async () => { analyzed = true; return { parser: "test", diagnostics: [] }; }, parse: core.parse });
   const execution = await session.run('#ifdef X\nConOut("X")');
@@ -236,11 +236,12 @@ test("expande traduções reais de COMMON.CH e preserva textos e comentários", 
   assert.match(result.source, /ConOut\("ISNUMBER\(20\)"\) \/\/ ISNUMBER\(30\)/);
 });
 
-test("diagnostica traduções fora do subconjunto, aridade e fechamento", () => {
+test("diagnostica traduções fora do subconjunto e fechamento", () => {
   const unsupported = preprocessor.process('#xtranslate TEST [<value>] => <value>');
   assert.equal(unsupported.diagnostics[0].code, "PP0017");
   const arity = preprocessor.process('#translate F(<a>, <b>) => <a> + <b>\nConOut(F(1))');
-  assert.equal(arity.diagnostics[0].code, "PP0019");
+  assert.deepEqual(arity.diagnostics, []);
+  assert.match(arity.source, /ConOut\(F\(1\)\)/);
   const unclosed = preprocessor.process('#translate F(<a>) => <a>\nLocal value := F(1');
   assert.equal(unclosed.diagnostics[0].code, "PP0018");
 });
@@ -266,9 +267,32 @@ test("aplica tradução formada somente por palavras literais", () => {
   assert.match(result.source, /WsMethodBegin\(\) ; BEGIN SEQUENCE/);
 });
 
-test("não aceita pontuação nem captura expressões no subconjunto literal", () => {
-  const punctuation = preprocessor.process('#translate GETPROP -> <name> => <name>');
-  assert.equal(punctuation.diagnostics[0].code, "PP0017");
+test("captura expressões e pontuação estrutural sem consumir o delimitador externo", () => {
+  const punctuation = preprocessor.process('#translate GETPROP-><name> => Read(<name>)\nConOut(GETPROP->customer:name)');
+  assert.deepEqual(punctuation.diagnostics, []);
+  assert.match(punctuation.source, /ConOut\(Read\(customer:name\)\)/);
   const expression = preprocessor.process('#xtranslate BYREF <name> => <name>\nConOut(BYREF source:value)');
-  assert.match(expression.source, /ConOut\(BYREF source:value\)/);
+  assert.match(expression.source, /ConOut\(source:value\)/);
+});
+
+test("processa tradução multilinha preservando o mapa físico", () => {
+  const result = preprocessor.process('#translate ISNULL(<value>);\n  => (ValType(<value>) == "U")\nConOut(ISNULL(Foo(1, 2)))', { filename: "DWDEFS.CH" });
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.map.length, 3);
+  assert.equal(result.map[1].originalLine, 2);
+  assert.match(result.source, /ConOut\(\(ValType\(Foo\(1, 2\)\) == "U"\)\)/);
+});
+
+test("encadeia traduções e bloqueia ciclos", () => {
+  const chained = preprocessor.process('#xtranslate FIRST => SECOND\n#xtranslate SECOND => THIRD\nConOut(FIRST)');
+  assert.deepEqual(chained.diagnostics, []);
+  assert.match(chained.source, /ConOut\(THIRD\)/);
+  const cyclic = preprocessor.process('#xtranslate FIRST => SECOND\n#xtranslate SECOND => FIRST\nConOut(FIRST)');
+  assert.equal(cyclic.diagnostics.some(item => item.code === "PP0020"), true);
+});
+
+test("limita cadeias de tradução a 64 passagens", () => {
+  const rules = Array.from({ length: 65 }, (_, index) => `#xtranslate STEP${index} => STEP${index + 1}`);
+  const result = preprocessor.process(`${rules.join("\n")}\nConOut(STEP0)`);
+  assert.equal(result.diagnostics.some(item => item.code === "PP0021"), true);
 });

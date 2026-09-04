@@ -104,7 +104,7 @@ window.ADVPL_EMULATOR_CONFIG = {
 };
 ```
 
-`includeCatalog` identifica versão, origem e commit do catálogo usado. Desde a distribuição `0.17.0`, regras `#translate` e `#xtranslate` em formato de chamada, como `ISNUMBER(<value>)`, são aplicadas. A `0.18.0` acrescenta sequências literais de palavras e marcadores de identificador, como `BYREF <name>`. Padrões com pontuação, expressões, grupos opcionais/listas e regras `#command`/`#xcommand` continuam gerando advertências de reconhecimento. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
+`includeCatalog` identifica versão, origem e commit do catálogo usado. Desde a distribuição `0.17.0`, regras `#translate` e `#xtranslate` em formato de chamada, como `ISNUMBER(<value>)`, são aplicadas. A `0.18.0` acrescentou sequências literais; a `0.19.0` acrescenta pontuação estrutural, expressões balanceadas e diretivas multilinha. Grupos opcionais/listas e regras `#command`/`#xcommand` continuam gerando advertências de reconhecimento. A execução síncrona `run()` não realiza I/O e, portanto, exige manifesto explícito quando precisa expandir includes.
 
 ### Macros parametrizadas
 
@@ -131,7 +131,7 @@ Na distribuição `0.17.0`, o PPO aceita o primeiro recorte de `#translate` e `#
 ConOut(ISNUMBER(10))
 ```
 
-O resultado é `ConOut(( ValType(10) == "N" ))`. Os argumentos respeitam parênteses, arrays, índices, strings e vírgulas internas. `PP0017` identifica sintaxe fora do subconjunto, `PP0018` uma chamada sem fechamento e `PP0019` aridade incompatível. Grupos opcionais (`[...]`), listas (`<x,...>`), operadores avançados e regras `#command` ainda não são expandidos.
+O resultado é `ConOut(( ValType(10) == "N" ))`. Os argumentos respeitam parênteses, arrays, índices, strings e vírgulas internas. `PP0017` identifica sintaxe fora do subconjunto e `PP0018` uma chamada sem fechamento. Uma aridade diferente apenas não combina com a regra, permitindo que a função real de mesmo nome continue no fonte. Grupos opcionais (`[...]`), listas (`<x,...>`), operadores avançados e regras `#command` ainda não são expandidos.
 
 Na distribuição `0.18.0`, o lado esquerdo também pode ser uma sequência de palavras e marcadores que capturam um identificador:
 
@@ -140,7 +140,9 @@ Na distribuição `0.18.0`, o lado esquerdo também pode ser uma sequência de p
 Local destination := BYREF source
 ```
 
-O resultado é `Local destination := source`. Também são aceitas traduções formadas apenas por palavras, como `BEGIN WSMETHOD`. O recorte não captura membros ou expressões: `BYREF alias->field`, `BYREF object:property` e `BYREF object.member` permanecem inalterados até que a gramática de expressões seja implementada.
+O resultado é `Local destination := source`. Também são aceitas traduções formadas apenas por palavras, como `BEGIN WSMETHOD`. Na versão 0.18.0, esse marcador ainda se limitava a um identificador; a versão seguinte amplia o contrato.
+
+Na distribuição `0.19.0`, marcadores passam a capturar essas expressões de forma balanceada, e tokens como `->`, `:=`, `;`, `:`, `.`, parênteses e chaves podem integrar o padrão. Diretivas partidas por `;` físico antes de `=>` são remontadas sem perder o mapa de linhas. Resultados de uma regra podem acionar outra; `PP0020` bloqueia ciclos e `PP0021` bloqueia cadeias acima de 64 passagens por linha.
 
 Um resultado com erros continua contendo `artifact` para inspeção. Antes de executar, verifique `diagnostics` ou use o pipeline assíncrono, que bloqueia erros. Metadados são independentes por chamada e serializáveis em JSON.
 
