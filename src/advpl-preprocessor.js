@@ -27,6 +27,17 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
   const VERSION = "0.1";
+  const CAPABILITIES = Object.freeze({
+    objectMacros: "supported",
+    conditionalCompilation: "supported",
+    undef: "supported",
+    sourceMap: "line",
+    includes: "recognized",
+    parameterMacros: "unsupported",
+    translations: "unsupported",
+    commands: "unsupported",
+    embeddedSql: "unsupported"
+  });
   // Todos os diagnósticos recebem a mesma origem para não serem confundidos
   // com mensagens do parser TDS ou com aproximações de assinatura do emulador.
   const diagnostic = (code, severity, message, line, column = 1) => ({ code, severity, message, line, column, origin: "preprocessor" });
@@ -120,7 +131,7 @@
    */
   function process(source, options = {}) {
     const input = String(source ?? ""), lines = input.split(/\r?\n/), definitions = normalizeDefines(options.defines);
-    const diagnostics = [], output = [], map = [], conditions = [];
+    const diagnostics = [], output = [], map = [], conditions = [], applied = new Set();
     let blockComment = false;
     // Um ramo só está ativo quando todos os quadros da pilha estão ativos.
     // A formulação explícita favorece a leitura; a profundidade esperada é
@@ -131,32 +142,38 @@
       if (directive && !blockComment) {
         const command = directive[1].toLowerCase(), argument = directive[2] || "", identifier = argument.match(/^([A-Za-z_]\w*)/)?.[1] || null;
         if (command === "ifdef" || command === "ifndef") {
+          applied.add("conditional-compilation");
           const parentActive = active();
           if (!identifier || argument.trim() !== identifier) diagnostics.push(diagnostic("PP0001", "error", `Invalid #${command} directive`, line));
           const exists = identifier ? definitions.has(identifier.toUpperCase()) : false, condition = command === "ifdef" ? exists : !exists;
           conditions.push({ parentActive, condition, active: parentActive && condition, elseSeen: false, line });
         } else if (command === "else") {
+          applied.add("conditional-compilation");
           const frame = conditions.at(-1);
           if (!frame || argument) diagnostics.push(diagnostic("PP0003", "error", "Unmatched or invalid #else", line));
           else if (frame.elseSeen) diagnostics.push(diagnostic("PP0003", "error", "Duplicate #else", line));
           else { frame.elseSeen = true; frame.active = frame.parentActive && !frame.condition; }
         } else if (command === "endif") {
+          applied.add("conditional-compilation");
           if (!conditions.length || argument) diagnostics.push(diagnostic("PP0003", "error", "Unmatched or invalid #endif", line)); else conditions.pop();
         } else if (command === "define") {
+          if (active()) applied.add("object-macro-definition");
           if (active()) {
             const match = argument.match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/);
             if (!match || !match[2]) diagnostics.push(diagnostic("PP0001", "error", "Invalid #define directive", line));
             else { const key = match[1].toUpperCase(); if (definitions.has(key)) diagnostics.push(diagnostic("PP0002", "warning", `Macro redefined: ${match[1]}`, line)); definitions.set(key, { name: match[1], value: match[2], line }); }
           }
         } else if (command === "undef") {
+          if (active()) applied.add("macro-undefinition");
           if (active()) { if (!identifier || argument.trim() !== identifier) diagnostics.push(diagnostic("PP0001", "error", "Invalid #undef directive", line)); else definitions.delete(identifier.toUpperCase()); }
         } else if (command === "include") {
+          if (active()) applied.add("include-recognition");
           if (active()) diagnostics.push(diagnostic("PP0006", "warning", `Include recognized but not loaded: ${argument || "<missing>"}`, line));
         } else diagnostics.push(diagnostic("PP0001", "error", `Unsupported directive: #${directive[1]}`, line));
         // A linha vazia mantém a numeração do fonte original no resultado.
         output.push("");
       } else if (!active()) output.push("");
-      else { const expanded = expandText(raw, definitions, diagnostics, line, { blockComment }); output.push(expanded.text); blockComment = expanded.blockComment; }
+      else { const expanded = expandText(raw, definitions, diagnostics, line, { blockComment }); if (expanded.text !== raw) applied.add("object-macro-expansion"); output.push(expanded.text); blockComment = expanded.blockComment; }
       map.push({ generatedLine: line, originalLine: line, originalColumn: 1 });
     });
     // Qualquer quadro remanescente representa um `#if...` sem `#endif`.
@@ -169,7 +186,16 @@
       label: "PPO didático — subconjunto do emulador",
       compatibility: "partial"
     };
-    return { version: VERSION, artifact, source: output.join(input.includes("\r\n") ? "\r\n" : "\n"), map, definitions: Object.fromEntries([...definitions].map(([key, item]) => [key, item.value])), diagnostics };
+    return {
+      version: VERSION,
+      artifact,
+      capabilities: { ...CAPABILITIES },
+      applied: [...applied],
+      source: output.join(input.includes("\r\n") ? "\r\n" : "\n"),
+      map,
+      definitions: Object.fromEntries([...definitions].map(([key, item]) => [key, item.value])),
+      diagnostics
+    };
   }
-  return Object.freeze({ VERSION, process });
+  return Object.freeze({ VERSION, CAPABILITIES, process });
 });

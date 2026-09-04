@@ -6,14 +6,24 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.12.0` |
+| Versão da distribuição | `0.13.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 78 |
+| Testes automatizados | 80 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.13.0 — 03/09/2026
+
+**Tipo:** observabilidade do pré-processador e pipeline.
+
+- O PPO didático passa a declarar `capabilities`, distinguindo suporte, reconhecimento e ausência de cada família de transformação.
+- Cada execução informa em `applied` somente as transformações realmente utilizadas no fonte.
+- Adicionado painel recolhível **Fonte × PPO didático**, com comparação lado a lado e resumo de capacidades.
+- O fallback legado declara capacidades vazias e nenhuma transformação, sem fingir pré-processamento.
+- Suíte ampliada de 78 para 80 testes automatizados.
 
 ### 0.12.0 — 03/09/2026
 

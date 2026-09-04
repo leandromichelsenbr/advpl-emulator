@@ -21,6 +21,26 @@ test("identifica o PPO didático sem alterar o contrato textual e isola os metad
   assert.equal(core.preprocess("").artifact.kind, "didactic-ppo");
 });
 
+test("declara capacidades estáveis do pré-processador", () => {
+  const result = preprocessor.process("");
+  assert.deepEqual(result.capabilities, {
+    objectMacros: "supported", conditionalCompilation: "supported", undef: "supported",
+    sourceMap: "line", includes: "recognized", parameterMacros: "unsupported",
+    translations: "unsupported", commands: "unsupported", embeddedSql: "unsupported"
+  });
+  result.capabilities.objectMacros = "alterado";
+  assert.equal(preprocessor.process("").capabilities.objectMacros, "supported");
+});
+
+test("informa somente as transformações aplicadas em cada PPO", () => {
+  const transformed = preprocessor.process('#define FLAG 1\n#ifdef FLAG\nConOut(FLAG)\n#endif\n#include "TOTVS.CH"\n#undef FLAG');
+  assert.deepEqual(transformed.applied, [
+    "object-macro-definition", "conditional-compilation", "object-macro-expansion",
+    "include-recognition", "macro-undefinition"
+  ]);
+  assert.deepEqual(preprocessor.process('ConOut("sem alteração")').applied, []);
+});
+
 test("preserva o rótulo parcial em includes ignorados e erros de diretiva", () => {
   const included = preprocessor.process('#include "TOTVS.CH"\nConOut("OK")');
   const invalid = preprocessor.process('#command TEST => ConOut("TEST")');

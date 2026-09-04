@@ -105,6 +105,14 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .diagnostic { padding: 7px 16px; border-left: 4px solid #7b8791; }
 .diagnostic-warning { border-left-color: #e4ac31; color: #ffd889; }
 .diagnostic-error { border-left-color: #d95555; color: #ffb4b4; }
+.ppo-inspector { border-top: 1px solid #394754; background: #111820; color: #dce7ef; font: 12px/1.4 Consolas, "Courier New", monospace; }
+.ppo-inspector[hidden] { display: none; }
+.ppo-inspector summary { cursor: pointer; padding: 8px 16px; color: #9ed8ff; user-select: none; }
+.ppo-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; max-height: 300px; background: #394754; }
+.ppo-columns section { min-width: 0; padding: 8px; overflow: auto; background: #141a21; }
+.ppo-columns strong { display: block; margin-bottom: 6px; color: #aebdca; }
+.ppo-columns pre { min-width: max-content; margin: 0; white-space: pre; tab-size: 4; }
+.ppo-capabilities { padding: 7px 16px; border-top: 1px solid #394754; color: #aebdca; }
 
 .desktop {
   flex: 1;
@@ -359,6 +367,7 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 }
 
 @media (max-width: 900px) {
+  .ppo-columns { grid-template-columns: 1fr; }
   .workspace { grid-template-columns: 1fr; }
   .editor-pane { min-height: 520px; }
   .exercise-instructions ol { display: block; }
