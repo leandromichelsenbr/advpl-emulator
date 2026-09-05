@@ -81,6 +81,19 @@ Return</textarea>
     </div>
   </div>
 
+  <div id="confirmOverlay" class="confirm-overlay" hidden>
+    <wa-dialog class="confirm-dialog dict-msdialog" data-advpl="tdialog" opened state="normal">
+      <div class="confirm-body">
+        <div class="confirm-icon">i</div>
+        <div><strong id="confirmTitle">Atenção</strong><p id="confirmText"></p></div>
+      </div>
+      <div class="confirm-actions">
+        <button id="confirmNo" class="confirm-secondary"><u>N</u>ão</button>
+        <button id="confirmYes" class="confirm-primary"><u>S</u>im</button>
+      </div>
+    </wa-dialog>
+  </div>
+
   <script src="data/sample-data.js"></script>
   <script src="src/advpl-model.js?v=0.19.0"></script>
   <script src="src/advpl-preprocessor.js?v=0.19.0"></script>
@@ -88,6 +101,7 @@ Return</textarea>
   <script src="src/advpl-core.js?v=0.19.0"></script>
   <script src="src/tds-parser-adapter.js?v=0.19.0"></script>
   <script src="src/execution-pipeline.js?v=0.19.0"></script>
+  <script src="src/fw-dialog-runtime.js?v=0.19.1"></script>
   <script src="msdialog.js?v=0.19.0"></script>
 </body>
 </html>
