@@ -1,5 +1,7 @@
 # Direcionamento: camada de compatibilidade AdvPL/Protheus para Web
 
+> **Registro histórico — atualizado em 08/09/2026:** a direção vigente está na [arquitetura](ARCHITECTURE.md), no [roadmap](ROADMAP.md), na [política de compatibilidade](COMPATIBILITY.md) e no [ADR 0001](adr/0001-ppo-como-fronteira-canonica.md). As propostas abaixo de ampliar o pré-processador local e sua ordem de implementação foram substituídas por PPO oficial como fronteira canônica e pela prioridade didática. Os registros de entregas e contratos atuais permanecem válidos; as novas camadas ainda são arquitetura-alvo.
+
 ## Decisão arquitetural
 
 O AdvPL Emulator deixa de ser orientado apenas à previsão de caixas de diálogo. O desenvolvimento passa a ser guiado pela construção incremental de uma **camada de compatibilidade AdvPL/Protheus para navegadores**, voltada a treinamento, documentação, experimentação e visualização segura de interfaces, dados fictícios e relatórios.

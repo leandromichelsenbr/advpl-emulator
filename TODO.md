@@ -1,6 +1,6 @@
 # Próximos passos
 
-Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser desenvolvido como uma camada de compatibilidade educacional e visual AdvPL/Protheus para Web. A decisão, arquitetura-alvo e marcos estão em [`docs/compatibility-layer-roadmap.md`](docs/compatibility-layer-roadmap.md).
+Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser desenvolvido como uma camada de compatibilidade educacional e visual AdvPL/Protheus para Web. A [arquitetura-alvo](docs/ARCHITECTURE.md) e o [roadmap vigente](docs/ROADMAP.md) definem as decisões e a ordem de investimento. Este arquivo mantém o inventário detalhado e o histórico de entregas; itens pendentes não estabelecem prioridade por sua posição.
 
 ## Princípios do projeto
 
@@ -26,6 +26,7 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] Ampliar `#translate`/`#xtranslate` para sequências literais de palavras e marcadores de identificador, validando `BYREF <nome>` de `APWEBSRV.CH`.
 - [x] Ampliar `#translate`/`#xtranslate` para pontuação, expressões balanceadas, diretivas multilinha e encadeamento protegido, validando `DWDEFS.CH`.
 - [ ] Implementar grupos opcionais e listas em `#translate`/`#xtranslate`, antes de iniciar `#command`/`#xcommand`.
+- [ ] Integrar obtenção/importação de PPO oficial e proveniência por arquivo, conforme o [ADR 0001](docs/adr/0001-ppo-como-fronteira-canonica.md); preservar o suporte didático local já entregue.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.
@@ -127,7 +128,7 @@ O inventário detalhado e a comparação com o suporte atual estão em [`docs/da
 - [x] Implementar `SubStr()` com índice baseado em 1, quantidade opcional, posição negativa, limites seguros e diagnóstico de assinatura.
 - [x] Implementar `Left()` e `Right()` sobre a mesma camada de operações de strings, com limites seguros e diagnósticos.
 - [ ] Implementar `At()` e `RAt()` para localizar delimitadores antes da extração com `SubStr()`.
-- [ ] Implementar o [pré-processador mínimo observável](docs/compatibility-layer-roadmap.md#marco-b--pré-processador-mínimo-observável) antes de ampliar comandos dependentes de `.ch`.
+- [ ] Caracterizar comandos dependentes de `.ch` com pares PRW/PPO oficiais antes de ampliar o parser, conforme a [política de fixtures](docs/COMPATIBILITY.md#fixtures-prwppo). O pré-processador mínimo local já entregue permanece parcial.
 - [ ] Melhorar resolução de variáveis `Local`, `Private`, `Public` e propriedades de objetos.
 - [ ] Completar chamadas encadeadas, atribuições, condicionais e laços; `+=`, `If/Else` e `For/To/Step/Next` possuem suporte inicial em fluxos independentes.
 - [ ] Produzir diagnósticos com linha, coluna e sugestão quando uma construção não for suportada.
