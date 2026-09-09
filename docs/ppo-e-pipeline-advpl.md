@@ -1,5 +1,7 @@
 # PPO e o pipeline do AdvPL: conclusões para o emulador
 
+> **Registro histórico — atualizado em 08/09/2026:** a direção vigente está na [arquitetura](ARCHITECTURE.md), no [roadmap](ROADMAP.md), na [política de compatibilidade](COMPATIBILITY.md) e no [ADR 0001](adr/0001-ppo-como-fronteira-canonica.md). As propostas abaixo de ampliar o pré-processador local e sua ordem de implementação foram substituídas por PPO oficial como fronteira canônica e pela prioridade didática. Os registros de entregas e contratos atuais permanecem válidos; as novas camadas ainda são arquitetura-alvo.
+
 ## Implementação do primeiro passo — 03/09/2026
 
 O P0 foi implementado na distribuição `0.9.0`: a API de pré-processamento identifica o texto com `artifact.kind: "didactic-ppo"`, `label: "PPO didático — subconjunto do emulador"` e `compatibility: "partial"`. O modo legado sem o módulo é identificado como `original-source`, com compatibilidade `none`, para não anunciar pré-processamento inexistente. O campo é preservado no modelo e na análise do pipeline, inclusive em análises bloqueadas por erro.

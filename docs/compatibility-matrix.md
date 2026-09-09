@@ -2,7 +2,7 @@
 
 Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.19.0`, o perfil `protheus-default`, o contrato público `0.1` e o modelo intermediário `0.1`.
 
-Os estados seguem o [direcionamento arquitetural](compatibility-layer-roadmap.md#matriz-de-compatibilidade):
+A [política de compatibilidade](COMPATIBILITY.md) define a evolução por fixtures PRW/PPO reais. Os estados do catálogo atual são:
 
 | Estado | Leitura correta |
 |---|---|

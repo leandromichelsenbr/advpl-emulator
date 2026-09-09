@@ -2,7 +2,17 @@
 
 Camada de compatibilidade educacional e visual para executar, no navegador, um subconjunto controlado de AdvPL/Protheus sem depender de AppServer, banco Protheus ou SmartClient.
 
-O direcionamento arquitetural, os limites da analogia com o Wine e o planejamento das camadas estão em [Camada de compatibilidade AdvPL/Protheus para Web](docs/compatibility-layer-roadmap.md).
+A direção consolidada está na [arquitetura-alvo](docs/ARCHITECTURE.md), com PPO oficial como fronteira canônica, binder, compiler, ISA própria baseada em pilha e VM. Essas decisões orientam a evolução; não descrevem todas as capacidades já implementadas.
+
+## Documentação
+
+- [Arquitetura e responsabilidades](docs/ARCHITECTURE.md).
+- [Roadmap e prioridades didáticas](docs/ROADMAP.md).
+- [Política de compatibilidade e fixtures PRW/PPO](docs/COMPATIBILITY.md).
+- [ADR 0001 — PPO como fronteira canônica](docs/adr/0001-ppo-como-fronteira-canonica.md).
+- [Matriz do suporte atual](docs/compatibility-matrix.md) e [contrato de integração](docs/integration.md).
+
+O [direcionamento anterior](docs/compatibility-layer-roadmap.md) permanece como histórico das propostas iniciais.
 
 O estudo sobre a pré-compilação, o PPO, sua diferença para APO/RPO e as consequências arquiteturais para o emulador está em [PPO e o pipeline do AdvPL](docs/ppo-e-pipeline-advpl.md).
 
@@ -26,7 +36,7 @@ Os próximos componentes, calibrações visuais e evoluções do interpretador e
 
 O histórico consolidado de versões e entregas está no [Kardex do projeto](KARDEX.md).
 
-## Arquitetura atualizável
+## Arquitetura atual
 
 ```text
 Fonte AdvPL
