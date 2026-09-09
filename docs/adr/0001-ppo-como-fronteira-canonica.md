@@ -6,7 +6,7 @@
 
 ## Contexto
 
-O produto é um ambiente didático, funcional e visual para exemplos de interface e exercícios AdvPL. Interpretar PRW junto com todo o universo de includes, diretivas e regras da LIB amplia o trabalho antes de chegar à lógica e à interação que queremos ensinar. O projeto já possui um pré-processador local parcial, identificado como PPO didático, que não resolve includes nem equivale à toolchain oficial.
+O produto é um ambiente didático, funcional e visual para exemplos de interface e exercícios AdvPL. Interpretar PRW junto com todo o universo de includes, diretivas e regras da LIB amplia o trabalho antes de chegar à lógica e à interação que queremos ensinar. O projeto já possui um pré-processador local parcial, identificado como PPO didático, com includes virtuais, catálogo educacional, macros parametrizadas e um subconjunto de traduções. Essas capacidades não equivalem à toolchain oficial.
 
 ## Decisão
 
