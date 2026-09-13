@@ -28,6 +28,8 @@ Instale a dependência local e abra `index.html` em um navegador:
 npm install
 ```
 
+Selecione **PRW didático** para o fluxo local existente ou **PPO previamente gerado** para colar texto já pré-processado. A entrada PPO não carrega includes nem expande macros; sua origem não é verificada. Veja o [contrato de entrada PPO](docs/integration.md#entrada-ppo-fornecida).
+
 Pressione **Executar código** ou `Ctrl+Enter`. Não há etapa de compilação.
 
 O laboratório público sem autenticação está em [`exercise.html`](exercise.html).

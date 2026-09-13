@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.19.0` |
+| Versão da distribuição | `0.20.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 103 |
+| Testes automatizados | 112 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.20.0 — 12/09/2026
+
+**Tipo:** fronteira explícita para entrada PPO previamente gerada.
+
+- Modo PPO nas duas páginas e APIs, sem carregar includes ou aplicar macros locais.
+- Origem não verificada, proveniência declarada e posições no arquivo PPO.
+- Diretivas pendentes bloqueadas antes de analisar/executar; fluxo PRW preservado.
+- Fixture sintética e seis testes de contrato, equivalência e falhas; 112 testes locais.
+- Compiler, ISA, VM e corpus PRW/PPO oficial permanecem pendentes.
+
 
 ### 0.19.0 — 04/09/2026
 
