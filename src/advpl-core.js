@@ -49,7 +49,7 @@
   // A versão do pacote evolui separadamente enquanto a API 0.1 permanecer compatível.
   const VERSION = "0.1.0";
   const API_VERSION = "0.1";
-  const PACKAGE_VERSION = "0.19.0";
+  const PACKAGE_VERSION = "0.20.0";
 
   const DEFAULT_INDENT = "    ";
   const BLOCK_OPEN_PATTERN = /^(?:(?:user|static)\s+function\b|if\b(?!\s*\()|for\b|while\b|do\s+case\b|try\b|define\s+(?:ms)?dialog\b)/i;
@@ -906,7 +906,7 @@
    * Adapta os produtores históricos ao pipeline novo sem reescrevê-los.
    *
    * Cada parser interno continua recebendo texto AdvPL simples e produzindo seu
-   * payload legado. Este adaptador executa o pré-processador antes, anexa o
+   * payload legado. Este adaptador prepara PRW ou valida PPO fornecido, anexa o
    * resultado completo para observabilidade, combina os diagnósticos das duas
    * fases e, por fim, aplica o envelope do modelo intermediário. Concentrar a
    * integração aqui garante o mesmo contrato para `parse`, `parseReport`,
@@ -915,18 +915,65 @@
   function executePreprocessed(parser, source, options = {}) {
     // Opções de pré-processamento podem ser agrupadas em `preprocessor` para
     // integrações novas. Os campos de topo permanecem aceitos por compatibilidade.
-    const preprocessing = AdvPLPreprocessor.process(source, {
+    const preprocessing = prepareInput(source, {
       defines: options.defines,
       includes: options.includes,
       filename: options.filename,
       maxIncludeDepth: options.maxIncludeDepth,
-      ...(options.preprocessor || {})
+      ...(options.preprocessor || {}),
+      inputMode: options.inputMode ?? "prw",
+      provenance: options.provenance
     });
+    if (options.inputMode === "ppo" && preprocessing.diagnostics.length) {
+      const error = new SyntaxError(preprocessing.diagnostics[0].message);
+      error.diagnostics = preprocessing.diagnostics;
+      throw error;
+    }
     const result = parser(preprocessing.source, options);
     if (result == null) return result;
     result.preprocessor = preprocessing;
     result.diagnostics = [...preprocessing.diagnostics, ...(result.diagnostics || [])];
+    if (options.inputMode === "ppo") result.diagnostics = result.diagnostics.map(item => ({ ...item, file: preprocessing.map[0].originalFile }));
     return AdvPLModel.finalize(result);
+  }
+
+  /**
+   * Recebe PRW didático (padrão) ou PPO já preparado. PPO não passa por macros,
+   * includes ou traduções locais. A proveniência é declarada pelo chamador,
+   * nunca uma certificação de geração oficial. Sem mapa externo confiável,
+   * as posições referem-se exclusivamente ao arquivo PPO.
+   * Retorna envelope sem efeitos; diretivas geram diagnostics (PPO0001),
+   * enquanto modo desconhecido lança TypeError. A execução síncrona converte
+   * diagnósticos de entrada PPO em SyntaxError antes de chamar o executor.
+   */
+  function prepareInput(source, options = {}) {
+    const mode = options.inputMode ?? "prw";
+    if (mode !== "prw" && mode !== "ppo") throw new TypeError("inputMode deve ser prw ou ppo.");
+    if (mode === "prw") return AdvPLPreprocessor.process(source, options);
+    const text = String(source ?? "");
+    const filename = options.filename || "input.ppo";
+    // Mascara comentários preservando quebras e colunas; strings têm prioridade
+    // para que marcadores de comentário dentro delas não escondam diretivas.
+    const visible = text.replace(/"(?:""|[^"\r\n])*"|'(?:''|[^'\r\n])*'|\/\*[\s\S]*?\*\/|\/\/[^\r\n]*/g,
+      token => token.startsWith("/") ? token.replace(/[^\r\n]/g, " ") : token);
+    const diagnostics = [];
+    visible.split(/\r?\n/).forEach((line, index) => {
+      if (/^\s*#/.test(line)) diagnostics.push({
+        code: "PPO0001", severity: "error", origin: "ppo-input", file: filename,
+        line: index + 1, column: line.indexOf("#") + 1,
+        message: "A entrada PPO deve estar sem diretivas, inclusive #line. Forneça texto já pré-processado ou selecione PRW didático."
+      });
+    });
+    const provenance = {};
+    for (const key of ["toolchain", "includes", "symbols", "generation", "reference"]) {
+      if (typeof options.provenance?.[key] === "string") provenance[key] = options.provenance[key];
+    }
+    return {
+      version: "ppo-input-0.1",
+      artifact: { kind: "provided-ppo", label: "PPO fornecido — origem não verificada", compatibility: "unverified", provenance },
+      source: text, definitions: {}, capabilities: {}, applied: [], diagnostics,
+      map: text.split(/\r?\n/).map((_, index) => ({ generatedLine: index + 1, originalFile: filename, originalLine: index + 1, originalColumn: 1 }))
+    };
   }
 
   return Object.freeze({
@@ -935,7 +982,7 @@
     parseReport: (source, options) => executePreprocessed(parseReport, source, options),
     parseAxCadastro: (source, options) => executePreprocessed(parseAxCadastro, source, options),
     parseFWMBrowse: (source, options) => executePreprocessed(parseFWMBrowse, source, options),
-    preprocess: AdvPLPreprocessor.process,
+    preprocess: prepareInput,
     validateModel: AdvPLModel.validate,
     evaluate, parseAction, diagnose, statements, splitTopLevel, splitArguments, parseArray, editorNewline, editorTab
   });

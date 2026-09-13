@@ -41,6 +41,13 @@
     ppoInspectorEl.hidden = false;
     ppoInspectorEl.querySelector('[data-ppo="source"]').textContent = String(originalSource ?? "");
     ppoInspectorEl.querySelector('[data-ppo="output"]').textContent = String(preprocessing.source ?? "");
+    const provided = preprocessing.artifact?.kind === "provided-ppo";
+    ppoInspectorEl.querySelector("summary").textContent = provided ? "Entrada PPO fornecida" : "Fonte × PPO didático";
+    ppoInspectorEl.querySelectorAll("strong")[1].textContent = provided ? "PPO fornecido" : "PPO didático";
+    if (provided) {
+      ppoInspectorEl.querySelector(".ppo-capabilities").textContent = preprocessing.artifact.label + " · Sem transformações locais";
+      return;
+    }
     const supported = Object.entries(preprocessing.capabilities || {}).filter(([, state]) => state === "supported" || state === "line").map(([name]) => name);
     const applied = preprocessing.applied || [];
     ppoInspectorEl.querySelector(".ppo-capabilities").textContent = `Capacidades: ${supported.join(", ") || "fallback legado"} · Aplicadas: ${applied.join(", ") || "nenhuma transformação"}`;
@@ -749,7 +756,7 @@
       const item = document.createElement("div");
       item.className = `diagnostic diagnostic-${diagnostic.severity || "info"}`;
       const origin = diagnostic.origin === "emulator-signatures" ? "assinaturas do emulador" : diagnostic.origin === "tds-parser" ? "parser sintático TDS" : diagnostic.origin;
-      item.textContent = `${diagnostic.code}: ${diagnostic.message} — linha ${diagnostic.line}, coluna ${diagnostic.column} · ${origin}`;
+      item.textContent = `${diagnostic.code}: ${diagnostic.message} — ${diagnostic.file ? diagnostic.file + ": " : ""}linha ${diagnostic.line}, coluna ${diagnostic.column} · ${origin}`;
       diagnosticsEl.append(item);
     }
   }
@@ -1066,9 +1073,17 @@
     preprocess: (source, options) => AdvPLCore.preprocess(source, options)
   });
   let uiRunSequence = 0;
+  const inputModeEl = document.getElementById("inputMode");
+  if (inputModeEl) inputModeEl.value = emulatorConfig.inputMode || "prw";
+  function inputOptions(options) {
+    const inputMode = options.inputMode ?? inputModeEl?.value ?? emulatorConfig.inputMode ?? "prw";
+    if (inputModeEl) inputModeEl.value = inputMode;
+    return { ...options, inputMode, provenance: options.provenance ?? emulatorConfig.provenance };
+  }
 
   async function preparePreprocessor(source, options = {}) {
     const configured = { ...(emulatorConfig.preprocessor || {}), ...(options.preprocessor || {}) };
+    if (options.inputMode === "ppo") return configured;
     if (configured.includes !== undefined || configured.builtinIncludes === false || !globalThis.AdvPLIncludeLoader) return configured;
     try {
       const loaded = await globalThis.AdvPLIncludeLoader.load(source, { baseUrl: configured.catalogUrl });
@@ -1081,13 +1096,14 @@
   }
 
   function runSource(source, data, options = {}) {
+    options = inputOptions(options);
     uiRunSequence += 1;
     executionPipeline?.cancel();
     if (typeof source === "string") sourceEl.value = source;
     updateHighlighting();
     try {
       const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
-      const program = AdvPLCore.parse(sourceEl.value, { tables, preprocessor: options.preprocessor || emulatorConfig.preprocessor || {} });
+      const program = AdvPLCore.parse(sourceEl.value, { ...options, tables, preprocessor: options.preprocessor || emulatorConfig.preprocessor || {} });
       renderPreprocessing(sourceEl.value, program.preprocessor);
       render(program);
       runButtonEl.disabled = false;
@@ -1101,6 +1117,7 @@
   }
 
   async function runSourceAsync(source, data, options = {}) {
+    options = inputOptions(options);
     const sequence = ++uiRunSequence;
     if (typeof source === "string") sourceEl.value = source;
     updateHighlighting();
@@ -1110,17 +1127,23 @@
     try {
       const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
       const preprocessor = await preparePreprocessor(sourceEl.value, options);
+      if (sequence !== uiRunSequence) return { executed: false, stale: true, program: null, analysis: null };
       let result;
       if (executionPipeline) {
         result = await executionPipeline.run(sourceEl.value, {
+          inputMode: options.inputMode,
+          provenance: options.provenance,
           analysis: options.analysis,
           parser: { tables },
           preprocessor
         });
       } else {
-        const analysis = await analyzeSource(sourceEl.value, options.analysis);
+        const preprocessing = AdvPLCore.preprocess(sourceEl.value, { ...preprocessor, inputMode: options.inputMode, provenance: options.provenance });
+        const inputErrors = preprocessing.diagnostics.some(item => item.severity === "error");
+        const analysis = inputErrors ? { diagnostics: preprocessing.diagnostics } : await analyzeSource(preprocessing.source, options.analysis);
+        analysis.preprocessing = preprocessing;
         const hasErrors = (analysis.diagnostics || []).some(diagnostic => diagnostic.severity === "error");
-        const program = hasErrors ? null : AdvPLCore.parse(sourceEl.value, { tables, preprocessor });
+        const program = hasErrors ? null : AdvPLCore.parse(sourceEl.value, { ...options, tables, preprocessor });
         if (program) {
           program.parserAnalysis = analysis;
           program.diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];

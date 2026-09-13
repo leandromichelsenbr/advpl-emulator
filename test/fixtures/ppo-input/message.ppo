@@ -1,0 +1,6 @@
+User Function PpoDemo()
+Local nTotal := 2 + 3
+ConOut("antes")
+MsgInfo("Total: " + cValToChar(nTotal), "PPO")
+ConOut("depois")
+Return

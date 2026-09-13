@@ -11,7 +11,7 @@ test("mantém a matriz de compatibilidade completa e classificável", () => {
   const ids = [];
   const validStates = new Set(["supported", "partial", "approximated", "recognized", "unsupported"]);
 
-  assert.equal(rows.length, 35, "a quantidade de capacidades inventariadas mudou; revise o catálogo e este contrato");
+  assert.equal(rows.length, 36, "a quantidade de capacidades inventariadas mudou; revise o catálogo e este contrato");
 
   for (const row of rows) {
     const cells = row.split("|").slice(1, -1).map(cell => cell.trim());

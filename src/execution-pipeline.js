@@ -1,6 +1,6 @@
 /*
  * Coordena as três etapas da execução didática:
- * 1. o pré-processador seleciona ramos e expande macros;
+ * 1. a entrada PRW é pré-processada; PPO fornecido é preservado e validado;
  * 2. o parser TDS verifica a sintaxe sem produzir efeitos;
  * 3. o parser leve interpreta o subconjunto suportado e monta a saída visual.
  *
@@ -40,10 +40,12 @@
      */
     async function run(source, options = {}) {
       const currentRevision = ++revision;
+      if (options.inputMode !== undefined && !["prw", "ppo"].includes(options.inputMode)) throw new TypeError("inputMode deve ser prw ou ppo.");
       // O TDS recebe o fonte processado: sintaxe inválida em um ramo inativo não
-      // deve bloquear o programa. O executor recebe o original e pré-processa
-      // internamente, preservando metadados e o mapa de origem no modelo final.
-      const preprocessing = preprocess(source, options.preprocessor || {});
+      // deve bloquear o programa. O executor recebe a mesma entrada e modo:
+      // prepara PRW internamente ou preserva PPO, com metadados no modelo final.
+      const inputOptions = { ...(options.preprocessor || {}), inputMode: options.inputMode ?? "prw", provenance: options.provenance };
+      const preprocessing = preprocess(source, inputOptions);
       const preprocessingErrors = (preprocessing.diagnostics || []).filter(diagnostic => diagnostic.severity === "error");
       if (preprocessingErrors.length) {
         const analysis = { parser: "preprocessor", ast: null, diagnostics: preprocessing.diagnostics, preprocessing };
@@ -63,7 +65,7 @@
       // Advertências não bloqueiam o exercício; apenas severidade "error" interrompe.
       const errors = (analysis.diagnostics || []).filter(diagnostic => diagnostic.severity === "error");
       if (errors.length) return { executed: false, stale: false, program: null, analysis };
-      const program = parse(source, { ...(options.parser || {}), preprocessor: options.preprocessor || {} });
+      const program = parse(source, { ...(options.parser || {}), preprocessor: options.preprocessor || {}, inputMode: inputOptions.inputMode, provenance: options.provenance });
       if (currentRevision !== revision) return { executed: false, stale: true, program: null, analysis };
       program.parserAnalysis = analysis;
       // O mesmo diagnóstico do pré-processador pode chegar pelos dois caminhos:
