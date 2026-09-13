@@ -11,7 +11,7 @@ Esta é a arquitetura-alvo consolidada em 08/09/2026. Binder, compiler, ISA e VM
 PPO é a representação textual canônica na fronteira de entrada do emulador. A decisão prática é aproveitar o pré-processador/toolchain AdvPL/TOTVS para resolver `#Include`, `#Define`, `#IfDef` e expansões de comandos e constantes dos headers. Isso reduz a complexidade que precisamos interpretar; não torna o PPO uma gramática universal independente de versão.
 
 - **Modo principal planejado:** PRW + includes → pré-processador oficial → PPO → emulator.
-- **Modo de desenvolvimento planejado:** PPO previamente gerado → emulator, permitindo trabalhar no núcleo sem executar a toolchain a cada teste.
+- **Modo de desenvolvimento entregue em 0.20.0:** PPO previamente gerado → análise TDS opcional → executor leve → modelo/renderer. A entrada é preservada, com proveniência declarada não verificada. Não há compiler/ISA/VM próprios nesse caminho ainda; veja o [contrato e limites](integration.md#entrada-ppo-fornecida).
 
 O pré-processamento oficial ocorre antes da fronteira do emulador. Sua integração e a forma de obter o PPO ainda precisam ser definidas e verificadas; esta decisão não afirma que a toolchain roda no navegador. Depois de produzido o PPO, a execução didática deve ser independente de AppServer, SmartClient e banco Protheus.
 

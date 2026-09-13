@@ -1,6 +1,6 @@
 # Matriz de compatibilidade
 
-Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.19.0`, o perfil `protheus-default`, o contrato público `0.1` e o modelo intermediário `0.1`.
+Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.20.0`, o perfil `protheus-default`, o contrato público `0.1` e o modelo intermediário `0.1`.
 
 A [política de compatibilidade](COMPATIBILITY.md) define a evolução por fixtures PRW/PPO reais. Os estados do catálogo atual são:
 
@@ -27,6 +27,8 @@ A [política de compatibilidade](COMPATIBILITY.md) define a evolução por fixtu
 | LNG-007 | Construção OO de diálogo | `partial` | `MSDialog():New()` e `oDlg:Activate()` no padrão testado. | Sem modelo geral de classes, herança, mensagens e objetos AdvPL. | `core.test.js`: `MSDialog():New` e blocos de ativação. |
 | LNG-008 | Parser TDS opcional | `partial` | Análise sintática assíncrona, normalização de erro e fallback automático para o parser leve. | O AST TDS ainda não substitui o executor leve; disponibilidade depende do bundle opcional. | `tds-parser-adapter.test.js` e `execution-pipeline.test.js`. |
 | LNG-009 | Diagnósticos de assinatura | `approximated` | Código, severidade, linha, coluna e origem, incluindo suporte inicial a `W0008`. | Origem `emulator-signatures`; não equivale ao compilador ou linter oficial do TDS. | `core.test.js`: diagnóstico de assinatura. |
+
+| LNG-010 | Entrada PPO fornecida | `partial` | Colagem/API com inputMode ppo preserva texto, ignora defines/includes locais, analisa e executa o subconjunto existente. Origem declarada não verificada e diagnósticos posicionados no PPO. | Sem corpus oficial, geração oficial, mapa PRW/includes, suporte a diretivas #line ou compiler/ISA/VM próprios. | `ppo-input.test.js`; fixture explicitamente sintética; validação manual em navegador das duas páginas. |
 
 ## Saídas, mensagens e editor
 

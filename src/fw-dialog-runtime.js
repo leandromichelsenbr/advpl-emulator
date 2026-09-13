@@ -287,6 +287,10 @@
     runButton.dataset.fwDialogsInstalled = "1";
 
     runButton.addEventListener("click", event => {
+      // PPO precisa atravessar a validação de entrada e o pipeline. Este atalho
+      // legado de demonstração permanece restrito ao modo PRW didático.
+      const inputMode = doc.getElementById("inputMode")?.value ?? globalThis.ADVPL_EMULATOR_CONFIG?.inputMode ?? "prw";
+      if (inputMode !== "prw") return;
       const program = parseProgram(source.value);
       if (!program) return;
 

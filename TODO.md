@@ -26,6 +26,7 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] Ampliar `#translate`/`#xtranslate` para sequências literais de palavras e marcadores de identificador, validando `BYREF <nome>` de `APWEBSRV.CH`.
 - [x] Ampliar `#translate`/`#xtranslate` para pontuação, expressões balanceadas, diretivas multilinha e encadeamento protegido, validando `DWDEFS.CH`.
 - [ ] Implementar grupos opcionais e listas em `#translate`/`#xtranslate`, antes de iniciar `#command`/`#xcommand`.
+- [x] Receber PPO previamente gerado por colagem/API, sem transformações locais, com diagnóstico de diretivas e origem declarada não verificada (0.20.0).
 - [ ] Integrar obtenção/importação de PPO oficial e proveniência por arquivo, conforme o [ADR 0001](docs/adr/0001-ppo-como-fronteira-canonica.md); preservar o suporte didático local já entregue.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 

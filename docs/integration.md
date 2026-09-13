@@ -292,3 +292,39 @@ Para ativação programática sem parâmetro de URL, defina antes do carregament
 ```js
 window.ADVPL_EMULATOR_CONFIG = { headless: true, data: dados };
 ```
+
+## Entrada PPO fornecida
+
+Disponível em 0.20.0. Nas páginas index.html e exercise.html, selecione **PPO previamente gerado**, cole o texto e execute. O modo padrão continua sendo **PRW didático**. A seleção também vale para Executar novamente.
+
+Em integrações, use a opção de topo inputMode: "ppo":
+
+```js
+const result = await AdvPLEmulator.runAsync(ppoText, undefined, {
+  inputMode: "ppo",
+  preprocessor: { filename: "exemplo.ppo" },
+  provenance: {
+    toolchain: "Ferramenta e versão informadas pelo produtor",
+    includes: "Perfil/versão dos headers",
+    symbols: "Símbolos e opções usados",
+    generation: "Procedimento de geração",
+    reference: "Referência da evidência de origem"
+  }
+});
+// Núcleo sem DOM (execução síncrona, sem análise TDS):
+const program = AdvPLCore.parse(ppoText, { inputMode: "ppo" });
+// Apenas preparar/inspecionar entrada:
+const input = AdvPLCore.preprocess(ppoText, { inputMode: "ppo", filename: "exemplo.ppo" });
+```
+
+run(), runAsync(), as opções de postMessage e ADVPL_EMULATOR_CONFIG aceitam inputMode. A opção por execução tem prioridade sobre o seletor/configuração. Na API de núcleo, parseReport, parseAxCadastro e parseFWMBrowse também aceitam o modo. No pipeline injetável, forneça AdvPLCore.preprocess como dependência preprocess, como nas páginas distribuídas; um preprocess customizado precisa implementar o mesmo contrato de entrada.
+
+O texto PPO é preservado sem carregar includes, aplicar defines ou executar traduções locais. O pipeline mantém a análise TDS opcional, o executor leve e o modelo 0.1 existente. As capacidades de execução permanecem limitadas à matriz atual; importar texto não cria suporte a novas construções.
+
+O envelope preprocessor, mantido por compatibilidade, expõe version: "ppo-input-0.1", artifact.kind: "provided-ppo", artifact.compatibility: "unverified" e artifact.provenance. Os cinco campos de proveniência acima são textos opcionais copiados; são declarações do produtor, não verificação ou certificação oficial. capabilities é vazio e applied é uma lista vazia. O PPO local continua identificado como didático.
+
+Sem mapa oficial confiável, filename identifica o próprio PPO (padrão input.ppo) e map mantém suas linhas, sem atribuir posições a PRW/includes. Nesta primeira entrega, todas as diretivas residuais, inclusive #line, são rejeitadas com PPO0001 antes de analisar ou executar. Comentários e strings contendo # não são diretivas. Não converta um PRW em PPO apenas trocando seu modo.
+
+preprocess retorna os diagnósticos no envelope; o pipeline/runAsync retorna executed: false sem programa quando há diretivas pendentes. As APIs síncronas de execução lançam SyntaxError com diagnostics nesse caso. Um inputMode diferente de prw ou ppo lança TypeError. O atalho legado de FWMsgAlertYesNo/ShowLog fica restrito ao modo PRW para não contornar essa validação.
+
+A fixture test/fixtures/ppo-input/message.ppo é **sintética**. Coleta de pares oficiais, integração com a toolchain, suporte a mapas/diretivas de localização e implementação de AST/binder/compiler/ISA/VM próprios continuam pendentes. Formatos oficiais ainda não caracterizados podem ser rejeitados ou ficar fora do subconjunto executável.
