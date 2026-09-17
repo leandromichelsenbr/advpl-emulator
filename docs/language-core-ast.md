@@ -49,8 +49,8 @@ O binder devolve uma tabela de funções e, para cada função, símbolos de par
 ## Relação com contratos existentes
 
 - AST descreve o programa.
-- Futuro bytecode/ISA descreverá a execução.
+- Bytecode/ISA `0.1` descreve a primeira fatia experimental de execução; veja [ISA, compiler e VM](language-core-isa.md).
 - Modelo intermediário `0.1` descreve a saída visual e eventos.
 - AST do TDS continua encapsulada pelo adaptador opcional e não é exposta como este contrato.
 
-O executor leve continua sendo o caminho de produção. A migração só começará depois de haver compiler/VM e testes de equivalência para uma fatia vertical completa.
+O executor leve continua sendo o caminho de produção. A versão `0.22.0` entrega compiler/VM e um teste de equivalência para a primeira fatia vertical de console. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.

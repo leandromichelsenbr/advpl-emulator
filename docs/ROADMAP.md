@@ -20,11 +20,16 @@ A ordem indica foco de investimento, não ausência de recursos atuais: editor, 
 
 1. Selecionar pares mínimos PRW/PPO reais, com versão de toolchain/includes e resultados observados, seguindo a [política de fixtures](COMPATIBILITY.md#fixtures-prwppo).
 2. **Parcialmente entregue em 0.20.0:** importar texto PPO por colagem/API, preservar seu conteúdo sem pré-processamento local e alcançar o modelo/renderer existente. O contrato distingue PPO fornecido de PPO didático; testes sintéticos cobrem análise, lógica, mensagem, diagnósticos e regressões. Ainda falta obter e caracterizar PPO oficial com proveniência reproduzível.
-3. **Parcialmente entregue em 0.21.0:** AST experimental `0.1`, lexer mínimo, posições e binder de funções/parâmetros/locais sobre fixture PPO sintética. Ainda faltam corpus oficial, ampliação da gramática, ISA/VM e a fatia vertical de lógica e mensagem até o renderer.
-4. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
+3. **Parcialmente entregue em 0.21.0:** AST experimental `0.1`, lexer mínimo, posições e binder de funções/parâmetros/locais sobre fixture PPO sintética.
+4. **Primeira fatia executável entregue em 0.22.0:** compiler para ISA stack-based `0.1`, VM limitada e Core Runtime com `ConOut`/`cValToChar`. Um teste de equivalência comprova `PPO → AST → binder → bytecode → VM → console` contra o executor leve. Ainda faltam corpus oficial, controle de fluxo, chamadas AdvPL, code blocks, suspensão e integração ao renderer.
+5. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
 
 O pré-processador local fica como caminho didático de transição. Reimplementar todo o universo de includes e regras TOTVS não é pré-requisito nem trilha principal. Não há prazo ou conclusão presumida para os novos componentes; o estado entregue continua na [matriz](compatibility-matrix.md).
 
 ## Incremento entregue — 0.20.0
 
 Entrada PPO → análise TDS opcional → executor leve → console/mensagem → renderer. A escolha fecha a fronteira de entrada sem inventar expansões oficiais ou antecipar a VM. Seleção disponível nas duas páginas e nas APIs; diretivas residuais (inclusive #line) são bloqueadas. A primeira coleta de pares oficiais continua sendo a próxima dependência para definir a gramática/AST/ISA com evidência.
+
+## Incremento entregue — 0.22.0
+
+PPO sintético → AST/binder `0.1` → compiler → bytecode stack-based `0.1` → VM limitada → Core Runtime → console. A fatia aceita literais, locais, aritmética, concatenação, comparações, chamadas permitidas e retorno; preserva posições e aplica limite de passos. Ela é um laboratório paralelo, não o pipeline do playground. A próxima ampliação é controle de fluxo (`If`/`Else` e saltos), seguida de mensagens e integração ao modelo intermediário.
