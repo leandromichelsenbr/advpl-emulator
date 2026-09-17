@@ -20,7 +20,7 @@ A ordem indica foco de investimento, não ausência de recursos atuais: editor, 
 
 1. Selecionar pares mínimos PRW/PPO reais, com versão de toolchain/includes e resultados observados, seguindo a [política de fixtures](COMPATIBILITY.md#fixtures-prwppo).
 2. **Parcialmente entregue em 0.20.0:** importar texto PPO por colagem/API, preservar seu conteúdo sem pré-processamento local e alcançar o modelo/renderer existente. O contrato distingue PPO fornecido de PPO didático; testes sintéticos cobrem análise, lógica, mensagem, diagnósticos e regressões. Ainda falta obter e caracterizar PPO oficial com proveniência reproduzível.
-3. Especificar o subconjunto inicial da AST, binder e ISA; implementar uma fatia vertical de lógica e mensagem até o renderer, com testes de equivalência do contrato atual.
+3. **Parcialmente entregue em 0.21.0:** AST experimental `0.1`, lexer mínimo, posições e binder de funções/parâmetros/locais sobre fixture PPO sintética. Ainda faltam corpus oficial, ampliação da gramática, ISA/VM e a fatia vertical de lógica e mensagem até o renderer.
 4. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
 
 O pré-processador local fica como caminho didático de transição. Reimplementar todo o universo de includes e regras TOTVS não é pré-requisito nem trilha principal. Não há prazo ou conclusão presumida para os novos componentes; o estado entregue continua na [matriz](compatibility-matrix.md).

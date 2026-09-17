@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.20.0` |
+| Versão da distribuição | `0.21.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 112 |
+| Testes automatizados | 117 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.21.0 — 17/09/2026
+
+**Tipo:** primeira fundação versionada do Language Core.
+
+- Criado `advpl-language-core.js`, separado do executor leve e do adaptador TDS.
+- Lexer mínimo para PPO com posições de arquivo, linha, coluna e offset e diagnósticos próprios `LC*`.
+- Definida AST experimental `0.1` para funções, locais, retorno, chamadas, binários, agrupamento, identificadores e literais.
+- Binder inicial registra funções, parâmetros e variáveis locais, diagnosticando duplicidades sem resolver APIs externas.
+- Fixture PPO permanece explicitamente sintética; corpus oficial, compiler, ISA e VM continuam pendentes.
+- Módulo exposto no navegador sem alterar o pipeline de produção; suíte ampliada de 112 para 117 testes.
 
 ### 0.20.0 — 12/09/2026
 

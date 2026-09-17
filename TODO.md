@@ -28,6 +28,8 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [ ] Implementar grupos opcionais e listas em `#translate`/`#xtranslate`, antes de iniciar `#command`/`#xcommand`.
 - [x] Receber PPO previamente gerado por colagem/API, sem transformações locais, com diagnóstico de diretivas e origem declarada não verificada (0.20.0).
 - [ ] Integrar obtenção/importação de PPO oficial e proveniência por arquivo, conforme o [ADR 0001](docs/adr/0001-ppo-como-fronteira-canonica.md); preservar o suporte didático local já entregue.
+- [x] Definir AST experimental `0.1`, lexer mínimo e binder inicial de funções, parâmetros e locais, sem substituir o executor leve (0.21.0).
+- [ ] Ampliar a AST somente com evidência de fixtures PPO; definir binder completo, ISA stack-based, compiler e VM para a primeira fatia vertical.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.
