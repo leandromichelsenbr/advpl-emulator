@@ -4,7 +4,7 @@
 
 O objetivo central é didático, funcional e visual: executar exemplos de interface e exercícios AdvPL no navegador, com lógica, estado, interação e resultados observáveis. A abrangência da linguagem e das APIs cresce conforme esses exemplos exigem.
 
-Esta é a arquitetura-alvo consolidada em 08/09/2026. Binder, compiler, ISA e VM próprios são decisões de evolução, não uma descrição de componentes já entregues. O [README](../README.md#arquitetura-atual) descreve a implementação atual; a [matriz](compatibility-matrix.md) registra o suporte verificável.
+Esta é a arquitetura-alvo consolidada em 08/09/2026. A AST experimental e o binder inicial `0.1` estão descritos no [contrato do Language Core](language-core-ast.md); compiler, ISA e VM próprios continuam como decisões ainda não entregues. O [README](../README.md#arquitetura-atual) descreve a implementação atual; a [matriz](compatibility-matrix.md) registra o suporte verificável.
 
 ## Fronteira canônica e modos de entrada
 
@@ -67,4 +67,4 @@ Protheus, Work Areas, aliases, banco, `GetMv`, `xFilial` e funções/classes `FW
 
 A migração será incremental, preservando contratos públicos, exemplos e fluxo ordenado de eventos por testes de equivalência. A sequência de entregas está no [roadmap](ROADMAP.md); o [TODO](../TODO.md) mantém o inventário detalhado.
 
-Permanecem abertos: ferramenta/versão e mecanismo de exportação do PPO; perfis de includes e símbolos; corpus inicial PRW/PPO; gramática efetivamente observada; contrato da AST vinculada; ISA e interface de chamadas ao runtime; proveniência PRW/includes/PPO para diagnósticos; formato dos exercícios e critérios automáticos de avaliação. A definição desses contratos deve preceder a migração dos respectivos caminhos de execução.
+Permanecem abertos: ferramenta/versão e mecanismo de exportação do PPO; perfis de includes e símbolos; corpus oficial PRW/PPO; ampliação empírica da gramática; contrato completo da AST vinculada; ISA e interface de chamadas ao runtime; proveniência PRW/includes/PPO para diagnósticos; formato dos exercícios e critérios automáticos de avaliação. A AST `0.1` atual é experimental e baseada em fixture sintética, não encerra essas decisões.

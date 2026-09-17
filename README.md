@@ -47,6 +47,7 @@ src/advpl-preprocessor.js  defines, condicionais, diagnósticos e mapa de origem
     ↓
 src/advpl-core.js      parser leve, execução controlada e diagnósticos
 src/tds-parser-adapter.js  adaptador opcional para AST sintática TDS
+src/advpl-language-core.js lexer, AST 0.1 e binder experimental para PPO
 src/tds-parser-worker.js   execução isolada do parser avançado
 vendor/tds-parser.bundle.js bundle do analisador AdvPL oficial
     ↓
