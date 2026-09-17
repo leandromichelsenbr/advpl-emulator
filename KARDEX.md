@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.21.0` |
+| Versão da distribuição | `0.22.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 117 |
+| Testes automatizados | 126 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.22.0 — 17/09/2026
+
+**Tipo:** primeira fatia executável do Language Core.
+
+- Criados compiler, ISA stack-based `0.1`, VM limitada e registro explícito do Core Runtime.
+- O fluxo experimental compila literais, locais, aritmética, concatenação, comparações, chamadas permitidas e retorno, preservando posições de origem.
+- `ConOut` e `cValToChar` formam a primeira fronteira de serviços; chamadas desconhecidas são recusadas e a execução possui limite de passos.
+- Teste de equivalência compara o console e a sequência de eventos da nova VM com o executor leve.
+- O caminho permanece paralelo ao laboratório: controle de fluxo, mensagens, callbacks e renderer serão migrados incrementalmente.
+- Suíte ampliada de 117 para 126 testes, incluindo carregamento autônomo na ordem usada pelo navegador.
 
 ### 0.21.0 — 17/09/2026
 

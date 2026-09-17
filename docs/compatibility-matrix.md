@@ -1,6 +1,6 @@
 # Matriz de compatibilidade
 
-Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.21.0`, o perfil `protheus-default`, o contrato público `0.1`, a AST experimental `0.1` e o modelo intermediário `0.1`.
+Catálogo verificável das capacidades anunciadas pelo AdvPL Emulator. Esta matriz cobre a distribuição `0.22.0`, o perfil `protheus-default`, o contrato público `0.1`, a AST e ISA experimentais `0.1` e o modelo intermediário `0.1`.
 
 A [política de compatibilidade](COMPATIBILITY.md) define a evolução por fixtures PRW/PPO reais. Os estados do catálogo atual são:
 
@@ -26,10 +26,10 @@ A [política de compatibilidade](COMPATIBILITY.md) define a evolução por fixtu
 | LNG-006 | Ações e callbacks | `partial` | Sequências como `(MsgInfo(...), oDlg:End())`, `ACTION MsgInfo(...)` e `ACTION oDlg:End()`. | Codeblocks e expressões arbitrárias de callback não são executados. | `core.test.js`: ações compostas e callbacks com console. |
 | LNG-007 | Construção OO de diálogo | `partial` | `MSDialog():New()` e `oDlg:Activate()` no padrão testado. | Sem modelo geral de classes, herança, mensagens e objetos AdvPL. | `core.test.js`: `MSDialog():New` e blocos de ativação. |
 | LNG-008 | Parser TDS opcional | `partial` | Análise sintática assíncrona, normalização de erro e fallback automático para o parser leve. | O AST TDS ainda não substitui o executor leve; disponibilidade depende do bundle opcional. | `tds-parser-adapter.test.js` e `execution-pipeline.test.js`. |
-| LNG-011 | Language Core experimental | `partial` | Lexer PPO, AST `0.1` posicionada e binder inicial para funções, parâmetros e locais. | Baseado em fixture sintética; sem corpus PPO oficial, controle de fluxo completo, compiler, ISA ou VM; não substitui o executor leve. | `language-core.test.js`, `language-core-ast.md` e `message.ppo`. |
+| LNG-011 | Language Core experimental | `partial` | Lexer PPO, AST/binder `0.1`, compiler, ISA stack-based `0.1`, VM limitada e Core Runtime com `ConOut`/`cValToChar`; posições e limite de passos preservados. | Baseado em fixture sintética; sem corpus PPO oficial, controle de fluxo, chamadas AdvPL, code blocks, suspensão ou integração ao renderer; não substitui o executor leve. | `language-core*.test.js`, `language-equivalence.test.js`, `language-core-ast.md`, `language-core-isa.md` e `message.ppo`. |
 | LNG-009 | Diagnósticos de assinatura | `approximated` | Código, severidade, linha, coluna e origem, incluindo suporte inicial a `W0008`. | Origem `emulator-signatures`; não equivale ao compilador ou linter oficial do TDS. | `core.test.js`: diagnóstico de assinatura. |
 
-| LNG-010 | Entrada PPO fornecida | `partial` | Colagem/API com inputMode ppo preserva texto, ignora defines/includes locais, analisa e executa o subconjunto existente. Origem declarada não verificada e diagnósticos posicionados no PPO. | Sem corpus oficial, geração oficial, mapa PRW/includes, suporte a diretivas #line ou compiler/ISA/VM próprios. | `ppo-input.test.js`; fixture explicitamente sintética; validação manual em navegador das duas páginas. |
+| LNG-010 | Entrada PPO fornecida | `partial` | Colagem/API com inputMode ppo preserva texto, ignora defines/includes locais, analisa e executa o subconjunto existente. Origem declarada não verificada e diagnósticos posicionados no PPO. | Sem corpus oficial, geração oficial, mapa PRW/includes ou suporte a diretivas #line; a nova compiler/VM ainda é paralela e não atende este caminho da interface. | `ppo-input.test.js`; fixture explicitamente sintética; validação manual em navegador das duas páginas. |
 
 ## Saídas, mensagens e editor
 
