@@ -34,3 +34,25 @@ test("VM aplica limite de passos antes de executar além do permitido", () => {
   assert.equal(result.diagnostics[0].code, "LC_RUNTIME_STEP_LIMIT");
   assert.equal(result.steps, 2);
 });
+
+test("VM executa somente o ramo selecionado de If/Else", () => {
+  const source = 'User Function Demo(n)\nIf n < 0\nMsgInfo("negativo", "Sinal")\nElse\nMsgInfo("positivo", "Sinal")\nEndIf\nReturn';
+  const negative = execute(source, { args: [-3] });
+  const positive = execute(source, { args: [3] });
+  assert.deepEqual(negative.events, [{ type: "message", kind: "info", text: "negativo", title: "Sinal" }]);
+  assert.deepEqual(positive.events, [{ type: "message", kind: "info", text: "positivo", title: "Sinal" }]);
+  assert.deepEqual(negative.diagnostics, []);
+  assert.deepEqual(positive.diagnostics, []);
+});
+
+test("VM executa expressão unária e Abs pelo runtime permitido", () => {
+  const result = execute('User Function Demo()\nLocal n := -12\nConOut(cValToChar(Abs(n)))\nReturn');
+  assert.deepEqual(result.console, ["12"]);
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test("VM rejeita destino de salto fora do bytecode", () => {
+  const bytecode = { bytecodeVersion: "0.1", entry: "DEMO", constants: [], diagnostics: [], functions: { DEMO: { localCount: 0, parameterCount: 0, instructions: [{ op: "JUMP", arg: 99 }] } } };
+  const result = vm.run(bytecode);
+  assert.equal(result.diagnostics[0].code, "LC_VM_INVALID_JUMP");
+});

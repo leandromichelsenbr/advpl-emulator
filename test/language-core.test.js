@@ -52,3 +52,28 @@ test("binder diagnostica símbolos duplicados sem alterar a AST", () => {
   assert.equal(bound.diagnostics.some(item => item.code === "LC0202"), true);
   assert.equal(JSON.stringify(ast), before);
 });
+
+test("representa blocos de If/Else, comparações e expressão unária", () => {
+  const ast = language.parse('User Function Branch()\nLocal n := -2\nIf n < 0\nMsgInfo("negativo", "Teste")\nElse\nMsgInfo("positivo", "Teste")\nEndIf\nReturn');
+  assert.deepEqual(ast.diagnostics, []);
+  const conditional = ast.body[0].body[1];
+  assert.equal(conditional.type, "IfStatement");
+  assert.equal(conditional.test.operator, "<");
+  assert.equal(ast.body[0].body[0].init.type, "UnaryExpression");
+  assert.equal(conditional.consequent[0].type, "ExpressionStatement");
+  assert.equal(conditional.alternate[0].type, "ExpressionStatement");
+});
+
+test("binder encontra locais declarados em blocos condicionais", () => {
+  const bound = language.bind(language.parse('User Function Branch()\nIf 1 == 1\nLocal cInside := "sim"\nEndIf\nReturn'));
+  assert.deepEqual(bound.diagnostics, []);
+  assert.equal(bound.functions.BRANCH.symbols.CINSIDE.kind, "local");
+});
+
+test("diagnostica If sem EndIf com posição de origem", () => {
+  const ast = language.parse('User Function Broken()\nIf 1 == 1\nConOut("aberto")', { filename: "broken-if.ppo" });
+  const missing = ast.diagnostics.find(item => item.code === "LC0101");
+  assert.equal(Boolean(missing), true);
+  assert.equal(missing.file, "broken-if.ppo");
+  assert.equal(missing.line, 3);
+});

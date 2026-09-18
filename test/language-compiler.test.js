@@ -28,3 +28,16 @@ test("compiler diagnostica identificador não vinculado sem executar", () => {
   const bytecode = compile('User Function Demo()\nConOut(missing)\nReturn');
   assert.equal(bytecode.diagnostics.some(item => item.code === "LC0302"), true);
 });
+
+test("compila If/Else para saltos absolutos verificáveis", () => {
+  const bytecode = compile('User Function Demo(n)\nIf n >= 10\nConOut("maior")\nElse\nConOut("menor")\nEndIf\nReturn');
+  assert.deepEqual(bytecode.diagnostics, []);
+  const instructions = bytecode.functions.DEMO.instructions;
+  assert.equal(instructions.some(item => item.op === "GE"), true);
+  assert.equal(instructions.some(item => item.op === "JUMP_IF_FALSE"), true);
+  assert.equal(instructions.some(item => item.op === "JUMP"), true);
+  for (const jump of instructions.filter(item => item.op.startsWith("JUMP"))) {
+    assert.equal(Number.isInteger(jump.arg), true);
+    assert.equal(jump.arg >= 0 && jump.arg <= instructions.length, true);
+  }
+});

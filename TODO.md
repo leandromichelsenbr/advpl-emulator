@@ -30,7 +30,8 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [ ] Integrar obtenção/importação de PPO oficial e proveniência por arquivo, conforme o [ADR 0001](docs/adr/0001-ppo-como-fronteira-canonica.md); preservar o suporte didático local já entregue.
 - [x] Definir AST experimental `0.1`, lexer mínimo e binder inicial de funções, parâmetros e locais, sem substituir o executor leve (0.21.0).
 - [x] Definir ISA stack-based `0.1`, compiler, VM limitada e Core Runtime para a primeira fatia vertical de expressão/local/`ConOut`, com equivalência contra o executor leve (0.22.0).
-- [ ] Ampliar AST/compiler/VM com `If`/`Else`, opcodes de salto e testes de limites; depois ligar `MsgInfo` ao modelo intermediário sem substituir prematuramente o executor leve.
+- [x] Ampliar AST/compiler/VM com `If`/`Else`, comparações, expressão unária, saltos validados, `Abs` e `MsgInfo`, preservando equivalência com o executor leve (0.23.0).
+- [ ] Implementar atribuição geral e chamadas entre funções AdvPL com frames isolados; depois ampliar o controle de fluxo para `For` e `While`.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.
