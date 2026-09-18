@@ -25,14 +25,24 @@
       if (instruction.op === "PUSH_CONST") stack.push(bytecode.constants[instruction.arg]);
       else if (instruction.op === "LOAD_LOCAL") stack.push(locals[instruction.arg]);
       else if (instruction.op === "STORE_LOCAL") { const item = pop(instruction); if (item.ok) locals[instruction.arg] = item.value; }
-      else if (["ADD", "SUB", "MUL", "DIV", "EQ", "NE"].includes(instruction.op)) {
+      else if (instruction.op === "NEG") { const item = pop(instruction); if (item.ok) stack.push(-Number(item.value)); }
+      else if (["ADD", "SUB", "MUL", "DIV", "EQ", "NE", "LT", "LE", "GT", "GE"].includes(instruction.op)) {
         const right = pop(instruction), left = pop(instruction); if (!right.ok || !left.ok) continue;
         if (instruction.op === "ADD") stack.push(typeof left.value === "number" && typeof right.value === "number" ? left.value + right.value : String(left.value ?? "") + String(right.value ?? ""));
         else if (instruction.op === "SUB") stack.push(Number(left.value) - Number(right.value));
         else if (instruction.op === "MUL") stack.push(Number(left.value) * Number(right.value));
         else if (instruction.op === "DIV") stack.push(Number(left.value) / Number(right.value));
         else if (instruction.op === "EQ") stack.push(left.value === right.value);
-        else stack.push(left.value !== right.value);
+        else if (instruction.op === "NE") stack.push(left.value !== right.value);
+        else if (instruction.op === "LT") stack.push(left.value < right.value);
+        else if (instruction.op === "LE") stack.push(left.value <= right.value);
+        else if (instruction.op === "GT") stack.push(left.value > right.value);
+        else stack.push(left.value >= right.value);
+      } else if (instruction.op === "JUMP" || instruction.op === "JUMP_IF_FALSE") {
+        const target = instruction.arg;
+        if (!Number.isInteger(target) || target < 0 || target > instructions.length) { fail("LC_VM_INVALID_JUMP", `Destino de salto inválido: ${target}.`, instruction); continue; }
+        if (instruction.op === "JUMP") ip = target;
+        else { const condition = pop(instruction); if (condition.ok && !condition.value) ip = target; }
       } else if (instruction.op === "CALL_RUNTIME") {
         if (stack.length < instruction.argc) { fail("LC_VM_STACK_UNDERFLOW", `Argumentos insuficientes para ${instruction.name}.`, instruction); continue; }
         const args = stack.splice(stack.length - instruction.argc, instruction.argc), called = runtime.call(instruction.name, args, { events, console: consoleOutput, locals });

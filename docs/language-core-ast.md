@@ -36,11 +36,13 @@ Cada posição contém `file`, `line`, `column` e `offset`. Linhas e colunas com
 | `ExpressionStatement` | chamada ou expressão em uma linha |
 | `CallExpression` | identificador como callee e argumentos posicionais |
 | `BinaryExpression` | `==`, `!=`, `+`, `-`, `*` e `/`, com precedência |
+| `UnaryExpression` | sinais unários `+` e `-` |
+| `IfStatement` | condição, bloco consequente e bloco alternativo opcional |
 | `ParenthesizedExpression` | expressão explicitamente agrupada |
 | `Identifier` | nome preservado como escrito |
 | `Literal` | texto, número e `Nil` |
 
-O parser ainda não cobre `If`, `For`, arrays, code blocks, métodos, atribuição geral, operadores completos ou construções visuais. Essas ausências são limitações, não interpretação aproximada.
+O parser cobre inicialmente `If`/`Else`/`EndIf`, inclusive blocos aninhados, e comparações `==`, `!=`, `<`, `<=`, `>` e `>=`. Ainda não cobre `ElseIf`, `For`, arrays, code blocks, métodos, atribuição geral, operadores completos ou construções visuais. Essas ausências são limitações, não interpretação aproximada.
 
 ## Binder inicial
 
@@ -53,4 +55,4 @@ O binder devolve uma tabela de funções e, para cada função, símbolos de par
 - Modelo intermediário `0.1` descreve a saída visual e eventos.
 - AST do TDS continua encapsulada pelo adaptador opcional e não é exposta como este contrato.
 
-O executor leve continua sendo o caminho de produção. A versão `0.22.0` entrega compiler/VM e um teste de equivalência para a primeira fatia vertical de console. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.
+O executor leve continua sendo o caminho de produção. As versões `0.22.0` e `0.23.0` entregam compiler/VM e equivalência para console e mensagem condicional. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.

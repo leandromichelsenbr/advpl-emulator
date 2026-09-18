@@ -2,7 +2,7 @@
 
 ## Estado
 
-A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.22.0 executa somente uma fatia sintética em paralelo ao executor leve; o playground não foi migrado.
+A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.23.0 acrescenta controle condicional à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
 
 ## Artefato compilado
 
@@ -28,11 +28,15 @@ Cada função declara quantidade de parâmetros/locais, slots estáveis e instru
 | `ADD` | soma números ou concatena quando algum operando não é numérico |
 | `SUB`, `MUL`, `DIV` | operações numéricas |
 | `EQ`, `NE` | igualdade e diferença estritas do recorte atual |
+| `LT`, `LE`, `GT`, `GE` | comparações relacionais |
+| `NEG` | negação numérica unária |
+| `JUMP` | desvio absoluto incondicional |
+| `JUMP_IF_FALSE` | remove a condição e desvia quando seu valor é falso |
 | `CALL_RUNTIME` | chama serviço nominal permitido e empilha seu retorno |
 | `POP` | descarta o topo |
 | `RETURN` | encerra o frame com o valor do topo |
 
-Não existem ainda saltos, frames aninhados ou chamada de função AdvPL. Isso impede representar `If`, laços e funções auxiliares na VM nova.
+Os destinos de salto são índices absolutos e validados antes de alterar o contador de instruções. Ainda não existem frames aninhados ou chamada de função AdvPL. Isso impede representar laços e funções auxiliares na VM nova.
 
 ## Runtime permitido
 
@@ -40,6 +44,8 @@ Não existem ainda saltos, frames aninhados ou chamada de função AdvPL. Isso i
 
 - `CVALTOCHAR`: converte um valor para texto didático;
 - `CONOUT`: registra um evento e uma linha de console.
+- `ABS`: calcula o valor absoluto numérico;
+- `MSGINFO`: registra uma mensagem informativa no mesmo formato de evento usado pelo modelo atual.
 
 Uma chamada ausente gera `LC_RUNTIME_UNKNOWN_CALL`. Integrações podem fornecer handlers adicionais por configuração do host, mas o código AdvPL não pode registrar JavaScript.
 
@@ -49,10 +55,11 @@ Uma chamada ausente gera `LC_RUNTIME_UNKNOWN_CALL`. Integrações podem fornecer
 - `LC_VM_STACK_UNDERFLOW`: bytecode tentou remover item inexistente;
 - `LC_VM_UNKNOWN_OPCODE`: instrução desconhecida;
 - `LC_VM_ENTRY`: função inicial ausente;
+- `LC_VM_INVALID_JUMP`: destino de salto inválido;
 - `LC0301`–`LC0305`: falhas de compilação.
 
 O limite padrão é 10.000 passos e pode ser reduzido pelo host. A VM devolve resultado e diagnósticos; não lança erros de fonte para fora do contrato.
 
 ## Evidência inicial
 
-O teste de equivalência executa o mesmo PPO sintético no executor leve e na VM e compara `events` e `console`. A equivalência cobre somente a fatia testada, não toda a linguagem.
+Os testes de equivalência executam o mesmo PPO sintético no executor leve e na VM e comparam console e mensagem do ramo condicional selecionado. A equivalência cobre somente as fatias testadas, não toda a linguagem.

@@ -19,10 +19,15 @@
     const services = new Map();
     const register = (name, handler) => services.set(String(name).toUpperCase(), handler);
     register("CVALTOCHAR", args => advplText(args[0]));
+    register("ABS", args => Math.abs(Number(args[0])));
     register("CONOUT", (args, context) => {
       const text = advplText(args[0]);
       context.events.push({ type: "console", text });
       context.console.push(text);
+      return null;
+    });
+    register("MSGINFO", (args, context) => {
+      context.events.push({ type: "message", kind: "info", text: advplText(args[0]), title: args.length > 1 ? advplText(args[1]) : "TOTVS" });
       return null;
     });
     for (const [name, handler] of Object.entries(custom)) if (typeof handler === "function") register(name, handler);

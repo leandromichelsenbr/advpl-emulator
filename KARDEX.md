@@ -6,14 +6,25 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.22.0` |
+| Versão da distribuição | `0.23.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 126 |
+| Testes automatizados | 134 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.23.0 — 18/09/2026
+
+**Tipo:** controle condicional na VM experimental.
+
+- AST passa a representar `If`/`Else` com blocos aninhados, comparações relacionais e sinais unários.
+- Compiler emite `JUMP`, `JUMP_IF_FALSE`, comparações e `NEG`, preservando posições de origem.
+- VM valida os destinos antes de saltar e produz `LC_VM_INVALID_JUMP` para bytecode inválido.
+- Core Runtime acrescenta `Abs` e `MsgInfo`; o evento de mensagem mantém o contrato do modelo atual.
+- Teste de equivalência confirma a mesma mensagem e seleção de ramo do executor leve.
+- Suíte ampliada de 126 para 134 testes, incluindo diagnóstico para bloco não encerrado.
 
 ### 0.22.0 — 17/09/2026
 
