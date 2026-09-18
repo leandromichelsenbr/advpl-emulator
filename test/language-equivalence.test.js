@@ -23,3 +23,12 @@ test("nova VM preserva a mensagem do ramo If selecionado pelo executor leve", ()
   assert.deepEqual(modern.diagnostics, []);
   assert.deepEqual(modern.events, legacy.events);
 });
+
+test("nova VM preserva função auxiliar, atribuição composta e mensagem", () => {
+  const source = 'User Function Demo()\nLocal nTotal := Sum(2, 3)\nnTotal += 4\nMsgInfo(cValToChar(nTotal), "Resultado")\nReturn\nStatic Function Sum(a, b)\nReturn a + b';
+  const legacy = core.parse(source);
+  const bytecode = compiler.compile(language.bind(language.parse(source, { filename: "call-equivalence.ppo" })));
+  const modern = vm.run(bytecode);
+  assert.deepEqual(modern.diagnostics, []);
+  assert.deepEqual(modern.events, legacy.events);
+});

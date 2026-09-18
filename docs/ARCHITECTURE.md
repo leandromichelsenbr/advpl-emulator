@@ -4,7 +4,7 @@
 
 O objetivo central é didático, funcional e visual: executar exemplos de interface e exercícios AdvPL no navegador, com lógica, estado, interação e resultados observáveis. A abrangência da linguagem e das APIs cresce conforme esses exemplos exigem.
 
-Esta é a arquitetura-alvo consolidada em 08/09/2026. A AST e o binder experimentais `0.1` estão descritos no [contrato do Language Core](language-core-ast.md). As versões `0.22.0` e `0.23.0` entregam as primeiras fatias executáveis do compiler, da [ISA própria](language-core-isa.md), da VM e do Core Runtime, incluindo console e mensagem condicional. Esse caminho permanece experimental e paralelo ao executor leve. O [README](../README.md#arquitetura-atual) descreve a implementação atual; a [matriz](compatibility-matrix.md) registra o suporte verificável.
+Esta é a arquitetura-alvo consolidada em 08/09/2026. A AST e o binder experimentais `0.1` estão descritos no [contrato do Language Core](language-core-ast.md). As versões `0.22.0` a `0.24.0` entregam as primeiras fatias executáveis do compiler, da [ISA própria](language-core-isa.md), da VM e do Core Runtime, incluindo console, condição, atribuição e funções com frames isolados. Esse caminho permanece experimental e paralelo ao executor leve. O [README](../README.md#arquitetura-atual) descreve a implementação atual; a [matriz](compatibility-matrix.md) registra o suporte verificável.
 
 ## Fronteira canônica e modos de entrada
 
@@ -55,7 +55,7 @@ As camadas de runtime e compatibilidade são serviços acessados pela VM; não s
 
 A AST representa o programa; o bytecode representa sua execução; o [modelo intermediário de saídas](intermediate-model.md) representa telas, mensagens, console e relatórios. São contratos distintos. O modelo atual `0.1` continua sendo referência de integração, e não deve ser renomeado ou tratado como ISA.
 
-A ISA é própria e baseada em pilha (*stack-based*). Não reproduz o bytecode proprietário TOTVS nem carrega APO/RPO. O contrato experimental `0.1`, seus opcodes, posições de origem e limites estão em [Language Core: ISA, compiler e VM](language-core-isa.md). Desvios condicionais já possuem suporte inicial; chamadas AdvPL, frames múltiplos, laços e suspensão/retomada permanecem por especificar e testar.
+A ISA é própria e baseada em pilha (*stack-based*). Não reproduz o bytecode proprietário TOTVS nem carrega APO/RPO. O contrato experimental `0.1`, seus opcodes, posições de origem e limites estão em [Language Core: ISA, compiler e VM](language-core-isa.md). Desvios condicionais e frames de funções já possuem suporte inicial; laços, escopos dinâmicos completos e suspensão/retomada permanecem por especificar e testar.
 
 ## Compatibilidade inspirada no Wine
 

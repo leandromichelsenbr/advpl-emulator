@@ -11,6 +11,7 @@
 
   function compile(bound) {
     const program = bound?.program, diagnostics = [...(bound?.diagnostics || [])], constants = [], functions = Object.create(null);
+    const declaredFunctions = new Set((program?.body || []).map(item => item.name.toUpperCase()));
     const constantIndex = value => { const found = constants.findIndex(item => Object.is(item, value)); if (found >= 0) return found; constants.push(value); return constants.length - 1; };
     if (!program || program.astVersion !== "0.1") {
       diagnostics.push(error("LC0301", "AST 0.1 vinculada é obrigatória.", program?.loc));
@@ -49,7 +50,8 @@
           if (!op) diagnostics.push(error("LC0303", `Operador não compilável: ${node.operator}`, node.loc)); else emit(op, undefined, node.loc);
         } else if (node.type === "CallExpression" && node.callee.type === "Identifier") {
           for (const argument of node.arguments) expression(argument);
-          emit("CALL_RUNTIME", undefined, node.loc, { name: node.callee.name.toUpperCase(), argc: node.arguments.length });
+          const name = node.callee.name.toUpperCase();
+          emit(declaredFunctions.has(name) ? "CALL_FUNCTION" : "CALL_RUNTIME", undefined, node.loc, { name, argc: node.arguments.length });
         } else diagnostics.push(error("LC0304", `Nó não compilável: ${node.type}`, node.loc));
       }
 
@@ -57,6 +59,15 @@
         for (const statement of statements) {
           if (statement.type === "LocalDeclaration") {
             expression(statement.init); emit("STORE_LOCAL", slots.get(statement.name.toUpperCase()), statement.loc);
+          } else if (statement.type === "AssignmentStatement") {
+            const slot = slots.get(statement.name.toUpperCase());
+            if (slot === undefined) diagnostics.push(error("LC0302", `Identificador não vinculado: ${statement.name}`, statement.loc));
+            else {
+              if (statement.operator === "+=") emit("LOAD_LOCAL", slot, statement.loc);
+              expression(statement.value);
+              if (statement.operator === "+=") emit("ADD", undefined, statement.loc);
+              emit("STORE_LOCAL", slot, statement.loc);
+            }
           } else if (statement.type === "ExpressionStatement") {
             expression(statement.expression); emit("POP", undefined, statement.loc);
           } else if (statement.type === "ReturnStatement") {

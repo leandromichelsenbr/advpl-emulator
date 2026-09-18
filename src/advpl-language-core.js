@@ -65,7 +65,7 @@
         emit(KEYWORDS.has(upper) ? "keyword" : "identifier", upper === "NIL" ? null : raw, raw, start); continue;
       }
       const start = here(), pair = text.slice(index, index + 2);
-      if ([":=", "==", "!=", "<=", ">="].includes(pair)) { advance(); advance(); emit("symbol", pair, pair, start); continue; }
+      if ([":=", "+=", "==", "!=", "<=", ">="].includes(pair)) { advance(); advance(); emit("symbol", pair, pair, start); continue; }
       if ("()+-*/,<>".includes(char)) { advance(); emit("symbol", char, char, start); continue; }
       advance(); diagnostics.push(diagnostic("LC0003", `Caractere não suportado: ${char}`, { start }));
     }
@@ -143,6 +143,10 @@
         take(); const argument = peek().type === "newline" || peek().type === "eof" ? null : expressionNode();
         return node("ReturnStatement", start, argument?.loc.end || start.end, { argument });
       }
+      if (peek().type === "identifier" && [":=", "+="].includes(peek(1).value)) {
+        const target = take(), operator = take(), value = expressionNode();
+        return node("AssignmentStatement", target, value.loc.end, { name: target.raw, operator: operator.value, value });
+      }
       const expression = expressionNode();
       return node("ExpressionStatement", expression.loc.start, expression.loc.end, { expression });
     }
@@ -198,6 +202,16 @@
         }
       };
       bindStatements(declaration.body);
+      const validateAssignments = statements => {
+        for (const statement of statements) {
+          if (statement.type === "AssignmentStatement" && !symbols[statement.name.toUpperCase()]) {
+            diagnostics.push({ code: "LC0203", severity: "error", message: `Atribuição a símbolo não vinculado: ${statement.name}`, line: statement.loc.start.line, column: statement.loc.start.column, origin: "language-core", file: statement.loc.start.file });
+          } else if (statement.type === "IfStatement") {
+            validateAssignments(statement.consequent); validateAssignments(statement.alternate);
+          }
+        }
+      };
+      validateAssignments(declaration.body);
       functions[key] = { kind: "function", name: declaration.name, visibility: declaration.visibility, params: [...declaration.params], symbols };
     }
     return { version: AST_VERSION, program, functions, diagnostics: [...(program.diagnostics || []), ...diagnostics] };

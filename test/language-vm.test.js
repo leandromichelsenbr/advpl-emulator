@@ -56,3 +56,26 @@ test("VM rejeita destino de salto fora do bytecode", () => {
   const result = vm.run(bytecode);
   assert.equal(result.diagnostics[0].code, "LC_VM_INVALID_JUMP");
 });
+
+test("VM executa função AdvPL em frame isolado e devolve seu valor", () => {
+  const source = 'User Function Demo()\nLocal n := 10\nLocal result := Sum(n, 5)\nn += 1\nConOut(cValToChar(result))\nConOut(cValToChar(n))\nReturn result\nStatic Function Sum(a, b)\nLocal result := a + b\nReturn result';
+  const result = execute(source);
+  assert.equal(result.completed, true);
+  assert.equal(result.value, 15);
+  assert.deepEqual(result.console, ["15", "11"]);
+  assert.deepEqual(result.locals, [11, 15]);
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test("VM limita profundidade de chamadas recursivas", () => {
+  const source = 'User Function Demo()\nReturn Recurse(1)\nStatic Function Recurse(n)\nReturn Recurse(n + 1)';
+  const result = execute(source, { maxCallDepth: 4 });
+  assert.equal(result.completed, false);
+  assert.equal(result.diagnostics[0].code, "LC_RUNTIME_CALL_DEPTH");
+});
+
+test("VM diagnostica referência de função inexistente no bytecode", () => {
+  const bytecode = { bytecodeVersion: "0.1", entry: "DEMO", constants: [], diagnostics: [], functions: { DEMO: { localCount: 0, parameterCount: 0, instructions: [{ op: "CALL_FUNCTION", name: "MISSING", argc: 0 }] } } };
+  const result = vm.run(bytecode);
+  assert.equal(result.diagnostics[0].code, "LC_VM_UNKNOWN_FUNCTION");
+});

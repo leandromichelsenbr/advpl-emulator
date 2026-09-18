@@ -2,7 +2,7 @@
 
 ## Estado
 
-A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.23.0 acrescenta controle condicional à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
+A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.24.0 acrescenta atribuições e frames de funções AdvPL à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
 
 ## Artefato compilado
 
@@ -33,10 +33,11 @@ Cada função declara quantidade de parâmetros/locais, slots estáveis e instru
 | `JUMP` | desvio absoluto incondicional |
 | `JUMP_IF_FALSE` | remove a condição e desvia quando seu valor é falso |
 | `CALL_RUNTIME` | chama serviço nominal permitido e empilha seu retorno |
+| `CALL_FUNCTION` | cria frame isolado para uma função AdvPL declarada e empilha seu retorno |
 | `POP` | descarta o topo |
 | `RETURN` | encerra o frame com o valor do topo |
 
-Os destinos de salto são índices absolutos e validados antes de alterar o contador de instruções. Ainda não existem frames aninhados ou chamada de função AdvPL. Isso impede representar laços e funções auxiliares na VM nova.
+Os destinos de salto são índices absolutos e validados antes de alterar o contador de instruções. Cada `CALL_FUNCTION` cria slots e contador de instrução próprios; parâmetros ausentes permanecem `Nil` e argumentos excedentes são ignorados no recorte atual. Laços ainda não estão representados na AST/compiler.
 
 ## Runtime permitido
 
@@ -56,10 +57,12 @@ Uma chamada ausente gera `LC_RUNTIME_UNKNOWN_CALL`. Integrações podem fornecer
 - `LC_VM_UNKNOWN_OPCODE`: instrução desconhecida;
 - `LC_VM_ENTRY`: função inicial ausente;
 - `LC_VM_INVALID_JUMP`: destino de salto inválido;
+- `LC_VM_UNKNOWN_FUNCTION`: função referenciada ausente no bytecode;
+- `LC_RUNTIME_CALL_DEPTH`: profundidade máxima de frames excedida;
 - `LC0301`–`LC0305`: falhas de compilação.
 
-O limite padrão é 10.000 passos e pode ser reduzido pelo host. A VM devolve resultado e diagnósticos; não lança erros de fonte para fora do contrato.
+O limite padrão é 10.000 passos e a profundidade padrão é 128 frames; ambos podem ser reduzidos pelo host. A VM devolve resultado e diagnósticos; não lança erros de fonte para fora do contrato.
 
 ## Evidência inicial
 
-Os testes de equivalência executam o mesmo PPO sintético no executor leve e na VM e comparam console e mensagem do ramo condicional selecionado. A equivalência cobre somente as fatias testadas, não toda a linguagem.
+Os testes de equivalência executam o mesmo PPO sintético no executor leve e na VM e comparam console, mensagem condicional e função auxiliar com atribuição composta. A equivalência cobre somente as fatias testadas, não toda a linguagem.
