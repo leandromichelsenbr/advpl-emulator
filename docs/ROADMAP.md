@@ -22,8 +22,9 @@ A ordem indica foco de investimento, não ausência de recursos atuais: editor, 
 2. **Parcialmente entregue em 0.20.0:** importar texto PPO por colagem/API, preservar seu conteúdo sem pré-processamento local e alcançar o modelo/renderer existente. O contrato distingue PPO fornecido de PPO didático; testes sintéticos cobrem análise, lógica, mensagem, diagnósticos e regressões. Ainda falta obter e caracterizar PPO oficial com proveniência reproduzível.
 3. **Parcialmente entregue em 0.21.0:** AST experimental `0.1`, lexer mínimo, posições e binder de funções/parâmetros/locais sobre fixture PPO sintética.
 4. **Primeira fatia executável entregue em 0.22.0:** compiler para ISA stack-based `0.1`, VM limitada e Core Runtime com `ConOut`/`cValToChar`. Um teste de equivalência comprova `PPO → AST → binder → bytecode → VM → console` contra o executor leve.
-5. **Controle condicional entregue em 0.23.0:** AST aninhada para `If`/`Else`, comparações, saltos validados, expressão unária, `Abs` e `MsgInfo`. A equivalência comprova a mesma mensagem e seleção de ramo do executor leve. Ainda faltam corpus oficial, atribuição geral, laços, chamadas AdvPL, code blocks, suspensão e integração ao renderer.
-6. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
+5. **Controle condicional entregue em 0.23.0:** AST aninhada para `If`/`Else`, comparações, saltos validados, expressão unária, `Abs` e `MsgInfo`. A equivalência comprova a mesma mensagem e seleção de ramo do executor leve. Atribuições e chamadas foram entregues no incremento seguinte; permanecem corpus oficial, laços, code blocks, suspensão e integração ao renderer.
+6. **Frames de funções entregues em 0.24.0:** atribuições `:=`/`+=`, distinção entre runtime e funções declaradas, frames isolados, retorno e limite de profundidade. A equivalência cobre função auxiliar e atribuição composta. Ainda faltam corpus oficial, laços, code blocks, suspensão e integração ao renderer.
+7. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
 
 O pré-processador local fica como caminho didático de transição. Reimplementar todo o universo de includes e regras TOTVS não é pré-requisito nem trilha principal. Não há prazo ou conclusão presumida para os novos componentes; o estado entregue continua na [matriz](compatibility-matrix.md).
 
@@ -37,4 +38,8 @@ PPO sintético → AST/binder `0.1` → compiler → bytecode stack-based `0.1` 
 
 ## Incremento entregue — 0.23.0
 
-O pipeline experimental passa a representar e executar `If`/`Else` com blocos aninhados, sinais unários e comparações relacionais. O compiler emite saltos absolutos, a VM valida cada destino e o Core Runtime acrescenta `Abs` e `MsgInfo`. O teste de equivalência compara a mensagem produzida pelo ramo selecionado com o executor leve. A próxima ampliação é atribuição geral e chamadas entre funções AdvPL com frames isolados.
+O pipeline experimental passa a representar e executar `If`/`Else` com blocos aninhados, sinais unários e comparações relacionais. O compiler emite saltos absolutos, a VM valida cada destino e o Core Runtime acrescenta `Abs` e `MsgInfo`. O teste de equivalência compara a mensagem produzida pelo ramo selecionado com o executor leve. A ampliação então planejada de atribuições e funções está registrada no incremento `0.24.0` abaixo.
+
+## Incremento entregue — 0.24.0
+
+A AST passa a representar atribuições `:=` e `+=` a locais/parâmetros. O compiler diferencia serviços do Core Runtime de funções AdvPL declaradas e emite `CALL_FUNCTION`. A VM cria frames com slots e contador próprios, devolve valores ao chamador e limita profundidade recursiva. A próxima ampliação é `For`/`To`/`Step`/`Next` e `While` sobre os saltos e atribuições existentes.

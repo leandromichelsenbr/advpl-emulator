@@ -77,3 +77,16 @@ test("diagnostica If sem EndIf com posição de origem", () => {
   assert.equal(missing.file, "broken-if.ppo");
   assert.equal(missing.line, 3);
 });
+
+test("representa atribuições simples e compostas", () => {
+  const ast = language.parse('User Function Assign()\nLocal n := 1\nn := n + 2\nn += 3\nReturn n');
+  assert.deepEqual(ast.diagnostics, []);
+  assert.equal(ast.body[0].body[1].type, "AssignmentStatement");
+  assert.equal(ast.body[0].body[1].operator, ":=");
+  assert.equal(ast.body[0].body[2].operator, "+=");
+});
+
+test("binder rejeita atribuição a símbolo não declarado", () => {
+  const bound = language.bind(language.parse('User Function Broken()\nmissing := 1\nReturn'));
+  assert.equal(bound.diagnostics.some(item => item.code === "LC0203"), true);
+});

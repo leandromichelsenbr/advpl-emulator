@@ -6,14 +6,26 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.23.0` |
+| Versão da distribuição | `0.24.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 134 |
+| Testes automatizados | 141 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.24.0 — 18/09/2026
+
+**Tipo:** atribuições e frames de funções na VM experimental.
+
+- AST passa a representar `:=` e `+=`; binder diagnostica atribuição a símbolo não vinculado com `LC0203`.
+- Compiler diferencia chamadas de runtime e funções AdvPL declaradas, emitindo `CALL_FUNCTION`.
+- VM cria frames isolados para parâmetros/locais e devolve o valor à expressão chamadora.
+- Profundidade padrão limitada a 128 frames; recursão excessiva produz `LC_RUNTIME_CALL_DEPTH`.
+- Bytecode inconsistente com função ausente produz `LC_VM_UNKNOWN_FUNCTION`.
+- Teste de equivalência cobre função auxiliar, atribuição composta e mensagem.
+- Suíte ampliada de 134 para 141 testes.
 
 ### 0.23.0 — 18/09/2026
 

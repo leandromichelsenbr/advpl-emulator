@@ -38,15 +38,16 @@ Cada posição contém `file`, `line`, `column` e `offset`. Linhas e colunas com
 | `BinaryExpression` | `==`, `!=`, `+`, `-`, `*` e `/`, com precedência |
 | `UnaryExpression` | sinais unários `+` e `-` |
 | `IfStatement` | condição, bloco consequente e bloco alternativo opcional |
+| `AssignmentStatement` | atribuição a local/parâmetro com `:=` ou `+=` |
 | `ParenthesizedExpression` | expressão explicitamente agrupada |
 | `Identifier` | nome preservado como escrito |
 | `Literal` | texto, número e `Nil` |
 
-O parser cobre inicialmente `If`/`Else`/`EndIf`, inclusive blocos aninhados, e comparações `==`, `!=`, `<`, `<=`, `>` e `>=`. Ainda não cobre `ElseIf`, `For`, arrays, code blocks, métodos, atribuição geral, operadores completos ou construções visuais. Essas ausências são limitações, não interpretação aproximada.
+O parser cobre inicialmente `If`/`Else`/`EndIf`, inclusive blocos aninhados, comparações `==`, `!=`, `<`, `<=`, `>` e `>=`, e atribuições `:=`/`+=` a símbolos vinculados. Ainda não cobre `ElseIf`, `For`, arrays, code blocks, métodos, outros destinos de atribuição, operadores completos ou construções visuais. Essas ausências são limitações, não interpretação aproximada.
 
 ## Binder inicial
 
-O binder devolve uma tabela de funções e, para cada função, símbolos de parâmetros e locais. Duplicidades recebem `LC0201` ou `LC0202`. Chamadas como `MsgInfo` e `ConOut` não são declaradas implicitamente: a resolução de built-ins e APIs Protheus pertence aos futuros contratos do Core Runtime e da camada de compatibilidade.
+O binder devolve uma tabela de funções e, para cada função, símbolos de parâmetros e locais. Duplicidades recebem `LC0201` ou `LC0202`; atribuições a símbolos não vinculados recebem `LC0203`. Chamadas como `MsgInfo` e `ConOut` não são declaradas implicitamente: a resolução de built-ins e APIs Protheus pertence ao Core Runtime e à camada de compatibilidade.
 
 ## Relação com contratos existentes
 
@@ -55,4 +56,4 @@ O binder devolve uma tabela de funções e, para cada função, símbolos de par
 - Modelo intermediário `0.1` descreve a saída visual e eventos.
 - AST do TDS continua encapsulada pelo adaptador opcional e não é exposta como este contrato.
 
-O executor leve continua sendo o caminho de produção. As versões `0.22.0` e `0.23.0` entregam compiler/VM e equivalência para console e mensagem condicional. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.
+O executor leve continua sendo o caminho de produção. As versões `0.22.0` a `0.24.0` entregam compiler/VM e equivalência para console, mensagem condicional, atribuição composta e função auxiliar. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.

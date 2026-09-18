@@ -41,3 +41,13 @@ test("compila If/Else para saltos absolutos verificáveis", () => {
     assert.equal(jump.arg >= 0 && jump.arg <= instructions.length, true);
   }
 });
+
+test("compila atribuições e distingue função AdvPL de serviço do runtime", () => {
+  const bytecode = compile('User Function Demo()\nLocal n := Sum(2, 3)\nn += 4\nConOut(cValToChar(n))\nReturn\nStatic Function Sum(a, b)\nReturn a + b');
+  assert.deepEqual(bytecode.diagnostics, []);
+  const instructions = bytecode.functions.DEMO.instructions;
+  assert.equal(instructions.some(item => item.op === "CALL_FUNCTION" && item.name === "SUM"), true);
+  assert.equal(instructions.some(item => item.op === "CALL_RUNTIME" && item.name === "CONOUT"), true);
+  assert.equal(instructions.filter(item => item.op === "STORE_LOCAL").length, 2);
+  assert.equal(instructions.some(item => item.op === "ADD"), true);
+});
