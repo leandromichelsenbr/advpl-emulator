@@ -32,3 +32,12 @@ test("nova VM preserva função auxiliar, atribuição composta e mensagem", () 
   assert.deepEqual(modern.diagnostics, []);
   assert.deepEqual(modern.events, legacy.events);
 });
+
+test("nova VM preserva soma de pares em For e mensagem final", () => {
+  const source = 'User Function ExEvenNumbers()\nLocal nNumber\nLocal nSum := 0\nFor nNumber := 0 To 100 Step 2\nnSum += nNumber\nNext\nMsgInfo("Sum of even numbers: " + cValToChar(nSum), "Resultado")\nReturn';
+  const legacy = core.parse(source);
+  const bytecode = compiler.compile(language.bind(language.parse(source, { filename: "for-equivalence.ppo" })));
+  const modern = vm.run(bytecode);
+  assert.deepEqual(modern.diagnostics, []);
+  assert.deepEqual(modern.events, legacy.events);
+});

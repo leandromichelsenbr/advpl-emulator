@@ -6,14 +6,26 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.24.0` |
+| Versão da distribuição | `0.25.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 141 |
+| Testes automatizados | 149 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.25.0 — 23/09/2026
+
+**Tipo:** laço `For` na VM experimental.
+
+- AST reconhece `For`/`To`/`Step`/`Next`, passo omitido e nome opcional após `Next`.
+- Binder valida a variável de controle com `LC0204`; parser diagnostica `Next` ausente ou divergente.
+- Compiler avalia início, limite e passo uma vez e reserva dois slots internos por laço.
+- Passos positivos usam limite inclusivo `<=`; negativos usam `>=`; laços aninhados mantêm temporários próprios.
+- `Step 0` é contido pelo limite global de instruções, sem bloquear o navegador.
+- Equivalência com o executor leve confirma `Sum of even numbers: 2550`.
+- Suíte ampliada de 141 para 149 testes.
 
 ### 0.24.0 — 18/09/2026
 

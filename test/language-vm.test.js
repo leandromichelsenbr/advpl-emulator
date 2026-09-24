@@ -79,3 +79,34 @@ test("VM diagnostica referência de função inexistente no bytecode", () => {
   const result = vm.run(bytecode);
   assert.equal(result.diagnostics[0].code, "LC_VM_UNKNOWN_FUNCTION");
 });
+
+test("VM executa For positivo e acumula números pares", () => {
+  const source = 'User Function Demo()\nLocal nNumber\nLocal nSum := 0\nFor nNumber := 0 To 100 Step 2\nnSum += nNumber\nNext\nMsgInfo("Sum of even numbers: " + cValToChar(nSum), "Resultado")\nReturn nSum';
+  const result = execute(source);
+  assert.equal(result.value, 2550);
+  assert.deepEqual(result.events, [{ type: "message", kind: "info", text: "Sum of even numbers: 2550", title: "Resultado" }]);
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test("VM executa For regressivo e passo padrão", () => {
+  const descending = execute('User Function Demo()\nLocal n\nFor n := 3 To 1 Step -1\nConOut(cValToChar(n))\nNext\nReturn');
+  const standard = execute('User Function Demo()\nLocal n\nFor n := 1 To 3\nConOut(cValToChar(n))\nNext n\nReturn');
+  assert.deepEqual(descending.console, ["3", "2", "1"]);
+  assert.deepEqual(standard.console, ["1", "2", "3"]);
+  assert.deepEqual(descending.diagnostics, []);
+  assert.deepEqual(standard.diagnostics, []);
+});
+
+test("VM limita For com Step zero sem travar", () => {
+  const result = execute('User Function Demo()\nLocal n\nFor n := 1 To 2 Step 0\nConOut(cValToChar(n))\nNext\nReturn', { maxSteps: 40 });
+  assert.equal(result.completed, false);
+  assert.equal(result.diagnostics[0].code, "LC_RUNTIME_STEP_LIMIT");
+  assert.equal(result.steps, 40);
+});
+
+test("VM mantém slots temporários separados em For aninhado", () => {
+  const source = 'User Function Demo()\nLocal i\nLocal j\nLocal nCount := 0\nFor i := 1 To 2\nFor j := 1 To 3\nnCount += 1\nNext\nNext\nReturn nCount';
+  const result = execute(source);
+  assert.equal(result.value, 6);
+  assert.deepEqual(result.diagnostics, []);
+});

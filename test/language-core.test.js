@@ -90,3 +90,24 @@ test("binder rejeita atribuição a símbolo não declarado", () => {
   const bound = language.bind(language.parse('User Function Broken()\nmissing := 1\nReturn'));
   assert.equal(bound.diagnostics.some(item => item.code === "LC0203"), true);
 });
+
+test("representa For com Step explícito e passo padrão", () => {
+  const ast = language.parse('User Function Loops()\nLocal n\nFor n := 0 To 4 Step 2\nConOut(cValToChar(n))\nNext\nFor n := 1 To 2\nConOut(cValToChar(n))\nNext n\nReturn');
+  assert.deepEqual(ast.diagnostics, []);
+  const loops = ast.body[0].body.filter(item => item.type === "ForStatement");
+  assert.equal(loops.length, 2);
+  assert.equal(loops[0].step.value, 2);
+  assert.equal(loops[0].step.synthetic, undefined);
+  assert.equal(loops[1].step.value, 1);
+  assert.equal(loops[1].step.synthetic, true);
+  assert.equal(loops[0].body[0].type, "ExpressionStatement");
+});
+
+test("diagnostica For sem Next, variável divergente e controle não vinculado", () => {
+  const missing = language.parse('User Function Broken()\nLocal n\nFor n := 1 To 2\nConOut(n)', { filename: "broken-for.ppo" });
+  assert.equal(missing.diagnostics.some(item => item.code === "LC0101"), true);
+  const mismatch = language.parse('User Function Broken()\nLocal n\nFor n := 1 To 2\nNext other\nReturn');
+  assert.equal(mismatch.diagnostics.some(item => item.code === "LC0108"), true);
+  const unbound = language.bind(language.parse('User Function Broken()\nFor n := 1 To 2\nNext\nReturn'));
+  assert.equal(unbound.diagnostics.some(item => item.code === "LC0204"), true);
+});

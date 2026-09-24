@@ -19,13 +19,17 @@
     }
 
     for (const declaration of program.body) {
-      const instructions = [], slots = new Map(), symbolTable = bound.functions[declaration.name.toUpperCase()]?.symbols || {};
+      const instructions = [], slots = new Map(), forTemps = new WeakMap(), symbolTable = bound.functions[declaration.name.toUpperCase()]?.symbols || {};
       let nextSlot = 0;
       for (const parameter of declaration.params) slots.set(parameter.toUpperCase(), nextSlot++);
       const allocateLocals = statements => {
         for (const statement of statements) {
           if (statement.type === "LocalDeclaration" && !slots.has(statement.name.toUpperCase())) slots.set(statement.name.toUpperCase(), nextSlot++);
           else if (statement.type === "IfStatement") { allocateLocals(statement.consequent); allocateLocals(statement.alternate); }
+          else if (statement.type === "ForStatement") {
+            forTemps.set(statement, { limit: nextSlot++, step: nextSlot++ });
+            allocateLocals(statement.body);
+          }
         }
       };
       allocateLocals(declaration.body);
@@ -82,6 +86,38 @@
               compileStatements(statement.alternate);
               instructions[endJump].arg = instructions.length;
             } else instructions[conditionJump].arg = instructions.length;
+          } else if (statement.type === "ForStatement") {
+            const variableSlot = slots.get(statement.variable.toUpperCase()), temps = forTemps.get(statement);
+            if (variableSlot === undefined) { diagnostics.push(error("LC0302", `Identificador não vinculado: ${statement.variable}`, statement.loc)); continue; }
+            expression(statement.initial); emit("STORE_LOCAL", variableSlot, statement.loc);
+            expression(statement.limit); emit("STORE_LOCAL", temps.limit, statement.loc);
+            expression(statement.step); emit("STORE_LOCAL", temps.step, statement.loc);
+
+            const loopStart = instructions.length;
+            emit("LOAD_LOCAL", temps.step, statement.step.loc);
+            emit("PUSH_CONST", constantIndex(0), statement.step.loc);
+            emit("GE", undefined, statement.step.loc);
+            const negativeBranch = instructions.length; emit("JUMP_IF_FALSE", null, statement.step.loc);
+
+            emit("LOAD_LOCAL", variableSlot, statement.loc);
+            emit("LOAD_LOCAL", temps.limit, statement.limit.loc);
+            emit("LE", undefined, statement.loc);
+            const conditionReady = instructions.length; emit("JUMP", null, statement.loc);
+
+            instructions[negativeBranch].arg = instructions.length;
+            emit("LOAD_LOCAL", variableSlot, statement.loc);
+            emit("LOAD_LOCAL", temps.limit, statement.limit.loc);
+            emit("GE", undefined, statement.loc);
+            instructions[conditionReady].arg = instructions.length;
+            const exitJump = instructions.length; emit("JUMP_IF_FALSE", null, statement.loc);
+
+            compileStatements(statement.body);
+            emit("LOAD_LOCAL", variableSlot, statement.loc);
+            emit("LOAD_LOCAL", temps.step, statement.step.loc);
+            emit("ADD", undefined, statement.loc);
+            emit("STORE_LOCAL", variableSlot, statement.loc);
+            emit("JUMP", loopStart, statement.loc);
+            instructions[exitJump].arg = instructions.length;
           } else diagnostics.push(error("LC0305", `Instrução não compilável: ${statement.type}`, statement.loc));
         }
       }
