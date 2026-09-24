@@ -2,7 +2,7 @@
 
 ## Estado
 
-A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.24.0 acrescenta atribuições e frames de funções AdvPL à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
+A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.25.0 acrescenta `For` à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
 
 ## Artefato compilado
 
@@ -37,7 +37,7 @@ Cada função declara quantidade de parâmetros/locais, slots estáveis e instru
 | `POP` | descarta o topo |
 | `RETURN` | encerra o frame com o valor do topo |
 
-Os destinos de salto são índices absolutos e validados antes de alterar o contador de instruções. Cada `CALL_FUNCTION` cria slots e contador de instrução próprios; parâmetros ausentes permanecem `Nil` e argumentos excedentes são ignorados no recorte atual. Laços ainda não estão representados na AST/compiler.
+Os destinos de salto são índices absolutos e validados antes de alterar o contador de instruções. Cada `CALL_FUNCTION` cria slots e contador de instrução próprios. O compiler reduz `For` aos opcodes já existentes, reservando dois slots internos por laço para limite e passo, ambos avaliados uma vez. Passo não negativo usa `LE`; passo negativo usa `GE`. `Step 0` não recebe atalho: se a condição permanecer verdadeira, o limite global de passos interrompe a execução.
 
 ## Runtime permitido
 
@@ -65,4 +65,4 @@ O limite padrão é 10.000 passos e a profundidade padrão é 128 frames; ambos 
 
 ## Evidência inicial
 
-Os testes de equivalência executam o mesmo PPO sintético no executor leve e na VM e comparam console, mensagem condicional e função auxiliar com atribuição composta. A equivalência cobre somente as fatias testadas, não toda a linguagem.
+Os testes de equivalência executam o mesmo PPO sintético no executor leve e na VM e comparam console, mensagem condicional, função auxiliar e soma em `For`. A equivalência cobre somente as fatias testadas, não toda a linguagem.

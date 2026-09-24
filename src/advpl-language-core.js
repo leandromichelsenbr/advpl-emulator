@@ -13,7 +13,7 @@
   "use strict";
 
   const AST_VERSION = "0.1";
-  const KEYWORDS = new Set(["USER", "STATIC", "FUNCTION", "LOCAL", "RETURN", "IF", "ELSE", "ENDIF", "NIL"]);
+  const KEYWORDS = new Set(["USER", "STATIC", "FUNCTION", "LOCAL", "RETURN", "IF", "ELSE", "ENDIF", "FOR", "TO", "STEP", "NEXT", "NIL"]);
 
   function position(file, line, column, offset) { return { file, line, column, offset }; }
   function location(start, end) { return { start, end }; }
@@ -132,6 +132,23 @@
         const close = expect("ENDIF") || consequent.at(-1) || test;
         return node("IfStatement", start, close, { test, consequent, alternate });
       }
+      if (is("FOR")) {
+        take();
+        const variable = peek().type === "identifier" ? take() : null;
+        if (!variable) diagnostics.push(diagnostic("LC0107", "Variável de controle do For esperada.", peek()));
+        expect(":="); const initial = expressionNode();
+        expect("TO"); const limit = expressionNode();
+        let step = node("Literal", start, start, { value: 1, raw: "1", synthetic: true });
+        if (is("STEP")) { take(); step = expressionNode(); }
+        skipLines();
+        const body = statementList(new Set(["NEXT"]));
+        const close = expect("NEXT") || body.at(-1) || step;
+        if (peek().type === "identifier") {
+          const nextVariable = take();
+          if (variable && nextVariable.raw.toUpperCase() !== variable.raw.toUpperCase()) diagnostics.push(diagnostic("LC0108", `Variável de Next difere do For: ${nextVariable.raw}.`, nextVariable));
+        }
+        return node("ForStatement", start, close, { variable: variable?.raw || "<invalid>", initial, limit, step, body });
+      }
       if (is("LOCAL")) {
         take(); const name = peek().type === "identifier" ? take() : null;
         if (!name) diagnostics.push(diagnostic("LC0103", "Nome de variável local esperado.", peek()));
@@ -198,6 +215,8 @@
             else symbols[localKey] = { kind: "local", name: statement.name };
           } else if (statement.type === "IfStatement") {
             bindStatements(statement.consequent); bindStatements(statement.alternate);
+          } else if (statement.type === "ForStatement") {
+            bindStatements(statement.body);
           }
         }
       };
@@ -208,6 +227,9 @@
             diagnostics.push({ code: "LC0203", severity: "error", message: `Atribuição a símbolo não vinculado: ${statement.name}`, line: statement.loc.start.line, column: statement.loc.start.column, origin: "language-core", file: statement.loc.start.file });
           } else if (statement.type === "IfStatement") {
             validateAssignments(statement.consequent); validateAssignments(statement.alternate);
+          } else if (statement.type === "ForStatement") {
+            if (!symbols[statement.variable.toUpperCase()]) diagnostics.push({ code: "LC0204", severity: "error", message: `Variável de controle não vinculada: ${statement.variable}`, line: statement.loc.start.line, column: statement.loc.start.column, origin: "language-core", file: statement.loc.start.file });
+            validateAssignments(statement.body);
           }
         }
       };

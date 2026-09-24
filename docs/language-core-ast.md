@@ -39,15 +39,16 @@ Cada posição contém `file`, `line`, `column` e `offset`. Linhas e colunas com
 | `UnaryExpression` | sinais unários `+` e `-` |
 | `IfStatement` | condição, bloco consequente e bloco alternativo opcional |
 | `AssignmentStatement` | atribuição a local/parâmetro com `:=` ou `+=` |
+| `ForStatement` | variável de controle, início, limite, passo e corpo |
 | `ParenthesizedExpression` | expressão explicitamente agrupada |
 | `Identifier` | nome preservado como escrito |
 | `Literal` | texto, número e `Nil` |
 
-O parser cobre inicialmente `If`/`Else`/`EndIf`, inclusive blocos aninhados, comparações `==`, `!=`, `<`, `<=`, `>` e `>=`, e atribuições `:=`/`+=` a símbolos vinculados. Ainda não cobre `ElseIf`, `For`, arrays, code blocks, métodos, outros destinos de atribuição, operadores completos ou construções visuais. Essas ausências são limitações, não interpretação aproximada.
+O parser cobre inicialmente `If`/`Else`/`EndIf`, `For`/`To`/`Step`/`Next`, blocos aninhados, comparações e atribuições `:=`/`+=` a símbolos vinculados. `Step` omitido é representado por literal sintético `1`; `Next` aceita opcionalmente o nome da variável e diagnostica divergência. Ainda não cobre `ElseIf`, `While`, arrays, code blocks, métodos, outros destinos de atribuição, operadores completos ou construções visuais.
 
 ## Binder inicial
 
-O binder devolve uma tabela de funções e, para cada função, símbolos de parâmetros e locais. Duplicidades recebem `LC0201` ou `LC0202`; atribuições a símbolos não vinculados recebem `LC0203`. Chamadas como `MsgInfo` e `ConOut` não são declaradas implicitamente: a resolução de built-ins e APIs Protheus pertence ao Core Runtime e à camada de compatibilidade.
+O binder devolve uma tabela de funções e, para cada função, símbolos de parâmetros e locais. Duplicidades recebem `LC0201` ou `LC0202`; atribuições a símbolos não vinculados recebem `LC0203`; variável de controle do `For` não vinculada recebe `LC0204`. Chamadas como `MsgInfo` e `ConOut` não são declaradas implicitamente: a resolução de built-ins e APIs Protheus pertence ao Core Runtime e à camada de compatibilidade.
 
 ## Relação com contratos existentes
 
@@ -56,4 +57,4 @@ O binder devolve uma tabela de funções e, para cada função, símbolos de par
 - Modelo intermediário `0.1` descreve a saída visual e eventos.
 - AST do TDS continua encapsulada pelo adaptador opcional e não é exposta como este contrato.
 
-O executor leve continua sendo o caminho de produção. As versões `0.22.0` a `0.24.0` entregam compiler/VM e equivalência para console, mensagem condicional, atribuição composta e função auxiliar. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.
+O executor leve continua sendo o caminho de produção. As versões `0.22.0` a `0.25.0` entregam compiler/VM e equivalência para console, condição, atribuição, função auxiliar e `For`. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.

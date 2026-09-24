@@ -51,3 +51,16 @@ test("compila atribuições e distingue função AdvPL de serviço do runtime", 
   assert.equal(instructions.filter(item => item.op === "STORE_LOCAL").length, 2);
   assert.equal(instructions.some(item => item.op === "ADD"), true);
 });
+
+test("compila For com limite e passo avaliados em slots temporários", () => {
+  const bytecode = compile('User Function Demo()\nLocal n\nFor n := 0 To 4 Step 2\nConOut(cValToChar(n))\nNext\nReturn');
+  assert.deepEqual(bytecode.diagnostics, []);
+  const fn = bytecode.functions.DEMO, ops = fn.instructions.map(item => item.op);
+  assert.equal(fn.localCount, 3);
+  assert.equal(fn.slots.N, 0);
+  assert.equal(ops.filter(op => op === "STORE_LOCAL").length >= 4, true);
+  assert.equal(ops.includes("JUMP_IF_FALSE"), true);
+  assert.equal(ops.includes("LE"), true);
+  assert.equal(ops.includes("GE"), true);
+  assert.equal(fn.instructions.some(item => item.op === "JUMP" && Number.isInteger(item.arg)), true);
+});

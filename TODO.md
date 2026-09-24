@@ -32,7 +32,8 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] Definir ISA stack-based `0.1`, compiler, VM limitada e Core Runtime para a primeira fatia vertical de expressão/local/`ConOut`, com equivalência contra o executor leve (0.22.0).
 - [x] Ampliar AST/compiler/VM com `If`/`Else`, comparações, expressão unária, saltos validados, `Abs` e `MsgInfo`, preservando equivalência com o executor leve (0.23.0).
 - [x] Implementar atribuições `:=`/`+=` e chamadas entre funções AdvPL com frames isolados e limite de profundidade (0.24.0).
-- [ ] Ampliar o controle de fluxo da VM para `For`/`To`/`Step`/`Next` e `While`, reutilizando atribuições, saltos e limite global de passos.
+- [x] Implementar `For`/`To`/`Step`/`Next`, incluindo passo padrão/negativo, laços aninhados, temporários isolados e proteção de `Step 0` pelo limite de instruções (0.25.0).
+- [ ] Implementar `While`/`EndDo`, incluindo aninhamento com `If`/`For` e equivalência de efeitos com o executor leve.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.
