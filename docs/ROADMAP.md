@@ -25,7 +25,8 @@ A ordem indica foco de investimento, não ausência de recursos atuais: editor, 
 5. **Controle condicional entregue em 0.23.0:** AST aninhada para `If`/`Else`, comparações, saltos validados, expressão unária, `Abs` e `MsgInfo`. A equivalência comprova a mesma mensagem e seleção de ramo do executor leve. Atribuições e chamadas foram entregues no incremento seguinte; permanecem corpus oficial, laços, code blocks, suspensão e integração ao renderer.
 6. **Frames de funções entregues em 0.24.0:** atribuições `:=`/`+=`, distinção entre runtime e funções declaradas, frames isolados, retorno e limite de profundidade. A equivalência cobre função auxiliar e atribuição composta. `For` foi entregue no incremento seguinte; permanecem corpus oficial, demais laços, code blocks, suspensão e integração ao renderer.
 7. **Laço `For` entregue em 0.25.0:** início, limite e passo avaliados uma vez, passo padrão/negativo, laços aninhados e proteção de passo zero pelo limite global. A equivalência cobre a soma dos pares até 100.
-8. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
+8. **Laço `While` entregue em 0.26.0:** condição reavaliada antes de cada iteração, aninhamento com `If`/`For`, retorno e limite global de instruções. Comparação de efeitos contra `For` equivalente no executor leve, que não executa `While`.
+9. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
 
 O pré-processador local fica como caminho didático de transição. Reimplementar todo o universo de includes e regras TOTVS não é pré-requisito nem trilha principal. Não há prazo ou conclusão presumida para os novos componentes; o estado entregue continua na [matriz](compatibility-matrix.md).
 
@@ -43,8 +44,12 @@ O pipeline experimental passa a representar e executar `If`/`Else` com blocos an
 
 ## Incremento entregue — 0.24.0
 
-A AST passa a representar atribuições `:=` e `+=` a locais/parâmetros. O compiler diferencia serviços do Core Runtime de funções AdvPL declaradas e emite `CALL_FUNCTION`. A VM cria frames com slots e contador próprios, devolve valores ao chamador e limita profundidade recursiva. O `For` então planejado está registrado no incremento `0.25.0` abaixo; `While` permanece pendente.
+A AST passa a representar atribuições `:=` e `+=` a locais/parâmetros. O compiler diferencia serviços do Core Runtime de funções AdvPL declaradas e emite `CALL_FUNCTION`. A VM cria frames com slots e contador próprios, devolve valores ao chamador e limita profundidade recursiva. O `For` então planejado está registrado no incremento `0.25.0` abaixo; `While` foi entregue em `0.26.0`.
 
 ## Incremento entregue — 0.25.0
 
-`For`/`To`/`Step`/`Next` passa a integrar AST, binder e compiler. Limite e passo ocupam slots internos avaliados uma vez; o compiler seleciona a comparação conforme o sinal do passo e reutiliza saltos existentes. Há cobertura de passo padrão, negativo, zero e laços aninhados. A próxima ampliação é `While`/`EndDo`.
+`For`/`To`/`Step`/`Next` passa a integrar AST, binder e compiler. Limite e passo ocupam slots internos avaliados uma vez; o compiler seleciona a comparação conforme o sinal do passo e reutiliza saltos existentes. Há cobertura de passo padrão, negativo, zero e laços aninhados. O incremento seguinte entrega `While`/`EndDo`.
+
+## Incremento entregue — 0.26.0
+
+`While`/`EndDo` integra AST, binder e compiler sem novos opcodes ou temporários. O salto retorna ao início da condição, inclusive quando ela contém chamadas. Testes cobrem corpo vazio/falso, blocos aninhados, locais, retorno em frame auxiliar e interrupção posicionada de laço infinito. O executor leve continua como caminho de produção; a comparação de efeitos usa um `For` equivalente e não afirma suporte a `While` nesse executor. Permanecem corpus PPO oficial, demais construções de controle, code blocks, suspensão e integração ao renderer.

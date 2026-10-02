@@ -6,14 +6,23 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.25.0` |
+| Versão da distribuição | `0.26.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 149 |
+| Testes automatizados | 158 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.26.0 — 01/10/2026
+
+**Tipo:** laço `While` na VM experimental.
+
+- `While`/`EndDo` integra AST, binder e compiler com saltos existentes e condição reavaliada.
+- Aninhamento com `If`/`For`, locais, retorno e laço infinito possuem cobertura.
+- Equivalência de efeitos é comparada com `For` correspondente, pois o executor leve não executa `While`.
+- Suíte ampliada de 149 para 158 testes; contratos experimentais continuam `0.1`.
 
 ### 0.25.0 — 23/09/2026
 

@@ -41,3 +41,19 @@ test("nova VM preserva soma de pares em For e mensagem final", () => {
   assert.deepEqual(modern.diagnostics, []);
   assert.deepEqual(modern.events, legacy.events);
 });
+
+
+test("While produz os mesmos efeitos que For equivalente no executor leve", () => {
+  // O executor leve não executa While: For fornece um oráculo independente
+  // para a mesma sequência finita, sem alegar equivalência da gramática.
+  const prefix = "User Function Demo()\nLocal n := 0\nLocal total := 0\n";
+  const suffix = "MsgInfo(cValToChar(total), \"Resultado\")\nReturn";
+  const legacy = core.parse(prefix + "For n := 0 To 3\nConOut(cValToChar(n))\ntotal += n\nNext\n" + suffix);
+  const source = prefix + "While n < 4\nConOut(cValToChar(n))\ntotal += n\nn += 1\nEndDo\n" + suffix;
+  const modern = vm.run(compiler.compile(language.bind(language.parse(source))));
+  assert.equal(modern.completed, true);
+  assert.deepEqual(modern.diagnostics, []);
+  assert.deepEqual(modern.events, legacy.events);
+  assert.deepEqual(modern.console, legacy.console);
+  assert.equal(modern.events.at(-1).text, '6');
+});

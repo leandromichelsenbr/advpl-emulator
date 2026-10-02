@@ -2,7 +2,7 @@
 
 ## Estado
 
-A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.25.0 acrescenta `For` à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
+A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.26.0 acrescenta `While`/`EndDo` à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
 
 ## Artefato compilado
 
@@ -39,6 +39,8 @@ Cada função declara quantidade de parâmetros/locais, slots estáveis e instru
 
 Os destinos de salto são índices absolutos e validados antes de alterar o contador de instruções. Cada `CALL_FUNCTION` cria slots e contador de instrução próprios. O compiler reduz `For` aos opcodes já existentes, reservando dois slots internos por laço para limite e passo, ambos avaliados uma vez. Passo não negativo usa `LE`; passo negativo usa `GE`. `Step 0` não recebe atalho: se a condição permanecer verdadeira, o limite global de passos interrompe a execução.
 
+O compiler reduz `While` aos mesmos saltos: avalia a condição antes do corpo, desvia para a saída quando falsa e retorna ao início da expressão após cada iteração. Chamadas na condição também são reavaliadas. Não reserva temporários nem acrescenta opcodes; AST/ISA/VM permanecem `0.1`. Laços infinitos, inclusive de corpo vazio, estão sujeitos ao limite global de passos.
+
 ## Runtime permitido
 
 `advpl-core-runtime.js` registra explicitamente serviços. A fonte nunca é avaliada como JavaScript. O conjunto inicial contém:
@@ -65,4 +67,4 @@ O limite padrão é 10.000 passos e a profundidade padrão é 128 frames; ambos 
 
 ## Evidência inicial
 
-Os testes de equivalência executam o mesmo PPO sintético no executor leve e na VM e comparam console, mensagem condicional, função auxiliar e soma em `For`. A equivalência cobre somente as fatias testadas, não toda a linguagem.
+Os testes de equivalência executam o mesmo PPO sintético no executor leve e na VM e comparam console, mensagem condicional, função auxiliar e soma em `For`. O executor leve não executa `While`; para esse incremento, um `For` equivalente fornece o oráculo independente de console e mensagens da mesma sequência finita. Testes diretos da VM cobrem condição falsa, reavaliação, aninhamento com `If`/`For`, retorno em função auxiliar e limite posicionado. A equivalência cobre somente as fatias testadas, não toda a linguagem.

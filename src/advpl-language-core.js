@@ -13,7 +13,7 @@
   "use strict";
 
   const AST_VERSION = "0.1";
-  const KEYWORDS = new Set(["USER", "STATIC", "FUNCTION", "LOCAL", "RETURN", "IF", "ELSE", "ENDIF", "FOR", "TO", "STEP", "NEXT", "NIL"]);
+  const KEYWORDS = new Set(["USER", "STATIC", "FUNCTION", "LOCAL", "RETURN", "IF", "ELSE", "ENDIF", "FOR", "TO", "STEP", "NEXT", "WHILE", "ENDDO", "NIL"]);
 
   function position(file, line, column, offset) { return { file, line, column, offset }; }
   function location(start, end) { return { start, end }; }
@@ -124,6 +124,12 @@
 
     function statement() {
       const start = peek();
+      if (is("WHILE")) {
+        take(); const test = expressionNode(); skipLines();
+        const body = statementList(new Set(["ENDDO"]));
+        const close = expect("ENDDO") || body.at(-1)?.loc.end || test.loc.end;
+        return node("WhileStatement", start, close, { test, body });
+      }
       if (is("IF")) {
         take(); const test = expressionNode(); skipLines();
         const consequent = statementList(new Set(["ELSE", "ENDIF"]));
@@ -215,7 +221,7 @@
             else symbols[localKey] = { kind: "local", name: statement.name };
           } else if (statement.type === "IfStatement") {
             bindStatements(statement.consequent); bindStatements(statement.alternate);
-          } else if (statement.type === "ForStatement") {
+          } else if (statement.type === "ForStatement" || statement.type === "WhileStatement") {
             bindStatements(statement.body);
           }
         }
@@ -229,6 +235,8 @@
             validateAssignments(statement.consequent); validateAssignments(statement.alternate);
           } else if (statement.type === "ForStatement") {
             if (!symbols[statement.variable.toUpperCase()]) diagnostics.push({ code: "LC0204", severity: "error", message: `Variável de controle não vinculada: ${statement.variable}`, line: statement.loc.start.line, column: statement.loc.start.column, origin: "language-core", file: statement.loc.start.file });
+            validateAssignments(statement.body);
+          } else if (statement.type === "WhileStatement") {
             validateAssignments(statement.body);
           }
         }

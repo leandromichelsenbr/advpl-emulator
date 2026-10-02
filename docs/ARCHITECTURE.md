@@ -4,7 +4,7 @@
 
 O objetivo central é didático, funcional e visual: executar exemplos de interface e exercícios AdvPL no navegador, com lógica, estado, interação e resultados observáveis. A abrangência da linguagem e das APIs cresce conforme esses exemplos exigem.
 
-Esta é a arquitetura-alvo consolidada em 08/09/2026. A AST e o binder experimentais `0.1` estão descritos no [contrato do Language Core](language-core-ast.md). As versões `0.22.0` a `0.25.0` entregam as primeiras fatias executáveis do compiler, da [ISA própria](language-core-isa.md), da VM e do Core Runtime, incluindo console, condição, atribuição, funções e `For`. Esse caminho permanece experimental e paralelo ao executor leve. O [README](../README.md#arquitetura-atual) descreve a implementação atual; a [matriz](compatibility-matrix.md) registra o suporte verificável.
+Esta é a arquitetura-alvo consolidada em 08/09/2026. A AST e o binder experimentais `0.1` estão descritos no [contrato do Language Core](language-core-ast.md). As versões `0.22.0` a `0.26.0` entregam as primeiras fatias executáveis do compiler, da [ISA própria](language-core-isa.md), da VM e do Core Runtime, incluindo console, condição, atribuição, funções, `For` e `While`. Esse caminho permanece experimental e paralelo ao executor leve. O [README](../README.md#arquitetura-atual) descreve a implementação atual; a [matriz](compatibility-matrix.md) registra o suporte verificável.
 
 ## Fronteira canônica e modos de entrada
 

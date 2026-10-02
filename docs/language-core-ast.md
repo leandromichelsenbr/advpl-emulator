@@ -39,12 +39,15 @@ Cada posição contém `file`, `line`, `column` e `offset`. Linhas e colunas com
 | `UnaryExpression` | sinais unários `+` e `-` |
 | `IfStatement` | condição, bloco consequente e bloco alternativo opcional |
 | `AssignmentStatement` | atribuição a local/parâmetro com `:=` ou `+=` |
+| `WhileStatement` | condição e corpo, com teste antes de cada iteração |
 | `ForStatement` | variável de controle, início, limite, passo e corpo |
 | `ParenthesizedExpression` | expressão explicitamente agrupada |
 | `Identifier` | nome preservado como escrito |
 | `Literal` | texto, número e `Nil` |
 
-O parser cobre inicialmente `If`/`Else`/`EndIf`, `For`/`To`/`Step`/`Next`, blocos aninhados, comparações e atribuições `:=`/`+=` a símbolos vinculados. `Step` omitido é representado por literal sintético `1`; `Next` aceita opcionalmente o nome da variável e diagnostica divergência. Ainda não cobre `ElseIf`, `While`, arrays, code blocks, métodos, outros destinos de atribuição, operadores completos ou construções visuais.
+O parser cobre inicialmente `If`/`Else`/`EndIf`, `For`/`To`/`Step`/`Next`, `While`/`EndDo`, blocos aninhados, comparações e atribuições `:=`/`+=` a símbolos vinculados. `Step` omitido é representado por literal sintético `1`; `Next` aceita opcionalmente o nome da variável e diagnostica divergência. Ainda não cobre `ElseIf`, arrays, code blocks, métodos, outros destinos de atribuição, operadores completos ou construções visuais.
+
+`WhileStatement` contém `test` e `body`; `EndDo` ausente recebe `LC0101`. Locais e atribuições no corpo seguem a vinculação da função, inclusive em blocos aninhados.
 
 ## Binder inicial
 
@@ -57,4 +60,4 @@ O binder devolve uma tabela de funções e, para cada função, símbolos de par
 - Modelo intermediário `0.1` descreve a saída visual e eventos.
 - AST do TDS continua encapsulada pelo adaptador opcional e não é exposta como este contrato.
 
-O executor leve continua sendo o caminho de produção. As versões `0.22.0` a `0.25.0` entregam compiler/VM e equivalência para console, condição, atribuição, função auxiliar e `For`. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.
+O executor leve continua sendo o caminho de produção. As versões `0.22.0` a `0.26.0` entregam compiler/VM e equivalência para console, condição, atribuição, função auxiliar, `For` e efeitos de `While`. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.
