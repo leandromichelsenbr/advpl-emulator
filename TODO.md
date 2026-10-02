@@ -33,7 +33,7 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] Ampliar AST/compiler/VM com `If`/`Else`, comparações, expressão unária, saltos validados, `Abs` e `MsgInfo`, preservando equivalência com o executor leve (0.23.0).
 - [x] Implementar atribuições `:=`/`+=` e chamadas entre funções AdvPL com frames isolados e limite de profundidade (0.24.0).
 - [x] Implementar `For`/`To`/`Step`/`Next`, incluindo passo padrão/negativo, laços aninhados, temporários isolados e proteção de `Step 0` pelo limite de instruções (0.25.0).
-- [ ] Implementar `While`/`EndDo`, incluindo aninhamento com `If`/`For` e equivalência de efeitos com o executor leve.
+- [x] Implementar `While`/`EndDo`, incluindo aninhamento com `If`/`For` e comparação de efeitos com `For` equivalente no executor leve, que não executa `While` (0.26.0).
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.

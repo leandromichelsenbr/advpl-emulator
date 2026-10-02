@@ -111,3 +111,25 @@ test("diagnostica For sem Next, variável divergente e controle não vinculado",
   const unbound = language.bind(language.parse('User Function Broken()\nFor n := 1 To 2\nNext\nReturn'));
   assert.equal(unbound.diagnostics.some(item => item.code === "LC0204"), true);
 });
+
+
+test("representa While aninhado com posições e vincula locais do corpo", () => {
+  const source = "User Function Demo()\nLocal n := 0\nwhile n < 2\nLocal inside := n\nWhile inside < 1\ninside += 1\nEndDo\nn += 1\nenddo\nReturn n";
+  const ast = language.parse(source, { filename: 'while.ppo' });
+  const bound = language.bind(ast), loop = ast.body[0].body[1];
+  assert.deepEqual(bound.diagnostics, []);
+  assert.equal(loop.type, 'WhileStatement');
+  assert.equal(loop.body[1].type, 'WhileStatement');
+  assert.equal(loop.loc.start.line, 3);
+  assert.equal(loop.loc.end.line, 9);
+  assert.equal(loop.loc.end.file, 'while.ppo');
+  assert.equal(bound.functions.DEMO.symbols.INSIDE.kind, 'local');
+});
+
+test("diagnostica While sem EndDo e atribuição não vinculada no corpo", () => {
+  const ast = language.parse("User Function Demo()\nWhile 1 == 1\nmissing += 1", { filename: 'broken-while.ppo' });
+  const bound = language.bind(ast);
+  assert.equal(ast.diagnostics.some(d => d.code === 'LC0101' && d.message.includes('ENDDO') && d.file === 'broken-while.ppo'), true);
+  assert.equal(bound.diagnostics.some(d => d.code === 'LC0203'), true);
+  assert.equal(ast.body[0].body[0].loc.end.line, 3);
+});

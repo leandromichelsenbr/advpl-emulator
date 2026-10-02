@@ -64,3 +64,16 @@ test("compila For com limite e passo avaliados em slots temporários", () => {
   assert.equal(ops.includes("GE"), true);
   assert.equal(fn.instructions.some(item => item.op === "JUMP" && Number.isInteger(item.arg)), true);
 });
+
+
+test("compila While com salto para a condição e sem temporários", () => {
+  const bytecode = compile("User Function Demo(n)\nWhile n < 2\nn += 1\nEndDo\nReturn n");
+  assert.deepEqual(bytecode.diagnostics, []);
+  const fn = bytecode.functions.DEMO;
+  assert.equal(fn.localCount, 1);
+  const back = fn.instructions.find(i => i.op === 'JUMP');
+  const exit = fn.instructions.find(i => i.op === 'JUMP_IF_FALSE');
+  assert.equal(back.arg, 0);
+  assert.equal(fn.instructions[exit.arg].op, 'LOAD_LOCAL');
+  assert.equal(fn.instructions.every(i => i.loc.start.file === 'compiler.ppo'), true);
+});

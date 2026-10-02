@@ -26,6 +26,7 @@
         for (const statement of statements) {
           if (statement.type === "LocalDeclaration" && !slots.has(statement.name.toUpperCase())) slots.set(statement.name.toUpperCase(), nextSlot++);
           else if (statement.type === "IfStatement") { allocateLocals(statement.consequent); allocateLocals(statement.alternate); }
+          else if (statement.type === "WhileStatement") allocateLocals(statement.body);
           else if (statement.type === "ForStatement") {
             forTemps.set(statement, { limit: nextSlot++, step: nextSlot++ });
             allocateLocals(statement.body);
@@ -86,6 +87,14 @@
               compileStatements(statement.alternate);
               instructions[endJump].arg = instructions.length;
             } else instructions[conditionJump].arg = instructions.length;
+          } else if (statement.type === "WhileStatement") {
+            // O salto retorna ao início da expressão, reavaliando também chamadas.
+            const loopStart = instructions.length;
+            expression(statement.test);
+            const exitJump = instructions.length; emit("JUMP_IF_FALSE", null, statement.test.loc);
+            compileStatements(statement.body);
+            emit("JUMP", loopStart, statement.loc);
+            instructions[exitJump].arg = instructions.length;
           } else if (statement.type === "ForStatement") {
             const variableSlot = slots.get(statement.variable.toUpperCase()), temps = forTemps.get(statement);
             if (variableSlot === undefined) { diagnostics.push(error("LC0302", `Identificador não vinculado: ${statement.variable}`, statement.loc)); continue; }
