@@ -7,11 +7,11 @@ const root = path.join(__dirname, "..");
 const source = 'User Function Demo()\nLocal n := 10\nLocal b := {|x| n += x, MsgInfo(cValToChar(n), "Total"), n}\nConOut("antes")\nConOut(cValToChar(Eval(b, 2)))\nConOut(cValToChar(Eval(b, 3)))\nConOut("depois")\nReturn n';
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
-async function load(page = "index.html") {
+async function load(page = "index.html", options = {}) {
   const dom = new JSDOM(fs.readFileSync(path.join(root, page), "utf8"), { url: "https://emulator.test/" + page, runScripts: "outside-only", pretendToBeVisual: true });
   const { window } = dom;
-  window.ADVPL_EMULATOR_CONFIG = { parserMode: "light", preprocessor: { builtinIncludes: false } };
-  window.document.getElementById("source").value = 'User Function Init()\nConOut("pronto")\nReturn';
+  window.ADVPL_EMULATOR_CONFIG = { parserMode: "light", preprocessor: { builtinIncludes: false }, ...(options.config || {}) };
+  if (options.initialSource !== null) window.document.getElementById("source").value = 'User Function Init()\nConOut("pronto")\nReturn';
   for (const script of window.document.querySelectorAll("script[src]")) {
     const file = script.getAttribute("src").split("?")[0];
     window.eval(fs.readFileSync(path.join(root, file), "utf8") + '\n//# sourceURL=' + file);
@@ -27,7 +27,7 @@ for (const page of ["index.html", "exercise.html"]) {
   test(page + ": Executar código e OK continuam a VM com mensagens e console em ordem", async t => {
     const dom = await load(page); t.after(() => dom.window.close());
     const { window } = dom, doc = window.document;
-    assert.equal(doc.getElementById("executionEngine").value, "legacy");
+    assert.equal(doc.getElementById("executionEngine").value, page === "index.html" ? "vm" : "legacy");
     doc.getElementById("executionEngine").value = "vm";
     doc.getElementById("executionEngine").dispatchEvent(new window.Event("change"));
     doc.getElementById("source").value = source;
@@ -143,4 +143,38 @@ test("edição durante carregamento de includes não troca o fonte já solicitad
   assert.equal((await requested).executed, true);
   assert.equal(message(doc), "12");
   assert.equal(consoleText(doc), "antes");
+});
+
+test("playground inicia na VM com exemplo compatível e conclui após dois OKs", async t => {
+  const dom = await load("index.html", { initialSource: null }); t.after(() => dom.window.close());
+  const doc = dom.window.document;
+  assert.equal(doc.getElementById("executionEngine").value, "vm");
+  assert.equal(doc.getElementById("executionHint").hidden, false);
+  assert.equal(message(doc), "12");
+  assert.equal(consoleText(doc), "Antes das mensagens");
+  ok(doc).click(); assert.equal(message(doc), "15");
+  ok(doc).click();
+  assert.equal(consoleText(doc), "Antes das mensagens\n12\n15\nTeste concluído");
+  assert.match(doc.getElementById("status").textContent, /Execução concluída/);
+  assert.ok(doc.querySelector('a[href="exercise.html"]'));
+  assert.ok(doc.querySelector('#executionEngine option[value="legacy"]'));
+});
+
+test("exemplo TWBrowse original continua disponível e executável no modo clássico", async t => {
+  const dom = await load(); t.after(() => dom.window.close());
+  const { window } = dom, doc = window.document;
+  const original = fs.readFileSync(path.join(root, "examples/twbrowse.prw"), "utf8");
+  const result = await window.AdvPLEmulator.runAsync(original, undefined, { engine: "legacy" });
+  assert.equal(result.executed, true);
+  assert.equal(doc.querySelector('#desktop [data-advpl="tdialog"]').getAttribute("title"), "Exemplo TWBrowse");
+  assert.equal(doc.getElementById("executionEngine").value, "legacy");
+});
+
+test("exercício MSDialog mantém seu padrão clássico e configuração explícita tem prioridade", async t => {
+  const dom = await load("exercise.html", { initialSource: null }); t.after(() => dom.window.close());
+  assert.equal(dom.window.document.getElementById("executionEngine").value, "legacy");
+  assert.equal(dom.window.document.querySelector('#desktop [data-advpl="tdialog"]').getAttribute("title"), "Cadastro");
+  const override = await load("index.html", { config: { engine: "legacy" } }); t.after(() => override.window.close());
+  assert.equal(override.window.document.getElementById("executionEngine").value, "legacy");
+  assert.equal(consoleText(override.window.document), "pronto");
 });

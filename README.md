@@ -30,7 +30,7 @@ npm install
 
 Selecione **PRW didático** para o fluxo local existente ou **PPO previamente gerado** para colar texto já pré-processado. A entrada PPO não carrega includes nem expande macros; sua origem não é verificada. Veja o [contrato de entrada PPO](docs/integration.md#entrada-ppo-fornecida).
 
-Pressione **Executar código** ou `Ctrl+Enter`. **Componentes clássicos** é o modo inicial para os exemplos existentes. O modo **Lógica e blocos (experimental)** executa o Language Core/VM e retoma mensagens pelo botão OK. A compilação interna desse modo é automática; não há comando de build para executar a demonstração.
+Pressione **Executar código** ou `Ctrl+Enter`. O playground `index.html` inicia em **Lógica e blocos (experimental)** com um exemplo de acumulador e mensagens; o botão OK retoma a execução. **Componentes clássicos** continua acessível no seletor, e `exercise.html` mantém esse modo para o exercício de MSDialog. O [exemplo TWBrowse original](examples/twbrowse.prw) permanece disponível para o modo clássico. A compilação interna desse modo é automática; não há comando de build para executar a demonstração.
 
 O laboratório público sem autenticação está em [`exercise.html`](exercise.html).
 

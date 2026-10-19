@@ -379,3 +379,5 @@ h1 { margin: 2px 0 0; font-size: 24px; }
 .topbar select { max-width: 100%; min-width: 0; padding: 6px; }
 .execution-hint { margin: 0; padding: 8px 16px; color: #dce7ef; background: #253443; font-size: 12px; }
 .execution-hint[hidden], #cancelExecution[hidden] { display: none; }
+
+.classic-exercise-link { color: #0969da; font-size: 13px; }

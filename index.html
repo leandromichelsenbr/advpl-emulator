@@ -10,12 +10,13 @@
   <main class="app-shell">
     <header class="topbar">
       <div>
-        <span class="eyebrow">AdvPL clássico</span>
+        <span class="eyebrow">Laboratório de lógica AdvPL</span>
         <h1>Emulador AdvPL</h1>
       </div>
       <label>Entrada <select id="inputMode" aria-label="Formato de entrada"><option value="prw">PRW didático</option><option value="ppo">PPO previamente gerado</option></select></label>
-      <label>Execução <select id="executionEngine" aria-label="Modo de execução"><option value="legacy">Componentes clássicos</option><option value="vm">Lógica e blocos (experimental)</option></select></label>
+      <label>Execução <select id="executionEngine" data-default-engine="vm" aria-label="Modo de execução"><option value="legacy">Componentes clássicos</option><option value="vm" selected>Lógica e blocos (experimental)</option></select></label>
       <button id="runButton" class="primary">Executar código</button>
+      <a class="classic-exercise-link" href="exercise.html">Exercício de MSDialog</a>
       <button id="cancelExecution" type="button" hidden>Interromper</button>
     </header>
 
@@ -24,27 +25,15 @@
         <div class="pane-title">Código AdvPL</div>
         <div class="code-editor">
           <pre id="highlighting" aria-hidden="true"><code id="highlightingContent"></code></pre>
-          <textarea id="source" spellcheck="false" aria-label="Código AdvPL">#include "TOTVS.CH"
+          <textarea id="source" spellcheck="false" aria-label="Código AdvPL">User Function TesteBloco()
+    Local nTotal := 10
+    Local bSomar := {|nValor| nTotal += nValor, MsgInfo(cValToChar(nTotal), "Total"), nTotal}
 
-User Function TWBrowse()
-    Local oOK := LoadBitmap(GetResources(),'br_verde')
-    Local oNO := LoadBitmap(GetResources(),'br_vermelho')
-    DEFINE DIALOG oDlg TITLE "Exemplo TWBrowse" FROM 180,180 TO 550,700 PIXEL
-
-    oBrowse := TWBrowse():New(01,01,260,184,,{'','Codigo','Descrição'},{20,30,30},;
-        oDlg,,,,,{||},,,,,,,.F.,,.T.,,.F.,,,)
-    aBrowse := {{.T.,'CLIENTE 001','RUA CLIENTE 001','BAIRRO CLIENTE 001'},;
-        {.F.,'CLIENTE 002','RUA CLIENTE 002','BAIRRO CLIENTE 002'},;
-        {.T.,'CLIENTE 003','RUA CLIENTE 003','BAIRRO CLIENTE 003'}}
-    oBrowse:SetArray(aBrowse)
-    oBrowse:bLine := {||{If(aBrowse[oBrowse:nAt,01],oOK,oNO),aBrowse[oBrowse:nAt,02],;
-        aBrowse[oBrowse:nAt,03],aBrowse[oBrowse:nAt,04]}}
-    // Troca a imagem no duplo clique do mouse
-    oBrowse:bLDblClick := {||aBrowse[oBrowse:nAt][1] := !aBrowse[oBrowse:nAt][1],;
-        oBrowse:DrawSelect()}
-
-    ACTIVATE DIALOG oDlg CENTERED
-Return</textarea>
+    ConOut("Antes das mensagens")
+    ConOut(cValToChar(Eval(bSomar, 2)))
+    ConOut(cValToChar(Eval(bSomar, 3)))
+    ConOut("Teste concluído")
+Return nTotal</textarea>
         </div>
         <p id="executionHint" class="execution-hint" hidden>Lógica, blocos, console e MsgInfo. Suporte experimental.</p>
         <div id="status" class="status">Pronto para interpretar.</div>
@@ -121,20 +110,20 @@ Return</textarea>
   </div>
 
   <script src="data/sample-data.js"></script>
-  <script src="src/advpl-model.js?v=0.29.0"></script>
-  <script src="src/advpl-preprocessor.js?v=0.29.0"></script>
-  <script src="src/advpl-include-loader.js?v=0.29.0"></script>
-  <script src="src/advpl-language-core.js?v=0.29.0"></script>
-  <script src="src/advpl-core-runtime.js?v=0.29.0"></script>
-  <script src="src/advpl-language-compiler.js?v=0.29.0"></script>
-  <script src="src/advpl-language-vm.js?v=0.29.0"></script>
-  <script src="src/advpl-core.js?v=0.29.0"></script>
-  <script src="src/tds-parser-adapter.js?v=0.29.0"></script>
-  <script src="src/advpl-vm-visual.js?v=0.29.0"></script>
-  <script src="src/execution-pipeline.js?v=0.29.0"></script>
+  <script src="src/advpl-model.js?v=0.30.0"></script>
+  <script src="src/advpl-preprocessor.js?v=0.30.0"></script>
+  <script src="src/advpl-include-loader.js?v=0.30.0"></script>
+  <script src="src/advpl-language-core.js?v=0.30.0"></script>
+  <script src="src/advpl-core-runtime.js?v=0.30.0"></script>
+  <script src="src/advpl-language-compiler.js?v=0.30.0"></script>
+  <script src="src/advpl-language-vm.js?v=0.30.0"></script>
+  <script src="src/advpl-core.js?v=0.30.0"></script>
+  <script src="src/tds-parser-adapter.js?v=0.30.0"></script>
+  <script src="src/advpl-vm-visual.js?v=0.30.0"></script>
+  <script src="src/execution-pipeline.js?v=0.30.0"></script>
   <script src="node_modules/qrcode-generator/dist/qrcode.js"></script>
-  <script src="src/fw-dialog-runtime.js?v=0.29.0"></script>
-  <script src="msdialog.js?v=0.29.0"></script>
+  <script src="src/fw-dialog-runtime.js?v=0.30.0"></script>
+  <script src="msdialog.js?v=0.30.0"></script>
   <style id="printPageStyle">@page { size: A4 portrait; margin: 0; }</style>
 </body>
 </html>

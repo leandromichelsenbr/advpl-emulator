@@ -1117,9 +1117,10 @@
   const executionEngineEl = document.getElementById("executionEngine");
   const cancelExecutionEl = document.getElementById("cancelExecution");
   const executionHintEl = document.getElementById("executionHint");
-  if (executionEngineEl) executionEngineEl.value = emulatorConfig.engine || "legacy";
+  const defaultExecutionEngine = executionEngineEl?.dataset.defaultEngine || "legacy";
+  if (executionEngineEl) executionEngineEl.value = emulatorConfig.engine || defaultExecutionEngine;
   function updateExecutionHint(engine) { if (executionHintEl) executionHintEl.hidden = engine !== "vm"; }
-  updateExecutionHint(executionEngineEl?.value || emulatorConfig.engine || "legacy");
+  updateExecutionHint(executionEngineEl?.value || emulatorConfig.engine || defaultExecutionEngine);
   function cancelVisualExecution() {
     activeVMExecution?.cancel(); activeVMExecution = null;
     if (cancelExecutionEl) cancelExecutionEl.hidden = true;
@@ -1142,7 +1143,7 @@
   if (inputModeEl) inputModeEl.value = emulatorConfig.inputMode || "prw";
   function inputOptions(options) {
     const inputMode = options.inputMode ?? inputModeEl?.value ?? emulatorConfig.inputMode ?? "prw";
-    const engine = options.engine ?? executionEngineEl?.value ?? emulatorConfig.engine ?? "legacy";
+    const engine = options.engine ?? executionEngineEl?.value ?? emulatorConfig.engine ?? defaultExecutionEngine;
     if (inputModeEl) inputModeEl.value = inputMode;
     if (executionEngineEl) executionEngineEl.value = engine;
     updateExecutionHint(engine);

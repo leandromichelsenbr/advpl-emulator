@@ -6,14 +6,24 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.29.0` |
+| Versão da distribuição | `0.30.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 216 |
+| Testes automatizados | 219 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.30.0 — 19/10/2026
+
+**Tipo:** VM como escolha inicial do playground de lógica.
+
+- `index.html` inicia no modo Lógica e blocos com um exemplo compatível de acumulador e duas mensagens; o exemplo TWBrowse original foi preservado em `examples/twbrowse.prw`.
+- O seletor mantém Componentes clássicos acessível; um link direto abre o exercício de MSDialog, que continua no modo clássico.
+- O padrão é definido por página e pode ser sobrescrito por `ADVPL_EMULATOR_CONFIG.engine`; a API síncrona continua clássica.
+- Mudança preparada em revisão separada da integração visual 0.29.0 para ativação após sua validação.
+- Suíte ampliada de 216 para 219 testes, incluindo inicialização real das páginas, exemplo clássico preservado e prioridade da configuração.
 
 ### 0.29.0 — 19/10/2026
 

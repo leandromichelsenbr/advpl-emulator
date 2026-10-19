@@ -72,3 +72,8 @@ Sessões com `createExecution` suspendem após serviços de runtime selecionados
 ## Incremento entregue — 0.29.0
 
 O pipeline conecta PPO analisado a uma sessão VM opcional, sem executar o parser leve nesse modo. Um adaptador publica o modelo neutro e remapeia diagnósticos. Nas duas páginas, Lógica e blocos (experimental) apresenta console e MsgInfo, retoma por OK e permite interrupção. O renderer consome somente eventos novos e descarta callbacks de execuções canceladas/substituídas. TDS real e testes DOM comprovam a primeira fatia visual. A direção futura é tornar a VM o padrão quando estável, mantendo Componentes clássicos acessível; antes disso, ampliar objetos, diálogos e callbacks gerais com regressões dos exemplos existentes.
+
+
+## Incremento preparado — 0.30.0
+
+Uma revisão separada da integração visual promove a VM a escolha inicial de `index.html`, com exemplo de acumulador e mensagens compatível com seu recorte. O exemplo TWBrowse original permanece em `examples/twbrowse.prw`, Componentes clássicos continua selecionável e um link abre o exercício de MSDialog, cujo padrão permanece clássico. A configuração explícita tem prioridade sobre o padrão da página. A ativação depende da validação da integração visual; não amplia a compatibilidade da VM com objetos, diálogos ou callbacks gerais.
