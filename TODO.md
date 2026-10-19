@@ -38,7 +38,7 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] Definir suspensão/retomada da VM preservando frames, capturas e orçamento global, com tokens por pausa, cancelamento e snapshots (0.28.0).
 - [x] Integrar sessões da VM ao renderer para lógica, blocos, console e `MsgInfo`, com seleção de modo, OK/retomada, interrupção e descarte de respostas atrasadas (0.29.0).
 - [ ] Migrar objetos, diálogos e callbacks visuais gerais para a VM, preservando os exemplos clássicos.
-- [ ] Promover a VM a modo padrão quando estável, mantendo Componentes clássicos acessível.
+- [x] Preparar a VM como modo inicial do playground com exemplo compatível, preservando Componentes clássicos, o exercício de MSDialog e configuração explícita (0.30.0; revisão separada da integração visual).
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.

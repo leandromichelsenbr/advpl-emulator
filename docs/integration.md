@@ -337,6 +337,6 @@ Desde 0.28.0, `AdvPLLanguageVM.createExecution(bytecode, options)` cria uma sess
 
 ## Modo visual da VM — 0.29.0
 
-`AdvPLEmulator.runAsync(source, data, { engine: "vm" })` prepara PRW/PPO, aguarda análise sintática e apresenta console/MsgInfo pela sessão VM. O OK retoma o token da pausa atual; `AdvPLEmulator.cancel()` cancela a sessão VM ou análise pendente. `engine: "legacy"` preserva o executor clássico e é o padrão inicial. `ADVPL_EMULATOR_CONFIG.engine` configura a seleção inicial.
+`AdvPLEmulator.runAsync(source, data, { engine: "vm" })` prepara PRW/PPO, aguarda análise sintática e apresenta console/MsgInfo pela sessão VM. O OK retoma o token da pausa atual; `AdvPLEmulator.cancel()` cancela a sessão VM ou análise pendente. `engine: "legacy"` preserva o executor clássico. Desde 0.30.0, o padrão inicial é `vm` em `index.html` e `legacy` em `exercise.html`. `ADVPL_EMULATOR_CONFIG.engine` configura a seleção inicial.
 
 O resultado de `runAsync` representa a primeira apresentação, que pode estar suspensa; `result.execution.snapshot().program` consulta o estado atual. O snapshot inicial não é uma promessa de conclusão após todos os cliques. `run` permanece síncrono/clássico e recusa `engine: "vm"`. O protocolo headless preserva a confirmação da primeira apresentação, sem serializar tokens ou acrescentar callbacks remotos. Veja [modo visual, limites e exemplo manual](vm-visual-integration.md).

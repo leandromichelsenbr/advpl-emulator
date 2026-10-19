@@ -2,7 +2,7 @@
 
 ## Testar pelo playground
 
-Em `index.html` ou `exercise.html`, selecione **Lógica e blocos (experimental)** no campo **Execução**. Cole o exemplo e pressione **Executar código**:
+Desde 0.30.0, `index.html` já inicia em **Lógica e blocos (experimental)** com o exemplo abaixo. Em `exercise.html`, escolha esse modo no campo **Execução** para testar lógica. Cole o exemplo quando necessário e pressione **Executar código**:
 
 ```advpl
 User Function TesteBloco()
@@ -26,9 +26,9 @@ O console fica visível no modo experimental e mantém sua ordem de execução. 
 
 ## Cobertura e escolha de modo
 
-**Componentes clássicos** continua sendo o padrão nesta entrega e executa os exemplos existentes de diálogos, browses e relatórios. **Lógica e blocos (experimental)** usa o subconjunto do Language Core, os blocos com `Eval`, console e mensagens `MsgInfo`. Os demais serviços/classes não passam a ser suportados pela VM por existirem no executor clássico. Não há troca automática de executor quando um fonte excede o recorte: os diagnósticos permanecem explícitos.
+Desde 0.30.0, o playground `index.html` inicia na VM com exemplo compatível. **Componentes clássicos** continua no seletor e é o padrão de `exercise.html`, que mantém o exercício de MSDialog. O [exemplo TWBrowse original](../examples/twbrowse.prw) foi preservado para esse modo, que executa os exemplos existentes de diálogos, browses e relatórios. **Lógica e blocos (experimental)** usa o subconjunto do Language Core, os blocos com `Eval`, console e mensagens `MsgInfo`. Os demais serviços/classes não passam a ser suportados pela VM por existirem no executor clássico. Não há troca automática de executor quando um fonte excede o recorte: os diagnósticos permanecem explícitos.
 
-A direção aceita é tornar a VM o padrão quando estiver estável, mantendo o modo clássico acessível. Essa promoção ainda não faz parte desta entrega: os exemplos iniciais das páginas dependem de componentes clássicos, e a migração de objetos, diálogos e callbacks gerais permanece pendente.
+A promoção da VM a escolha inicial do playground foi preparada em uma revisão separada, posterior à integração visual 0.29.0, para ativação após sua validação. O exercício de MSDialog permanece clássico; a migração de objetos, diálogos e callbacks gerais para a VM continua pendente.
 
 ## Pipeline e modelo
 
@@ -54,7 +54,7 @@ console.log(result.execution.snapshot().program.execution);
 AdvPLEmulator.cancel();
 ```
 
-`ADVPL_EMULATOR_CONFIG.engine` configura a escolha inicial. `runAsync` resolve após a análise e a primeira apresentação, sem aguardar que o usuário feche todas as mensagens. `result.program` é o snapshot inicial; `result.execution.snapshot().program` consulta o estado atual. A interface administra a retomada; integrações não devem retomar esse controlador em paralelo aos botões do renderer. A API de sessão sem DOM permanece disponível para hosts que administram sua própria apresentação.
+`ADVPL_EMULATOR_CONFIG.engine` tem prioridade sobre a escolha inicial definida por página (`vm` no playground e `legacy` no exercício). `runAsync` resolve após a análise e a primeira apresentação, sem aguardar que o usuário feche todas as mensagens. `result.program` é o snapshot inicial; `result.execution.snapshot().program` consulta o estado atual. A interface administra a retomada; integrações não devem retomar esse controlador em paralelo aos botões do renderer. A API de sessão sem DOM permanece disponível para hosts que administram sua própria apresentação.
 
 `AdvPLEmulator.run` permanece síncrono e clássico; pedir `engine: "vm"` nesse método produz um erro de uso orientando para `runAsync`. O botão **Executar novamente** passa pelo mesmo caminho assíncrono de análise e pela seleção atual de execução.
 
@@ -64,4 +64,4 @@ O protocolo headless existente aceita `options.engine: "vm"` e mantém a notific
 
 `vm-visual-pipeline.test.js` cobre PPO/PRW, TDS real, bloqueio de efeitos, modelo neutro, diagnósticos, cancelamento e resultados sintáticos atrasados. `vm-visual-dom.test.js` carrega as duas páginas e seus scripts locais em jsdom e testa Executar, OK, interrupção, repetição de cliques, nova execução, troca de modo, erros e regressão de diálogo clássico.
 
-jsdom é uma dependência exclusiva de desenvolvimento; não participa da distribuição no navegador. Esses testes verificam o DOM e o comportamento dos eventos, sem medir geometria ou fidelidade de pixels em um navegador real. A migração de diálogos/objetos/callbacks para a VM e a promoção do modo experimental a padrão permanecem como próximos incrementos.
+jsdom é uma dependência exclusiva de desenvolvimento; não participa da distribuição no navegador. Esses testes verificam o DOM e o comportamento dos eventos, sem medir geometria ou fidelidade de pixels em um navegador real. A migração de diálogos/objetos/callbacks para a VM permanece como próximo incremento. A mudança do padrão do playground é uma entrega separada em 0.30.0.
