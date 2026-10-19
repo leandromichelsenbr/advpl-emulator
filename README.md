@@ -66,7 +66,7 @@ Sites de treinamento e plugins podem consumir o núcleo e seus módulos de model
 
 Toda execução bem-sucedida expõe o contrato intermediário `0.1` com `modelVersion`, `outputType`, `events`, `controls`, `diagnostics` e `variables`. Consulte a [especificação do modelo intermediário](docs/intermediate-model.md).
 
-A VM experimental inclui `While`/`EndDo` e [blocos de código com parâmetros, `Eval` e capturas léxicas](docs/language-code-blocks.md), com limites globais de passos e frames. Esse suporte ainda não está integrado ao executor leve usado pelo playground; veja o [contrato da ISA/VM](docs/language-core-isa.md).
+A VM experimental inclui `While`/`EndDo` e [blocos de código com parâmetros, `Eval` e capturas léxicas](docs/language-code-blocks.md), com limites globais de passos e frames. Esse suporte ainda não está integrado ao executor leve usado pelo playground; veja o [contrato da ISA/VM](docs/language-core-isa.md). A API [createExecution](docs/language-execution-session.md) permite pausar após serviços selecionados e retomar com frames/capturas preservados, tokens por pausa e cancelamento.
 
 O laboratório completo carrega `@totvs/tds-parsers` sob demanda em um Web Worker. Se o bundle avançado não estiver disponível, a execução visual continua usando o parser leve.
 

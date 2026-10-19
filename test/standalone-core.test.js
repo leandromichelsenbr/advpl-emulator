@@ -11,7 +11,7 @@ test("carrega advpl-core sozinho em integrações legadas do navegador", () => {
   vm.runInNewContext(source, context, { filename: "advpl-core.js" });
 
   assert.equal(typeof context.AdvPLCore?.parse, "function");
-  assert.equal(context.AdvPLCore.PACKAGE_VERSION, "0.27.0");
+  assert.equal(context.AdvPLCore.PACKAGE_VERSION, "0.28.0");
   const program = context.AdvPLCore.parse('#include "TOTVS.CH"\nUser Function T()\nMsgInfo("OK", "Teste")\nReturn');
   assert.equal(program.message.text, "OK");
   assert.equal(program.modelVersion, "0.1");
@@ -53,4 +53,14 @@ test("carrega o Language Core completo na ordem usada pelo navegador", () => {
   assert.equal(blockResult.completed, true);
   assert.equal(blockResult.value, 3);
   assert.equal(blockResult.diagnostics.length, 0);
+  const sessionAst = context.AdvPLLanguageCore.parse('User Function Demo()\nLocal n := 1\nLocal b := {|x| n += x, MsgInfo(cValToChar(n)), n}\nReturn Eval(b, 2)');
+  const sessionBytecode = context.AdvPLLanguageCompiler.compile(context.AdvPLLanguageCore.bind(sessionAst));
+  const session = context.AdvPLLanguageVM.createExecution(sessionBytecode, { suspendOn: ["MSGINFO"] });
+  const paused = session.run();
+  assert.equal(paused.state, "suspended");
+  assert.equal(paused.events[0].text, "3");
+  const resumed = session.resume(paused.suspension.token);
+  assert.equal(resumed.completed, true);
+  assert.equal(resumed.value, 3);
+  assert.equal(resumed.events.length, 1);
 });
