@@ -36,7 +36,9 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] Implementar `While`/`EndDo`, incluindo aninhamento com `If`/`For` e comparação de efeitos com `For` equivalente no executor leve, que não executa `While` (0.26.0).
 - [x] Implementar blocos de código com parâmetros, sequência de expressões, `Eval`, captura léxica por referência, frames limitados e fixture sintética (0.27.0).
 - [x] Definir suspensão/retomada da VM preservando frames, capturas e orçamento global, com tokens por pausa, cancelamento e snapshots (0.28.0).
-- [ ] Integrar sessões da VM à simulação visual e ao renderer, preservando ordem de eventos e descarte de respostas atrasadas.
+- [x] Integrar sessões da VM ao renderer para lógica, blocos, console e `MsgInfo`, com seleção de modo, OK/retomada, interrupção e descarte de respostas atrasadas (0.29.0).
+- [ ] Migrar objetos, diálogos e callbacks visuais gerais para a VM, preservando os exemplos clássicos.
+- [ ] Promover a VM a modo padrão quando estável, mantendo Componentes clássicos acessível.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.

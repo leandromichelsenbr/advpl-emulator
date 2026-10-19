@@ -2,7 +2,7 @@
  * Coordena as três etapas da execução didática:
  * 1. a entrada PRW é pré-processada; PPO fornecido é preservado e validado;
  * 2. o parser TDS verifica a sintaxe sem produzir efeitos;
- * 3. o parser leve interpreta o subconjunto suportado e monta a saída visual.
+ * 3. o executor selecionado monta a saída clássica ou inicia uma sessão visual da VM.
  *
  * O módulo não conhece DOM, Web Worker ou AdvPLCore. As funções `analyze` e
  * `parse` são injetadas para que o fluxo possa ser reutilizado e testado.
@@ -25,9 +25,10 @@
    * depois B, o Worker de A pode terminar por último. Comparar a revisão antes
    * de publicar cada resultado impede que A sobrescreva visualmente B.
    */
-  function create({ analyze, parse, preprocess = source => ({ source, diagnostics: [], map: [] }) }) {
+  function create({ analyze, parse, createVM, preprocess = source => ({ source, diagnostics: [], map: [] }) }) {
     if (typeof analyze !== "function" || typeof parse !== "function") throw new TypeError("O pipeline exige analyze e parse.");
     let revision = 0;
+    let activeExecution = null;
 
     /**
      * Executa o pipeline respeitando a fronteira de efeitos.
@@ -40,7 +41,10 @@
      */
     async function run(source, options = {}) {
       const currentRevision = ++revision;
+      activeExecution?.cancel(); activeExecution = null;
       if (options.inputMode !== undefined && !["prw", "ppo"].includes(options.inputMode)) throw new TypeError("inputMode deve ser prw ou ppo.");
+      if (options.engine !== undefined && !["legacy", "vm"].includes(options.engine)) throw new TypeError("engine deve ser legacy ou vm.");
+      if (options.engine === "vm" && typeof createVM !== "function") throw new TypeError("Adaptador visual da VM indisponível.");
       // O TDS recebe o fonte processado: sintaxe inválida em um ramo inativo não
       // deve bloquear o programa. O executor recebe a mesma entrada e modo:
       // prepara PRW internamente ou preserva PPO, com metadados no modelo final.
@@ -51,7 +55,7 @@
         const analysis = { parser: "preprocessor", ast: null, diagnostics: preprocessing.diagnostics, preprocessing };
         return { executed: false, stale: false, program: null, analysis };
       }
-      const analysis = await analyze(preprocessing.source, options.analysis || {});
+      const analysis = { ...await analyze(preprocessing.source, options.analysis || {}) };
       analysis.preprocessing = preprocessing;
       // O parser analisa o PPO. Reassociamos cada posição ao arquivo virtual e
       // à linha de origem para que um erro dentro de um .CH não pareça pertencer
@@ -65,6 +69,18 @@
       // Advertências não bloqueiam o exercício; apenas severidade "error" interrompe.
       const errors = (analysis.diagnostics || []).filter(diagnostic => diagnostic.severity === "error");
       if (errors.length) return { executed: false, stale: false, program: null, analysis };
+      if (options.engine === "vm") {
+        const execution = createVM(preprocessing.source, { ...(options.vm || {}), preprocessing, diagnostics: analysis.diagnostics });
+        const snapshot = execution.run();
+        if (currentRevision !== revision) { execution.cancel(); return { executed: false, stale: true, program: null, analysis }; }
+        if (snapshot.state === "failed" && snapshot.steps === 0) {
+          analysis.diagnostics = snapshot.program.diagnostics;
+          return { executed: false, stale: false, program: null, analysis };
+        }
+        activeExecution = execution;
+        snapshot.program.parserAnalysis = analysis;
+        return { executed: true, stale: false, program: snapshot.program, analysis, execution };
+      }
       const program = parse(source, { ...(options.parser || {}), preprocessor: options.preprocessor || {}, inputMode: inputOptions.inputMode, provenance: options.provenance });
       if (currentRevision !== revision) return { executed: false, stale: true, program: null, analysis };
       program.parserAnalysis = analysis;
@@ -81,6 +97,7 @@
     /** Invalida uma análise pendente sem precisar encerrar à força seu Worker. */
     function cancel() {
       revision += 1;
+      activeExecution?.cancel(); activeExecution = null;
     }
 
     return Object.freeze({ run, cancel, get revision() { return revision; } });

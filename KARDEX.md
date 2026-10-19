@@ -6,14 +6,26 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.28.0` |
+| Versão da distribuição | `0.29.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 199 |
+| Testes automatizados | 216 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.29.0 — 19/10/2026
+
+**Tipo:** integração visual inicial da VM com mensagens e console.
+
+- Modo selecionável de lógica/blocos no playground e no exercício público, mantendo Componentes clássicos como padrão inicial.
+- Pipeline preserva pré-processamento e análise TDS antes da sessão VM; erros de compilação bloqueiam todos os efeitos.
+- Adaptador sem DOM publica o modelo neutro com snapshots, variáveis e diagnósticos remapeados.
+- Renderer apresenta apenas os novos eventos; OK retoma o token atual e Interromper cancela a sessão.
+- Nova execução, troca de modo e callbacks antigos não continuam uma sessão substituída; Executar novamente passa pela análise assíncrona.
+- Contrato e exemplo manual documentados. Direção futura: VM como padrão quando estável, mantendo o modo clássico acessível.
+- Suíte ampliada de 199 para 216 testes, incluindo TDS real e DOM das duas páginas com jsdom exclusivo de desenvolvimento.
 
 ### 0.28.0 — 19/10/2026
 

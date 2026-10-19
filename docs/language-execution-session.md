@@ -19,7 +19,7 @@ O efeito do serviço ocorre uma única vez, antes da pausa. Seu retorno ainda n�
 
 ## Exemplo no console do navegador
 
-Na distribuição 0.28.0, abra `index.html` e execute o trecho no console. Ele usa a VM diretamente; o botão do playground continua no executor leve.
+Na distribuição 0.28.0, abra `index.html` e execute o trecho no console. Ele usa a VM diretamente; desde 0.29.0, o [modo visual experimental](vm-visual-integration.md) também permite testar pelo botão do playground.
 
 ```javascript
 const source = `
@@ -67,6 +67,6 @@ Passos e profundidade são globais para a sessão inteira; nenhuma retomada reno
 
 Falhas de fonte/bytecode deixam a sessão em `failed`, sem permitir continuação. Além dos diagnósticos anteriores, `LC_RUNTIME_SERVICE_ERROR` informa falha de handler nativo e `LC_VM_MISSING_RETURN` identifica um frame de bytecode que terminou sem retorno. Não há novos opcodes; AST/ISA/VM permanecem `0.1` e a distribuição é `0.28.0`.
 
-Esta API não agenda tarefas, não aguarda Promises nem oferece fatiamento automático por tempo. O host pode aguardar sua interação ou operação externa e depois chamar `resume` com o token correto. A próxima etapa é integrar o contrato à simulação visual e ao renderer preservando a ordem dos eventos. O caminho de produção do playground continua no executor leve.
+Esta API não agenda tarefas, não aguarda Promises nem oferece fatiamento automático por tempo. O host pode aguardar sua interação ou operação externa e depois chamar `resume` com o token correto. Desde 0.29.0, o modo visual experimental integra console e `MsgInfo`; o modo clássico continua sendo o padrão. Objetos, diálogos e callbacks visuais gerais na VM permanecem pendentes.
 
 `test/language-execution-session.test.js` cobre pausa/retorno, pilha intermediária, closures retornadas, múltiplas pausas, tokens, cancelamento, limites, falhas de serviço, reentrada e sessões intercaladas. O teste de carregamento autônomo verifica a mesma API sem CommonJS. Os cenários são sintéticos e não certificam PPO oficial ou compatibilidade integral com Protheus.

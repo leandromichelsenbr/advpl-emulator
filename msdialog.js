@@ -515,6 +515,45 @@
     next();
   }
 
+  /** Consome somente o delta de eventos; OK retoma a mesma sessão da VM. */
+  function renderVMExecution(execution, sequence) {
+    desktopEl.replaceChildren();
+    activeVMExecution = execution;
+    let eventIndex = 0;
+    const consoleLines = [];
+    const isCurrent = () => activeVMExecution === execution && sequence === uiRunSequence;
+    const present = snapshot => {
+      if (!isCurrent()) return;
+      renderDiagnostics(snapshot.program.diagnostics || []);
+      while (eventIndex < snapshot.program.events.length) {
+        const event = snapshot.program.events[eventIndex++];
+        if (event.type === "console") {
+          consoleLines.push(event.text);
+          desktopEl.querySelector(".emulator-console")?.remove();
+          renderConsole(consoleLines, true);
+        } else if (event.type === "message") {
+          const token = snapshot.suspension?.token;
+          let acknowledged = false;
+          if (cancelExecutionEl) cancelExecutionEl.hidden = false;
+          setStatus("Execução em andamento · aguardando OK.", "success");
+          showStandaloneMessage(event, () => {
+            if (!isCurrent() || acknowledged) return;
+            acknowledged = true;
+            present(execution.resume(token));
+          });
+          return;
+        }
+      }
+      if (cancelExecutionEl) cancelExecutionEl.hidden = true;
+      if (snapshot.state === "failed") setStatus("Execução interrompida: corrija o erro indicado.", "error");
+      else if (snapshot.state === "completed") {
+        setStatus(`Execução concluída · ${consoleLines.length} registro(s) no console.`, "success");
+        showRunAgain();
+      }
+    };
+    present(execution.snapshot());
+  }
+
   function showStandaloneMessage(event, done, modal = false) {
     const host = modal ? document.createElement("div") : desktopEl;
     if (modal) host.className = "dynamic-message-layer";
@@ -722,7 +761,7 @@
     button.type = "button";
     button.className = "run-again";
     button.textContent = "Executar novamente";
-    button.addEventListener("click", () => runSource());
+    button.addEventListener("click", () => runSourceAsync().catch(() => {}));
     desktopEl.append(button);
     button.focus();
   }
@@ -1070,15 +1109,44 @@
   const executionPipeline = globalThis.AdvPLExecutionPipeline?.create({
     analyze: analyzeSource,
     parse: (source, options) => AdvPLCore.parse(source, options),
+    createVM: globalThis.AdvPLVMVisual?.create,
     preprocess: (source, options) => AdvPLCore.preprocess(source, options)
   });
   let uiRunSequence = 0;
+  let activeVMExecution = null;
+  const executionEngineEl = document.getElementById("executionEngine");
+  const cancelExecutionEl = document.getElementById("cancelExecution");
+  const executionHintEl = document.getElementById("executionHint");
+  if (executionEngineEl) executionEngineEl.value = emulatorConfig.engine || "legacy";
+  function updateExecutionHint(engine) { if (executionHintEl) executionHintEl.hidden = engine !== "vm"; }
+  updateExecutionHint(executionEngineEl?.value || emulatorConfig.engine || "legacy");
+  function cancelVisualExecution() {
+    activeVMExecution?.cancel(); activeVMExecution = null;
+    if (cancelExecutionEl) cancelExecutionEl.hidden = true;
+  }
+  function cancelExecution() {
+    uiRunSequence += 1; executionPipeline?.cancel(); cancelVisualExecution();
+    desktopEl.querySelectorAll('wa-message-box').forEach(box => box.remove());
+    runButtonEl.disabled = false;
+    setStatus("Execução interrompida.", "warning");
+    showRunAgain();
+  }
+  cancelExecutionEl?.addEventListener("click", cancelExecution);
+  executionEngineEl?.addEventListener("change", () => {
+    uiRunSequence += 1; executionPipeline?.cancel(); cancelVisualExecution();
+    desktopEl.replaceChildren(); renderDiagnostics([]); runButtonEl.disabled = false;
+    updateExecutionHint(executionEngineEl.value);
+    setStatus("Modo alterado. Execute o código para visualizar o resultado.", "");
+  });
   const inputModeEl = document.getElementById("inputMode");
   if (inputModeEl) inputModeEl.value = emulatorConfig.inputMode || "prw";
   function inputOptions(options) {
     const inputMode = options.inputMode ?? inputModeEl?.value ?? emulatorConfig.inputMode ?? "prw";
+    const engine = options.engine ?? executionEngineEl?.value ?? emulatorConfig.engine ?? "legacy";
     if (inputModeEl) inputModeEl.value = inputMode;
-    return { ...options, inputMode, provenance: options.provenance ?? emulatorConfig.provenance };
+    if (executionEngineEl) executionEngineEl.value = engine;
+    updateExecutionHint(engine);
+    return { ...options, inputMode, engine, provenance: options.provenance ?? emulatorConfig.provenance };
   }
 
   async function preparePreprocessor(source, options = {}) {
@@ -1096,9 +1164,11 @@
   }
 
   function runSource(source, data, options = {}) {
-    options = inputOptions(options);
+    if (options.engine === "vm") throw new TypeError("Execução da VM usa runAsync.");
+    options = inputOptions({ ...options, engine: "legacy" });
     uiRunSequence += 1;
     executionPipeline?.cancel();
+    cancelVisualExecution();
     if (typeof source === "string") sourceEl.value = source;
     updateHighlighting();
     try {
@@ -1119,18 +1189,22 @@
   async function runSourceAsync(source, data, options = {}) {
     options = inputOptions(options);
     const sequence = ++uiRunSequence;
+    executionPipeline?.cancel(); cancelVisualExecution();
     if (typeof source === "string") sourceEl.value = source;
     updateHighlighting();
+    const executedSource = sourceEl.value;
     runButtonEl.disabled = true;
     renderDiagnostics([]);
     setStatus("Analisando sintaxe…", "");
     try {
       const tables = data === undefined ? runtimeTables : { ...defaultTables, ...normalizeTables(data) };
-      const preprocessor = await preparePreprocessor(sourceEl.value, options);
+      const preprocessor = await preparePreprocessor(executedSource, options);
       if (sequence !== uiRunSequence) return { executed: false, stale: true, program: null, analysis: null };
       let result;
       if (executionPipeline) {
-        result = await executionPipeline.run(sourceEl.value, {
+        result = await executionPipeline.run(executedSource, {
+          engine: options.engine,
+          vm: options.vm,
           inputMode: options.inputMode,
           provenance: options.provenance,
           analysis: options.analysis,
@@ -1138,12 +1212,13 @@
           preprocessor
         });
       } else {
-        const preprocessing = AdvPLCore.preprocess(sourceEl.value, { ...preprocessor, inputMode: options.inputMode, provenance: options.provenance });
+        if (options.engine === "vm") throw new TypeError("Pipeline da VM indisponível.");
+        const preprocessing = AdvPLCore.preprocess(executedSource, { ...preprocessor, inputMode: options.inputMode, provenance: options.provenance });
         const inputErrors = preprocessing.diagnostics.some(item => item.severity === "error");
         const analysis = inputErrors ? { diagnostics: preprocessing.diagnostics } : await analyzeSource(preprocessing.source, options.analysis);
         analysis.preprocessing = preprocessing;
         const hasErrors = (analysis.diagnostics || []).some(diagnostic => diagnostic.severity === "error");
-        const program = hasErrors ? null : AdvPLCore.parse(sourceEl.value, { ...options, tables, preprocessor });
+        const program = hasErrors ? null : AdvPLCore.parse(executedSource, { ...options, tables, preprocessor });
         if (program) {
           program.parserAnalysis = analysis;
           program.diagnostics = [...(program.diagnostics || []), ...(analysis.diagnostics || [])];
@@ -1151,7 +1226,7 @@
         result = { executed: !hasErrors, stale: false, analysis, program };
       }
       if (sequence !== uiRunSequence || result.stale) return result;
-      renderPreprocessing(sourceEl.value, result.analysis?.preprocessing || result.program?.preprocessor);
+      renderPreprocessing(executedSource, result.analysis?.preprocessing || result.program?.preprocessor);
       if (!result.executed) {
         desktopEl.replaceChildren();
         const empty = document.createElement("div");
@@ -1162,9 +1237,10 @@
         setStatus("Execução interrompida: corrija o erro indicado.", "error");
         return result;
       }
-      render(result.program);
-      if (result.analysis.fallbackUsed) {
-        setStatus(`${statusEl.textContent} · Parser avançado indisponível; execução realizada pelo parser leve.`, "warning");
+      if (result.execution) renderVMExecution(result.execution, sequence);
+      else render(result.program);
+      if (result.analysis.fallbackUsed && result.program.execution?.state !== "failed") {
+        setStatus(`${statusEl.textContent} · Parser avançado indisponível; análise pelo ${options.engine === "vm" ? "Language Core" : "parser leve"}.`, "warning");
       }
       return result;
     } catch (error) {
@@ -1183,6 +1259,7 @@
   globalThis.AdvPLEmulator = Object.freeze({
     run: runSource,
     runAsync: runSourceAsync,
+    cancel: cancelExecution,
     analyze: analyzeSource,
     setData,
     headless

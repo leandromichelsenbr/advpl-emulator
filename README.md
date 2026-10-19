@@ -30,7 +30,7 @@ npm install
 
 Selecione **PRW didático** para o fluxo local existente ou **PPO previamente gerado** para colar texto já pré-processado. A entrada PPO não carrega includes nem expande macros; sua origem não é verificada. Veja o [contrato de entrada PPO](docs/integration.md#entrada-ppo-fornecida).
 
-Pressione **Executar código** ou `Ctrl+Enter`. Não há etapa de compilação.
+Pressione **Executar código** ou `Ctrl+Enter`. **Componentes clássicos** é o modo inicial para os exemplos existentes. O modo **Lógica e blocos (experimental)** executa o Language Core/VM e retoma mensagens pelo botão OK. A compilação interna desse modo é automática; não há comando de build para executar a demonstração.
 
 O laboratório público sem autenticação está em [`exercise.html`](exercise.html).
 
@@ -51,6 +51,7 @@ src/advpl-language-core.js lexer, AST 0.1 e binder experimental para PPO
 src/advpl-language-compiler.js AST vinculada para bytecode stack-based 0.1
 src/advpl-language-vm.js    VM isolada e limitada, ainda paralela ao executor
 src/advpl-core-runtime.js   registro mínimo de serviços permitidos pela VM
+src/advpl-vm-visual.js      sessões da VM para modelo neutro, console e mensagens
 src/tds-parser-worker.js   execução isolada do parser avançado
 vendor/tds-parser.bundle.js bundle do analisador AdvPL oficial
     ↓
@@ -66,9 +67,9 @@ Sites de treinamento e plugins podem consumir o núcleo e seus módulos de model
 
 Toda execução bem-sucedida expõe o contrato intermediário `0.1` com `modelVersion`, `outputType`, `events`, `controls`, `diagnostics` e `variables`. Consulte a [especificação do modelo intermediário](docs/intermediate-model.md).
 
-A VM experimental inclui `While`/`EndDo` e [blocos de código com parâmetros, `Eval` e capturas léxicas](docs/language-code-blocks.md), com limites globais de passos e frames. Esse suporte ainda não está integrado ao executor leve usado pelo playground; veja o [contrato da ISA/VM](docs/language-core-isa.md). A API [createExecution](docs/language-execution-session.md) permite pausar após serviços selecionados e retomar com frames/capturas preservados, tokens por pausa e cancelamento.
+A VM experimental inclui `While`/`EndDo` e [blocos de código com parâmetros, `Eval` e capturas léxicas](docs/language-code-blocks.md), com limites globais de passos e frames. No playground, selecione **Lógica e blocos (experimental)** para usar a [integração visual de console e MsgInfo](docs/vm-visual-integration.md); veja também o [contrato da ISA/VM](docs/language-core-isa.md). A API [createExecution](docs/language-execution-session.md) permite pausar após serviços selecionados e retomar com frames/capturas preservados, tokens por pausa e cancelamento.
 
-O laboratório completo carrega `@totvs/tds-parsers` sob demanda em um Web Worker. Se o bundle avançado não estiver disponível, a execução visual continua usando o parser leve.
+O laboratório completo carrega `@totvs/tds-parsers` sob demanda em um Web Worker. Se o bundle avançado não estiver disponível, o modo clássico usa o parser leve e o modo experimental continua pela análise do Language Core.
 
 O botão principal e `AdvPLEmulator.runAsync()` aguardam a análise sintática. Quando o parser TDS encontra um erro, nenhuma mensagem, tela ou impressão é executada; `AdvPLEmulator.run()` permanece disponível apenas para compatibilidade síncrona.
 
