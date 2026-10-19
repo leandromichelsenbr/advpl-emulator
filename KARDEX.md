@@ -6,14 +6,26 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.27.0` |
+| Versão da distribuição | `0.28.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 185 |
+| Testes automatizados | 199 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.28.0 — 19/10/2026
+
+**Tipo:** sessões com suspensão e retomada da VM experimental.
+
+- Nova API `createExecution` com `run`, `resume`, `cancel` e `snapshot`, sem mudar os opcodes ou o comportamento síncrono de `run(bytecode)`.
+- Serviços selecionados por `suspendOn` executam seu efeito uma vez e deixam o retorno pendente até a retomada.
+- Sessão preserva pilha, frames, capturas, registro de closures e limites globais entre pausas.
+- Tokens por pausa recusam respostas atrasadas/duplicadas/forjadas; cancelamento terminal e reentrada protegida.
+- Snapshots expõem estado e saídas cumulativas; falhas de handler nativo e frame sem retorno recebem diagnóstico.
+- Contrato e exemplo manual documentados, incluindo teste autônomo no ambiente de navegador.
+- Suíte ampliada de 185 para 199 testes; integração ao renderer permanece pendente.
 
 ### 0.27.0 — 19/10/2026
 

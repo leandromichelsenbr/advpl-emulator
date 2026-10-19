@@ -75,3 +75,8 @@ O limite padrão é 10.000 passos e a profundidade padrão é 128 frames; ambos 
 ## Evidência inicial
 
 Os testes de equivalência executam o mesmo PPO sintético no executor leve e na VM e comparam console, mensagem condicional, função auxiliar e soma em `For`. O executor leve não executa `While`; para esse incremento, um `For` equivalente fornece o oráculo independente de console e mensagens da mesma sequência finita. Testes diretos da VM cobrem condição falsa, reavaliação, aninhamento com `If`/`For`, retorno em função auxiliar e limite posicionado. A equivalência cobre somente as fatias testadas, não toda a linguagem.
+
+
+## Sessões de execução — 0.28.0
+
+`createExecution(bytecode, options)` cria uma sessão com `run`, `resume`, `cancel` e `snapshot`. `suspendOn` seleciona serviços de runtime: o efeito ocorre uma vez e o retorno fica pendente, com token opaco por pausa. Frames, pilha, capturas e limites persistem entre retomadas. Não há novo opcode; `run(bytecode)` continua síncrono e sem suspensão. Veja o [contrato de sessão](language-execution-session.md), incluindo estados, respostas atrasadas e exemplo manual. Novos diagnósticos: `LC_VM_INVALID_RESUME`/`LC_VM_REENTRANT` para operações do host, `LC_RUNTIME_SERVICE_ERROR` para falha de serviço e `LC_VM_MISSING_RETURN` para frame sem retorno. Integração ao renderer permanece pendente.

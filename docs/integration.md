@@ -328,3 +328,8 @@ Sem mapa oficial confiável, filename identifica o próprio PPO (padrão input.p
 preprocess retorna os diagnósticos no envelope; o pipeline/runAsync retorna executed: false sem programa quando há diretivas pendentes. As APIs síncronas de execução lançam SyntaxError com diagnostics nesse caso. Um inputMode diferente de prw ou ppo lança TypeError. O atalho legado de FWMsgAlertYesNo/ShowLog fica restrito ao modo PRW para não contornar essa validação.
 
 A fixture test/fixtures/ppo-input/message.ppo é **sintética**. Coleta de pares oficiais, integração com a toolchain e suporte a mapas/diretivas de localização continuam pendentes. AST/binder e a primeira fatia compiler/ISA/VM existem como laboratório experimental, ainda separado deste caminho de entrada e do executor leve. Formatos oficiais ainda não caracterizados podem ser rejeitados ou ficar fora do subconjunto executável.
+
+
+## Sessões da VM experimental
+
+Desde 0.28.0, `AdvPLLanguageVM.createExecution(bytecode, options)` cria uma sessão independente do DOM com `run`, `resume`, `cancel` e `snapshot`. `options.suspendOn` seleciona serviços de runtime para pausar após seu efeito. O host recebe saídas cumulativas e um token por pausa, e pode retomar com o retorno original ou um valor de resposta. Frames, capturas e limites globais permanecem entre retomadas. A API síncrona `AdvPLLanguageVM.run` não suspende. Consulte o [contrato completo e exemplo](language-execution-session.md). Essa API ainda não está ligada a `AdvPLEmulator.runAsync`, ao botão do playground ou ao protocolo headless existente.

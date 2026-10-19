@@ -27,8 +27,9 @@ A ordem indica foco de investimento, não ausência de recursos atuais: editor, 
 7. **Laço `For` entregue em 0.25.0:** início, limite e passo avaliados uma vez, passo padrão/negativo, laços aninhados e proteção de passo zero pelo limite global. A equivalência cobre a soma dos pares até 100.
 8. **Laço `While` entregue em 0.26.0:** condição reavaliada antes de cada iteração, aninhamento com `If`/`For`, retorno e limite global de instruções. Comparação de efeitos contra `For` equivalente no executor leve, que não executa `While`.
 9. **Blocos de código entregues em 0.27.0:** parâmetros, sequência de expressões, atribuições com retorno, `Eval` e capturas por referência com frames limitados. Fixture sintética e equivalência com lógica direta no executor leve.
-10. Definir suspensão/retomada preservando frames, capturas e limites antes de integrar callbacks visuais.
-11. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
+10. **Suspensão/retomada entregue em 0.28.0:** sessões preservam frames, capturas e limites, com retorno pendente de serviço, tokens por pausa, cancelamento e snapshots cumulativos.
+11. Integrar sessões à simulação visual e ao renderer, consumindo eventos uma vez e descartando respostas atrasadas.
+12. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
 
 O pré-processador local fica como caminho didático de transição. Reimplementar todo o universo de includes e regras TOTVS não é pré-requisito nem trilha principal. Não há prazo ou conclusão presumida para os novos componentes; o estado entregue continua na [matriz](compatibility-matrix.md).
 
@@ -59,4 +60,9 @@ A AST passa a representar atribuições `:=` e `+=` a locais/parâmetros. O comp
 
 ## Incremento entregue — 0.27.0
 
-Blocos de código com parâmetros, sequência de expressões e atribuições com retorno integram AST, binder, compiler e VM. `Eval` usa frames e orçamento globais, retorna a última expressão e preserva a ordem dos efeitos. Capturas por referência permanecem válidas após o retorno da função criadora dentro da mesma execução e suportam blocos aninhados. A fixture é sintética e a comparação de efeitos usa lógica direta no executor leve. O [contrato dos blocos](language-code-blocks.md) registra limites e novos opcodes. O próximo incremento é especificar suspensão/retomada preservando frames e capturas; integração ao renderer permanece posterior.
+Blocos de código com parâmetros, sequência de expressões e atribuições com retorno integram AST, binder, compiler e VM. `Eval` usa frames e orçamento globais, retorna a última expressão e preserva a ordem dos efeitos. Capturas por referência permanecem válidas após o retorno da função criadora dentro da mesma execução e suportam blocos aninhados. A fixture é sintética e a comparação de efeitos usa lógica direta no executor leve. O [contrato dos blocos](language-code-blocks.md) registra limites e novos opcodes. A suspensão/retomada foi entregue em 0.28.0; integração ao renderer permanece posterior.
+
+
+## Incremento entregue — 0.28.0
+
+Sessões com `createExecution` suspendem após serviços de runtime selecionados e retomam o retorno pendente sem repetir efeitos. Pilha de operandos, frames de funções/blocos, capturas, registro de closures e orçamento global permanecem na sessão. Tokens recusam respostas atrasadas, duplicadas, forjadas ou de outra sessão; cancelamento é terminal e snapshots mantêm saídas cumulativas. A API síncrona anterior continua sem suspensão. O [contrato](language-execution-session.md) inclui teste manual e limites. O próximo incremento é integrar as sessões à simulação visual e ao renderer, preservando a ordem dos eventos.
