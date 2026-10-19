@@ -6,6 +6,32 @@ const language = require("../src/advpl-language-core.js");
 
 const fixture = fs.readFileSync(path.join(__dirname, "fixtures/ppo-input/message.ppo"), "utf8");
 
+test("representa While aninhado com posições e palavras sem distinção de caixa", () => {
+  const ast = language.parse('User Function Demo()\nLocal n := 0\nwHiLe n < 2\nWhile n < 1\nn += 1\nEndDo\nn += 1\neNdDo\nReturn', { filename: "while.ppo" });
+  assert.deepEqual(ast.diagnostics, []);
+  const loop = ast.body[0].body[1];
+  assert.equal(loop.type, "WhileStatement");
+  assert.equal(loop.test.operator, "<");
+  assert.equal(loop.body[0].type, "WhileStatement");
+  assert.deepEqual([loop.loc.start.file, loop.loc.start.line, loop.loc.end.line], ["while.ppo", 3, 8]);
+});
+
+test("binder percorre locais e atribuições em While e blocos internos", () => {
+  const bound = language.bind(language.parse('User Function Demo()\nWhile 1 == 1\nLocal n := 0\nIf n == 0\nn += 1\nmissing := n\nEndIf\nEndDo\nReturn'));
+  assert.equal(bound.functions.DEMO.symbols.N.kind, "local");
+  assert.deepEqual(bound.diagnostics.map(item => item.code), ["LC0203"]);
+});
+
+test("diagnostica While sem EndDo e condição ausente sem executar efeitos", () => {
+  const ast = language.parse('User Function Broken()\nWhile 1 == 1\nConOut("aberto")', { filename: "broken-while.ppo" });
+  const missing = ast.diagnostics.find(item => item.code === "LC0101");
+  assert.equal(missing.file, "broken-while.ppo");
+  assert.equal(missing.line, 3);
+  assert.match(missing.message, /ENDDO/);
+  const noCondition = language.parse('User Function Broken()\nWhile\nEndDo\nReturn');
+  assert.equal(noCondition.diagnostics.some(item => item.code === "LC0102"), true);
+});
+
 test("constrói AST 0.1 experimental com posições a partir do PPO sintético", () => {
   const ast = language.parse(fixture, { filename: "message.ppo" });
   assert.equal(ast.astVersion, "0.1");

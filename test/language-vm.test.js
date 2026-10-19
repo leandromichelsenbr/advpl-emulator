@@ -6,6 +6,62 @@ const vm = require("../src/advpl-language-vm.js");
 
 function execute(source, options) { return vm.run(compiler.compile(language.bind(language.parse(source))), options); }
 
+test("VM executa While zero, uma e várias vezes reavaliando a condição", () => {
+  const source = 'User Function Demo(n)\nWhile n < 3\nConOut(cValToChar(n))\nn += 1\nEndDo\nReturn n';
+  for (const [start, expected] of [[3, []], [2, ["2"]], [0, ["0", "1", "2"]]]) {
+    const result = execute(source, { args: [start] });
+    assert.equal(result.completed, true);
+    assert.equal(result.value, 3);
+    assert.deepEqual(result.console, expected);
+    assert.deepEqual(result.diagnostics, []);
+  }
+});
+
+test("VM reavalia chamadas na condição do While inclusive na saída", () => {
+  const source = 'User Function Demo()\nLocal n := 0\nWhile Check(n)\nn += 1\nEndDo\nReturn n\nStatic Function Check(n)\nConOut(cValToChar(n))\nReturn n < 2';
+  const result = execute(source);
+  assert.equal(result.completed, true);
+  assert.equal(result.value, 2);
+  assert.deepEqual(result.console, ["0", "1", "2"]);
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test("VM combina While, For e If nas duas direções de aninhamento", () => {
+  const source = 'User Function Demo()\nLocal i\nLocal j := 0\nLocal n := 0\nWhile j < 2\nFor i := 1 To 2\nIf i == 2\nn += 1\nEndIf\nNext\nj += 1\nEndDo\nFor i := 1 To 2\nj := 0\nWhile j < 3\nIf j < 2\nn += 1\nEndIf\nj += 1\nEndDo\nNext\nReturn n';
+  const result = execute(source);
+  assert.equal(result.completed, true);
+  assert.equal(result.value, 6);
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test("VM executa While aninhado e Return encerra a função dentro do laço", () => {
+  const source = 'User Function Demo()\nLocal i := 0\nLocal j\nWhile i < 2\nj := 0\nWhile j < 2\nConOut(cValToChar(i * 2 + j))\nj += 1\nEndDo\ni += 1\nEndDo\nWhile 1 == 1\nReturn i\nEndDo\nConOut("inacessível")';
+  const result = execute(source);
+  assert.equal(result.completed, true);
+  assert.equal(result.value, 2);
+  assert.deepEqual(result.console, ["0", "1", "2", "3"]);
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test("VM limita While infinito inclusive com corpo vazio e preserva origem", () => {
+  for (const body of ["", 'ConOut("passo")\n']) {
+    const bytecode = compiler.compile(language.bind(language.parse('User Function Demo()\nWhile 1 == 1\n' + body + 'EndDo\nReturn', { filename: "infinite-while.ppo" })));
+    const result = vm.run(bytecode, { maxSteps: 40 });
+    assert.equal(result.completed, false);
+    assert.equal(result.steps, 40);
+    assert.equal(result.diagnostics[0].code, "LC_RUNTIME_STEP_LIMIT");
+    assert.equal(result.diagnostics[0].file, "infinite-while.ppo");
+    assert.equal(result.diagnostics[0].line, 2);
+  }
+});
+
+test("VM bloqueia While inválido antes de produzir efeitos", () => {
+  const result = execute('User Function Demo()\nConOut("não executar")\nWhile 1 == 1\nReturn');
+  assert.equal(result.completed, false);
+  assert.deepEqual(result.events, []);
+  assert.equal(result.diagnostics.some(item => item.code === "LC0101"), true);
+});
+
 test("VM executa aritmética, locais, concatenação e console", () => {
   const result = execute('User Function Demo()\nLocal n := 2 + 3 * 4\nConOut("Total: " + cValToChar(n))\nReturn');
   assert.equal(result.completed, true);

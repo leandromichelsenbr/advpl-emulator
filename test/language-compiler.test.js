@@ -5,6 +5,20 @@ const compiler = require("../src/advpl-language-compiler.js");
 
 function compile(source) { return compiler.compile(language.bind(language.parse(source, { filename: "compiler.ppo" }))); }
 
+test("While reavalia condição e aloca locais dentro do corpo sem slots temporários", () => {
+  const bytecode = compile('User Function Demo(n)\nWhile n < 2\nLocal inner := n\nn += 1\nEndDo\nReturn n');
+  assert.deepEqual(bytecode.diagnostics, []);
+  const fn = bytecode.functions.DEMO;
+  assert.deepEqual(fn.slots, { N: 0, INNER: 1 });
+  assert.equal(fn.localCount, 2);
+  const back = fn.instructions.find(item => item.op === "JUMP");
+  const exit = fn.instructions.find(item => item.op === "JUMP_IF_FALSE");
+  assert.equal(back.arg, 0);
+  assert.equal(fn.instructions[exit.arg].op, "LOAD_LOCAL");
+  assert.equal(exit.loc.start.line, 2);
+  assert.equal(fn.instructions.every(item => item.loc.start.file === "compiler.ppo"), true);
+});
+
 test("compila a fatia inicial para bytecode stack-based 0.1 com posições", () => {
   const bytecode = compile('User Function Demo()\nLocal n := 2 + 3\nConOut(cValToChar(n))\nReturn');
   assert.equal(bytecode.bytecodeVersion, "0.1");
