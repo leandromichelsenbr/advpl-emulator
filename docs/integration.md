@@ -332,4 +332,11 @@ A fixture test/fixtures/ppo-input/message.ppo é **sintética**. Coleta de pares
 
 ## Sessões da VM experimental
 
-Desde 0.28.0, `AdvPLLanguageVM.createExecution(bytecode, options)` cria uma sessão independente do DOM com `run`, `resume`, `cancel` e `snapshot`. `options.suspendOn` seleciona serviços de runtime para pausar após seu efeito. O host recebe saídas cumulativas e um token por pausa, e pode retomar com o retorno original ou um valor de resposta. Frames, capturas e limites globais permanecem entre retomadas. A API síncrona `AdvPLLanguageVM.run` não suspende. Consulte o [contrato completo e exemplo](language-execution-session.md). Essa API ainda não está ligada a `AdvPLEmulator.runAsync`, ao botão do playground ou ao protocolo headless existente.
+Desde 0.28.0, `AdvPLLanguageVM.createExecution(bytecode, options)` cria uma sessão independente do DOM com `run`, `resume`, `cancel` e `snapshot`. `options.suspendOn` seleciona serviços de runtime para pausar após seu efeito. O host recebe saídas cumulativas e um token por pausa, e pode retomar com o retorno original ou um valor de resposta. Frames, capturas e limites globais permanecem entre retomadas. A API síncrona `AdvPLLanguageVM.run` não suspende. Consulte o [contrato completo e exemplo](language-execution-session.md). Desde 0.29.0, `runAsync` e o modo visual experimental usam essa API para console/`MsgInfo`; o protocolo headless mantém a confirmação inicial, sem transportar tokens.
+
+
+## Modo visual da VM — 0.29.0
+
+`AdvPLEmulator.runAsync(source, data, { engine: "vm" })` prepara PRW/PPO, aguarda análise sintática e apresenta console/MsgInfo pela sessão VM. O OK retoma o token da pausa atual; `AdvPLEmulator.cancel()` cancela a sessão VM ou análise pendente. `engine: "legacy"` preserva o executor clássico e é o padrão inicial. `ADVPL_EMULATOR_CONFIG.engine` configura a seleção inicial.
+
+O resultado de `runAsync` representa a primeira apresentação, que pode estar suspensa; `result.execution.snapshot().program` consulta o estado atual. O snapshot inicial não é uma promessa de conclusão após todos os cliques. `run` permanece síncrono/clássico e recusa `engine: "vm"`. O protocolo headless preserva a confirmação da primeira apresentação, sem serializar tokens ou acrescentar callbacks remotos. Veja [modo visual, limites e exemplo manual](vm-visual-integration.md).

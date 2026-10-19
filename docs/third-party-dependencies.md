@@ -24,3 +24,8 @@ O texto completo da licença acompanha a dependência instalada e está disponí
 - Política de atualização: nenhuma sincronização automática. Trocar o commit exige nova revisão do conteúdo, da procedência e da compatibilidade.
 
 Os arquivos e a declaração integral da origem estão em `vendor/protheus-includes`. Esta nota registra procedência e uso no projeto; não substitui os avisos presentes nos próprios headers nem constitui uma nova licença sobre eles.
+
+
+## jsdom — testes DOM
+
+`jsdom@26.1.0` é uma dependência de desenvolvimento com licença MIT, fixada no package-lock.json. Os testes carregam HTML e scripts locais das duas páginas para verificar eventos e renderização incremental da VM. Não é carregado pelo emulador no navegador nem altera o bundle TDS. Referência: [repositório oficial do jsdom](https://github.com/jsdom/jsdom).

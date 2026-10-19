@@ -28,8 +28,9 @@ A ordem indica foco de investimento, não ausência de recursos atuais: editor, 
 8. **Laço `While` entregue em 0.26.0:** condição reavaliada antes de cada iteração, aninhamento com `If`/`For`, retorno e limite global de instruções. Comparação de efeitos contra `For` equivalente no executor leve, que não executa `While`.
 9. **Blocos de código entregues em 0.27.0:** parâmetros, sequência de expressões, atribuições com retorno, `Eval` e capturas por referência com frames limitados. Fixture sintética e equivalência com lógica direta no executor leve.
 10. **Suspensão/retomada entregue em 0.28.0:** sessões preservam frames, capturas e limites, com retorno pendente de serviço, tokens por pausa, cancelamento e snapshots cumulativos.
-11. Integrar sessões à simulação visual e ao renderer, consumindo eventos uma vez e descartando respostas atrasadas.
-12. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
+11. **Integração visual inicial entregue em 0.29.0:** modo selecionável com console e `MsgInfo`, retomada por OK, interrupção e consumo incremental dos eventos nas duas páginas.
+12. Migrar objetos, diálogos e callbacks visuais gerais; promover a VM a padrão quando estável, mantendo o modo clássico acessível.
+13. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
 
 O pré-processador local fica como caminho didático de transição. Reimplementar todo o universo de includes e regras TOTVS não é pré-requisito nem trilha principal. Não há prazo ou conclusão presumida para os novos componentes; o estado entregue continua na [matriz](compatibility-matrix.md).
 
@@ -65,4 +66,9 @@ Blocos de código com parâmetros, sequência de expressões e atribuições com
 
 ## Incremento entregue — 0.28.0
 
-Sessões com `createExecution` suspendem após serviços de runtime selecionados e retomam o retorno pendente sem repetir efeitos. Pilha de operandos, frames de funções/blocos, capturas, registro de closures e orçamento global permanecem na sessão. Tokens recusam respostas atrasadas, duplicadas, forjadas ou de outra sessão; cancelamento é terminal e snapshots mantêm saídas cumulativas. A API síncrona anterior continua sem suspensão. O [contrato](language-execution-session.md) inclui teste manual e limites. O próximo incremento é integrar as sessões à simulação visual e ao renderer, preservando a ordem dos eventos.
+Sessões com `createExecution` suspendem após serviços de runtime selecionados e retomam o retorno pendente sem repetir efeitos. Pilha de operandos, frames de funções/blocos, capturas, registro de closures e orçamento global permanecem na sessão. Tokens recusam respostas atrasadas, duplicadas, forjadas ou de outra sessão; cancelamento é terminal e snapshots mantêm saídas cumulativas. A API síncrona anterior continua sem suspensão. O [contrato](language-execution-session.md) inclui teste manual e limites. A integração visual inicial de console e `MsgInfo` foi entregue em 0.29.0; objetos, diálogos e callbacks gerais permanecem pendentes.
+
+
+## Incremento entregue — 0.29.0
+
+O pipeline conecta PPO analisado a uma sessão VM opcional, sem executar o parser leve nesse modo. Um adaptador publica o modelo neutro e remapeia diagnósticos. Nas duas páginas, Lógica e blocos (experimental) apresenta console e MsgInfo, retoma por OK e permite interrupção. O renderer consome somente eventos novos e descarta callbacks de execuções canceladas/substituídas. TDS real e testes DOM comprovam a primeira fatia visual. A direção futura é tornar a VM o padrão quando estável, mantendo Componentes clássicos acessível; antes disso, ampliar objetos, diálogos e callbacks gerais com regressões dos exemplos existentes.

@@ -8,7 +8,7 @@
 
 body { margin: 0; min-height: 100vh; }
 
-button, textarea, input { font: inherit; }
+button, textarea, input, select { font: inherit; }
 
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
@@ -372,3 +372,10 @@ h1 { margin: 2px 0 0; font-size: 24px; }
   .editor-pane { min-height: 520px; }
   .exercise-instructions ol { display: block; }
 }
+
+/* Os dois modos permanecem selecionáveis também em telas estreitas. */
+.topbar { gap: 12px; flex-wrap: wrap; }
+.topbar label { display: flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; font-size: 13px; }
+.topbar select { max-width: 100%; min-width: 0; padding: 6px; }
+.execution-hint { margin: 0; padding: 8px 16px; color: #dce7ef; background: #253443; font-size: 12px; }
+.execution-hint[hidden], #cancelExecution[hidden] { display: none; }

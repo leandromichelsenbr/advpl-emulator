@@ -1,6 +1,6 @@
 {
   "name": "advpl-emulator",
-  "version": "0.28.0",
+  "version": "0.29.0",
   "private": true,
   "scripts": {
     "build:include-catalog": "node scripts/build-include-catalog.js",
@@ -12,6 +12,7 @@
     "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
-    "esbuild": "0.25.9"
+    "esbuild": "0.25.9",
+    "jsdom": "26.1.0"
   }
 }
