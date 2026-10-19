@@ -11,14 +11,14 @@
   function run(bytecode, options = {}) {
     const runtime = options.runtime || runtimeModule.create(), maxSteps = Number.isFinite(options.maxSteps) ? Math.max(1, Math.trunc(options.maxSteps)) : 10000;
     const maxCallDepth = Number.isFinite(options.maxCallDepth) ? Math.max(1, Math.trunc(options.maxCallDepth)) : 128;
-    const events = [], consoleOutput = [], diagnostics = [...(bytecode?.diagnostics || [])], stack = [];
+    const events = [], consoleOutput = [], diagnostics = [...(bytecode?.diagnostics || [])], stack = [], codeBlocks = new WeakMap();
     const entryFn = bytecode?.functions?.[String(options.entry || bytecode?.entry || "").toUpperCase()];
     if (!entryFn) return { vmVersion: VM_VERSION, completed: false, value: null, events, console: consoleOutput, diagnostics: [...diagnostics, diagnostic("LC_VM_ENTRY", "Função de entrada não encontrada.")] };
     /** Cada chamada recebe seus próprios slots e contador de instrução. */
-    const createFrame = (fn, args) => {
+    const createFrame = (fn, args, captures = []) => {
       const locals = Array(fn.localCount).fill(null);
       args.slice(0, fn.parameterCount).forEach((value, index) => { locals[index] = value; });
-      return { fn, locals, ip: 0 };
+      return { fn, locals, captures, ip: 0 };
     };
     let frame = createFrame(entryFn, options.args || []), steps = 0, completed = false, value = null;
     const rootLocals = frame.locals, callFrames = [];
@@ -32,6 +32,31 @@
       if (instruction.op === "PUSH_CONST") stack.push(bytecode.constants[instruction.arg]);
       else if (instruction.op === "LOAD_LOCAL") stack.push(frame.locals[instruction.arg]);
       else if (instruction.op === "STORE_LOCAL") { const item = pop(instruction); if (item.ok) frame.locals[instruction.arg] = item.value; }
+      else if (instruction.op === "DUP") { const item = pop(instruction); if (item.ok) stack.push(item.value, item.value); }
+      else if (instruction.op === "LOAD_CAPTURE" || instruction.op === "STORE_CAPTURE") {
+        const cell = Number.isInteger(instruction.arg) && instruction.arg >= 0 ? frame.captures[instruction.arg] : null;
+        if (!cell) { fail("LC_VM_INVALID_CAPTURE", "Captura de bloco inválida.", instruction); continue; }
+        if (instruction.op === "LOAD_CAPTURE") stack.push(cell.locals[cell.slot]);
+        else { const item = pop(instruction); if (item.ok) cell.locals[cell.slot] = item.value; }
+      } else if (instruction.op === "MAKE_BLOCK") {
+        const fn = bytecode?.blocks?.[instruction.arg];
+        if (!fn || !Array.isArray(fn.captures)) { fail("LC_VM_INVALID_BLOCK", "Definição de bloco inválida.", instruction); continue; }
+        const captures = fn.captures.map(source => {
+          if (source?.kind === "local" && Number.isInteger(source.index) && source.index >= 0 && source.index < frame.locals.length) return { locals: frame.locals, slot: source.index };
+          if (source?.kind === "capture" && Number.isInteger(source.index) && source.index >= 0) return frame.captures[source.index];
+          return null;
+        });
+        if (captures.some(cell => !cell)) { fail("LC_VM_INVALID_CAPTURE", "Origem de captura inválida.", instruction); continue; }
+        const block = Object.freeze({ type: "codeblock" });
+        codeBlocks.set(block, { fn, captures }); stack.push(block);
+      } else if (instruction.op === "CALL_BLOCK") {
+        if (!Number.isInteger(instruction.argc) || instruction.argc < 0 || stack.length < instruction.argc + 1) { fail("LC_VM_STACK_UNDERFLOW", "Argumentos insuficientes para Eval.", instruction); continue; }
+        const args = stack.splice(stack.length - instruction.argc, instruction.argc), block = stack.pop();
+        const closure = block && typeof block === "object" ? codeBlocks.get(block) : null;
+        if (!closure) { fail("LC_VM_NOT_BLOCK", "Eval exige um bloco criado nesta execução.", instruction); continue; }
+        if (callFrames.length + 1 >= maxCallDepth) { fail("LC_RUNTIME_CALL_DEPTH", `Limite de ${maxCallDepth} frames excedido.`, instruction); continue; }
+        callFrames.push(frame); frame = createFrame(closure.fn, args, closure.captures);
+      }
       else if (instruction.op === "NEG") { const item = pop(instruction); if (item.ok) stack.push(-Number(item.value)); }
       else if (["ADD", "SUB", "MUL", "DIV", "EQ", "NE", "LT", "LE", "GT", "GE"].includes(instruction.op)) {
         const right = pop(instruction), left = pop(instruction); if (!right.ok || !left.ok) continue;

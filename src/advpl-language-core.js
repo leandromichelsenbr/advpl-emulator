@@ -66,7 +66,7 @@
       }
       const start = here(), pair = text.slice(index, index + 2);
       if ([":=", "+=", "==", "!=", "<=", ">="].includes(pair)) { advance(); advance(); emit("symbol", pair, pair, start); continue; }
-      if ("()+-*/,<>".includes(char)) { advance(); emit("symbol", char, char, start); continue; }
+      if ("()+-*/,<>{}|".includes(char)) { advance(); emit("symbol", char, char, start); continue; }
       advance(); diagnostics.push(diagnostic("LC0003", `Caractere não suportado: ${char}`, { start }));
     }
     const end = here(); tokens.push({ type: "eof", value: null, raw: "", start: end, end });
@@ -85,6 +85,25 @@
 
     function primary() {
       const token = peek();
+      if (is("{")) {
+        take(); expect("|"); const params = [];
+        while (!is("|") && peek().type !== "eof" && peek().type !== "newline") {
+          if (peek().type === "identifier") params.push(take().raw);
+          else { diagnostics.push(diagnostic("LC0105", "Parâmetro de bloco inválido.", peek())); take(); }
+          if (!is(",")) break; take();
+          if (is("|")) diagnostics.push(diagnostic("LC0105", "Parâmetro esperado após vírgula.", peek()));
+        }
+        expect("|"); skipLines();
+        const expressions = [];
+        if (is("}")) diagnostics.push(diagnostic("LC0102", "Expressão esperada no bloco de código.", peek()));
+        while (!is("}") && peek().type !== "eof") {
+          expressions.push(expressionNode()); skipLines();
+          if (!is(",")) break; take(); skipLines();
+          if (is("}")) diagnostics.push(diagnostic("LC0102", "Expressão esperada após vírgula.", peek()));
+        }
+        const close = expect("}") || expressions.at(-1)?.loc.end || token;
+        return node("CodeBlockExpression", token, close, { params, expressions });
+      }
       if (["string", "number"].includes(token.type) || (token.type === "keyword" && token.value === null)) {
         take(); return node("Literal", token, token, { value: token.value, raw: token.raw });
       }
@@ -120,7 +139,15 @@
       }
       return left;
     }
-    function expressionNode() { return binary(); }
+    function expressionNode() {
+      const left = binary();
+      if (is(":=") || is("+=")) {
+        const operator = take(), value = expressionNode();
+        if (left.type !== "Identifier") diagnostics.push(diagnostic("LC0109", "Atribuição exige um identificador local ou parâmetro.", operator));
+        return node("AssignmentExpression", left.loc.start, value.loc.end, { name: left.name || "<invalid>", operator: operator.value, value });
+      }
+      return left;
+    }
 
     function statement() {
       const start = peek();
@@ -242,6 +269,23 @@
         }
       };
       validateAssignments(declaration.body);
+      /** Parâmetros de bloco sombreiam locais; atribuições capturadas seguem o escopo léxico. */
+      const validateExpressions = (value, visible) => {
+        if (!value || typeof value !== "object") return;
+        if (Array.isArray(value)) { value.forEach(item => validateExpressions(item, visible)); return; }
+        if (value.type === "CodeBlockExpression") {
+          const parameters = new Set(), scope = new Set(visible);
+          for (const parameter of value.params) {
+            const name = parameter.toUpperCase();
+            if (parameters.has(name)) diagnostics.push({ code: "LC0205", severity: "error", message: `Parâmetro de bloco duplicado: ${parameter}`, line: value.loc.start.line, column: value.loc.start.column, origin: "language-core", file: value.loc.start.file });
+            parameters.add(name); scope.add(name);
+          }
+          validateExpressions(value.expressions, scope); return;
+        }
+        if (value.type === "AssignmentExpression" && !visible.has(value.name.toUpperCase())) diagnostics.push({ code: "LC0203", severity: "error", message: `Atribuição a símbolo não vinculado: ${value.name}`, line: value.loc.start.line, column: value.loc.start.column, origin: "language-core", file: value.loc.start.file });
+        for (const [key, child] of Object.entries(value)) if (key !== "loc") validateExpressions(child, visible);
+      };
+      validateExpressions(declaration.body, new Set(Object.keys(symbols)));
       functions[key] = { kind: "function", name: declaration.name, visibility: declaration.visibility, params: [...declaration.params], symbols };
     }
     return { version: AST_VERSION, program, functions, diagnostics: [...(program.diagnostics || []), ...diagnostics] };

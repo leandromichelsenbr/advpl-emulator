@@ -11,7 +11,7 @@ test("carrega advpl-core sozinho em integrações legadas do navegador", () => {
   vm.runInNewContext(source, context, { filename: "advpl-core.js" });
 
   assert.equal(typeof context.AdvPLCore?.parse, "function");
-  assert.equal(context.AdvPLCore.PACKAGE_VERSION, "0.26.0");
+  assert.equal(context.AdvPLCore.PACKAGE_VERSION, "0.27.0");
   const program = context.AdvPLCore.parse('#include "TOTVS.CH"\nUser Function T()\nMsgInfo("OK", "Teste")\nReturn');
   assert.equal(program.message.text, "OK");
   assert.equal(program.modelVersion, "0.1");
@@ -47,4 +47,10 @@ test("carrega o Language Core completo na ordem usada pelo navegador", () => {
   assert.equal(result.completed, true);
   assert.deepEqual(Array.from(result.console), ["9"]);
   assert.equal(result.diagnostics.length, 0);
+  const blockAst = context.AdvPLLanguageCore.parse('User Function Demo()\nLocal n := 1\nLocal b := {|x| n += x}\nReturn Eval(b, 2)');
+  const blockBytecode = context.AdvPLLanguageCompiler.compile(context.AdvPLLanguageCore.bind(blockAst));
+  const blockResult = context.AdvPLLanguageVM.run(blockBytecode);
+  assert.equal(blockResult.completed, true);
+  assert.equal(blockResult.value, 3);
+  assert.equal(blockResult.diagnostics.length, 0);
 });

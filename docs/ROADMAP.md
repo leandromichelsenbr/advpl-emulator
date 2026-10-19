@@ -26,7 +26,9 @@ A ordem indica foco de investimento, não ausência de recursos atuais: editor, 
 6. **Frames de funções entregues em 0.24.0:** atribuições `:=`/`+=`, distinção entre runtime e funções declaradas, frames isolados, retorno e limite de profundidade. A equivalência cobre função auxiliar e atribuição composta. `For` foi entregue no incremento seguinte; permanecem corpus oficial, demais laços, code blocks, suspensão e integração ao renderer.
 7. **Laço `For` entregue em 0.25.0:** início, limite e passo avaliados uma vez, passo padrão/negativo, laços aninhados e proteção de passo zero pelo limite global. A equivalência cobre a soma dos pares até 100.
 8. **Laço `While` entregue em 0.26.0:** condição reavaliada antes de cada iteração, aninhamento com `If`/`For`, retorno e limite global de instruções. Comparação de efeitos contra `For` equivalente no executor leve, que não executa `While`.
-9. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
+9. **Blocos de código entregues em 0.27.0:** parâmetros, sequência de expressões, atribuições com retorno, `Eval` e capturas por referência com frames limitados. Fixture sintética e equivalência com lógica direta no executor leve.
+10. Definir suspensão/retomada preservando frames, capturas e limites antes de integrar callbacks visuais.
+11. Migrar capacidades incrementalmente conforme os critérios da tabela, preservando os exemplos existentes.
 
 O pré-processador local fica como caminho didático de transição. Reimplementar todo o universo de includes e regras TOTVS não é pré-requisito nem trilha principal. Não há prazo ou conclusão presumida para os novos componentes; o estado entregue continua na [matriz](compatibility-matrix.md).
 
@@ -53,3 +55,8 @@ A AST passa a representar atribuições `:=` e `+=` a locais/parâmetros. O comp
 ## Incremento entregue — 0.26.0
 
 `While`/`EndDo` integra AST, binder e compiler sem novos opcodes ou temporários. O salto retorna ao início da condição, inclusive quando ela contém chamadas. Testes cobrem corpo vazio/falso, blocos aninhados, locais, retorno em frame auxiliar e interrupção posicionada de laço infinito. O executor leve continua como caminho de produção; a comparação de efeitos usa um `For` equivalente e não afirma suporte a `While` nesse executor. Permanecem corpus PPO oficial, demais construções de controle, code blocks, suspensão e integração ao renderer.
+
+
+## Incremento entregue — 0.27.0
+
+Blocos de código com parâmetros, sequência de expressões e atribuições com retorno integram AST, binder, compiler e VM. `Eval` usa frames e orçamento globais, retorna a última expressão e preserva a ordem dos efeitos. Capturas por referência permanecem válidas após o retorno da função criadora dentro da mesma execução e suportam blocos aninhados. A fixture é sintética e a comparação de efeitos usa lógica direta no executor leve. O [contrato dos blocos](language-code-blocks.md) registra limites e novos opcodes. O próximo incremento é especificar suspensão/retomada preservando frames e capturas; integração ao renderer permanece posterior.

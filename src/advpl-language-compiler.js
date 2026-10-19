@@ -10,7 +10,8 @@
   const error = (code, message, loc) => ({ code, severity: "error", message, line: loc?.start?.line || 1, column: loc?.start?.column || 1, origin: "language-compiler", file: loc?.start?.file || "<ppo>" });
 
   function compile(bound) {
-    const program = bound?.program, diagnostics = [...(bound?.diagnostics || [])], constants = [], functions = Object.create(null);
+    const program = bound?.program, diagnostics = [...(bound?.diagnostics || [])], constants = [], functions = Object.create(null), blocks = Object.create(null);
+    let nextBlock = 0;
     const declaredFunctions = new Set((program?.body || []).map(item => item.name.toUpperCase()));
     const constantIndex = value => { const found = constants.findIndex(item => Object.is(item, value)); if (found >= 0) return found; constants.push(value); return constants.length - 1; };
     if (!program || program.astVersion !== "0.1") {
@@ -18,8 +19,8 @@
       return { bytecodeVersion: BYTECODE_VERSION, entry: null, constants, functions, diagnostics };
     }
 
-    for (const declaration of program.body) {
-      const instructions = [], slots = new Map(), forTemps = new WeakMap(), symbolTable = bound.functions[declaration.name.toUpperCase()]?.symbols || {};
+    function compileScope(declaration, parent = null) {
+      const instructions = [], slots = new Map(), captures = [], captureSlots = new Map(), forTemps = new WeakMap(), symbolTable = bound.functions[declaration.name.toUpperCase()]?.symbols || {};
       let nextSlot = 0;
       for (const parameter of declaration.params) slots.set(parameter.toUpperCase(), nextSlot++);
       const allocateLocals = statements => {
@@ -35,14 +36,43 @@
       };
       allocateLocals(declaration.body);
       const emit = (op, arg, loc, extra = {}) => instructions.push({ op, ...(arg === undefined ? {} : { arg }), ...extra, loc });
+      // Capturas descrevem células do escopo pai, nunca uma cópia do valor atual.
+      const resolve = name => {
+        const key = name.toUpperCase();
+        if (slots.has(key)) return { kind: "local", index: slots.get(key) };
+        if (captureSlots.has(key)) return { kind: "capture", index: captureSlots.get(key) };
+        const source = parent?.resolve(name);
+        if (!source) return null;
+        const index = captures.length;
+        captures.push(source); captureSlots.set(key, index);
+        return { kind: "capture", index };
+      };
+      const load = (binding, loc) => emit(binding.kind === "local" ? "LOAD_LOCAL" : "LOAD_CAPTURE", binding.index, loc);
+      const store = (binding, loc) => emit(binding.kind === "local" ? "STORE_LOCAL" : "STORE_CAPTURE", binding.index, loc);
 
       function expression(node) {
         if (!node) { emit("PUSH_CONST", constantIndex(null), declaration.loc); return; }
         if (node.type === "Literal") emit("PUSH_CONST", constantIndex(node.value), node.loc);
         else if (node.type === "Identifier") {
-          const slot = slots.get(node.name.toUpperCase());
-          if (slot === undefined) diagnostics.push(error("LC0302", `Identificador não vinculado: ${node.name}`, node.loc));
-          else emit("LOAD_LOCAL", slot, node.loc);
+          const binding = resolve(node.name);
+          if (!binding) diagnostics.push(error("LC0302", `Identificador não vinculado: ${node.name}`, node.loc));
+          else load(binding, node.loc);
+        } else if (node.type === "AssignmentExpression") {
+          const binding = resolve(node.name);
+          if (!binding) diagnostics.push(error("LC0302", `Identificador não vinculado: ${node.name}`, node.loc));
+          else {
+            if (node.operator === "+=") load(binding, node.loc);
+            expression(node.value);
+            if (node.operator === "+=") emit("ADD", undefined, node.loc);
+            emit("DUP", undefined, node.loc); store(binding, node.loc);
+          }
+        } else if (node.type === "CodeBlockExpression") {
+          const name = `$BLOCK${nextBlock++}`;
+          const body = node.expressions.map((item, index) => index === node.expressions.length - 1
+            ? { type: "ReturnStatement", argument: item, loc: item.loc }
+            : { type: "ExpressionStatement", expression: item, loc: item.loc });
+          blocks[name] = compileScope({ name, params: node.params, body, visibility: "block", loc: node.loc }, { resolve });
+          emit("MAKE_BLOCK", name, node.loc);
         } else if (node.type === "ParenthesizedExpression") expression(node.expression);
         else if (node.type === "UnaryExpression") {
           expression(node.argument);
@@ -56,7 +86,10 @@
         } else if (node.type === "CallExpression" && node.callee.type === "Identifier") {
           for (const argument of node.arguments) expression(argument);
           const name = node.callee.name.toUpperCase();
-          emit(declaredFunctions.has(name) ? "CALL_FUNCTION" : "CALL_RUNTIME", undefined, node.loc, { name, argc: node.arguments.length });
+          if (name === "EVAL" && !declaredFunctions.has(name)) {
+            if (!node.arguments.length) diagnostics.push(error("LC0306", "Eval exige um bloco de código.", node.loc));
+            else emit("CALL_BLOCK", undefined, node.loc, { argc: node.arguments.length - 1 });
+          } else emit(declaredFunctions.has(name) ? "CALL_FUNCTION" : "CALL_RUNTIME", undefined, node.loc, { name, argc: node.arguments.length });
         } else diagnostics.push(error("LC0304", `Nó não compilável: ${node.type}`, node.loc));
       }
 
@@ -132,12 +165,13 @@
       }
       compileStatements(declaration.body);
       if (!instructions.length || instructions.at(-1).op !== "RETURN") { emit("PUSH_CONST", constantIndex(null), declaration.loc); emit("RETURN", undefined, declaration.loc); }
-      functions[declaration.name.toUpperCase()] = {
+      return {
         name: declaration.name, visibility: declaration.visibility, parameterCount: declaration.params.length,
-        localCount: nextSlot, slots: Object.fromEntries(slots), symbols: symbolTable, instructions
+        localCount: nextSlot, slots: Object.fromEntries(slots), captures, symbols: symbolTable, instructions
       };
     }
-    return { bytecodeVersion: BYTECODE_VERSION, entry: program.body[0]?.name.toUpperCase() || null, constants, functions, diagnostics };
+    for (const declaration of program.body) functions[declaration.name.toUpperCase()] = compileScope(declaration);
+    return { bytecodeVersion: BYTECODE_VERSION, entry: program.body[0]?.name.toUpperCase() || null, constants, functions, blocks, diagnostics };
   }
 
   return Object.freeze({ BYTECODE_VERSION, compile });
