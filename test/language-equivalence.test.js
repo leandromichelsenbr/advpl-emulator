@@ -5,6 +5,23 @@ const language = require("../src/advpl-language-core.js");
 const compiler = require("../src/advpl-language-compiler.js");
 const vm = require("../src/advpl-language-vm.js");
 
+test("While na VM preserva efeitos de algoritmo equivalente em For no executor leve", () => {
+  // O executor leve ainda não interpreta While; a referência usa o mesmo algoritmo em For.
+  const setup = 'User Function Demo()\nLocal n := 0\nLocal total := 0\n';
+  const body = 'ConOut(cValToChar(n))\ntotal += n\n';
+  const finish = 'MsgInfo("Total: " + cValToChar(total), "Resultado")\nReturn';
+  const reference = setup + 'For n := 0 To 3\n' + body + 'Next\n' + finish;
+  const source = setup + 'While n < 4\n' + body + 'n += 1\nEndDo\n' + finish;
+  const legacy = core.parse(reference);
+  const modern = vm.run(compiler.compile(language.bind(language.parse(source))));
+  assert.equal(modern.completed, true);
+  assert.deepEqual(modern.diagnostics, []);
+  assert.deepEqual(modern.console, ["0", "1", "2", "3"]);
+  assert.deepEqual(modern.console, legacy.console);
+  assert.deepEqual(modern.events, legacy.events);
+  assert.deepEqual(modern.events.at(-1), { type: "message", kind: "info", text: "Total: 6", title: "Resultado" });
+});
+
 test("nova VM produz o mesmo evento de console do executor leve na fatia inicial", () => {
   const source = 'User Function Demo()\nLocal nTotal := 2 + 3\nConOut("Total: " + cValToChar(nTotal))\nReturn';
   const legacy = core.parse(source);
@@ -40,4 +57,20 @@ test("nova VM preserva soma de pares em For e mensagem final", () => {
   const modern = vm.run(bytecode);
   assert.deepEqual(modern.diagnostics, []);
   assert.deepEqual(modern.events, legacy.events);
+});
+
+
+test("While produz os mesmos efeitos que For equivalente no executor leve", () => {
+  // O executor leve não executa While: For fornece um oráculo independente
+  // para a mesma sequência finita, sem alegar equivalência da gramática.
+  const prefix = "User Function Demo()\nLocal n := 0\nLocal total := 0\n";
+  const suffix = "MsgInfo(cValToChar(total), \"Resultado\")\nReturn";
+  const legacy = core.parse(prefix + "For n := 0 To 3\nConOut(cValToChar(n))\ntotal += n\nNext\n" + suffix);
+  const source = prefix + "While n < 4\nConOut(cValToChar(n))\ntotal += n\nn += 1\nEndDo\n" + suffix;
+  const modern = vm.run(compiler.compile(language.bind(language.parse(source))));
+  assert.equal(modern.completed, true);
+  assert.deepEqual(modern.diagnostics, []);
+  assert.deepEqual(modern.events, legacy.events);
+  assert.deepEqual(modern.console, legacy.console);
+  assert.equal(modern.events.at(-1).text, '6');
 });
