@@ -6,14 +6,26 @@ Registro cronológico consolidado das movimentações do projeto. Para detalhes 
 
 | Campo | Situação |
 |---|---|
-| Versão da distribuição | `0.26.0` |
+| Versão da distribuição | `0.27.0` |
 | Contrato público | `0.1` |
 | Parser avançado | `@totvs/tds-parsers@0.1.5`, opcional |
 | Parser de execução | núcleo leve com fallback |
-| Testes automatizados | 169 |
+| Testes automatizados | 185 |
 | Branch de publicação | `main` |
 
 ## Movimentações
+
+### 0.27.0 — 19/10/2026
+
+**Tipo:** blocos de código e capturas na VM experimental.
+
+- Parser representa `{|| ...}`, `{|a, b| ...}` e atribuições como expressões, com posições e diagnósticos.
+- Binder verifica parâmetros de bloco e atribuições em escopo léxico; compiler resolve capturas locais/transitivas.
+- `Eval` cria frames limitados, retorna a última expressão e preserva a ordem dos efeitos.
+- Closures compartilham células externas, sobrevivem ao retorno da função criadora dentro da mesma execução e isolam parâmetros/fábricas.
+- Novos opcodes aditivos: `MAKE_BLOCK`, `CALL_BLOCK`, `LOAD_CAPTURE`, `STORE_CAPTURE` e `DUP`; contratos experimentais continuam `0.1`.
+- Fixture explicitamente sintética, comparação com lógica direta no executor leve e teste de carregamento sem CommonJS.
+- Suíte ampliada de 169 para 185 testes. Suspensão/retomada e callbacks visuais permanecem pendentes.
 
 ### 0.26.0 — 01/10/2026
 

@@ -2,7 +2,7 @@
 
 ## Estado
 
-A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.26.0 acrescenta `While`/`EndDo` à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
+A ISA `0.1` é uma representação própria, didática e stack-based. Não corresponde a APO, RPO, bytecode ou máquina virtual TOTVS. A versão 0.27.0 acrescenta blocos de código com parâmetros, `Eval` e capturas léxicas à fatia sintética executada em paralelo ao executor leve; o playground não foi migrado.
 
 ## Artefato compilado
 
@@ -12,6 +12,7 @@ A ISA `0.1` é uma representação própria, didática e stack-based. Não corre
   entry: "DEMO",
   constants: [],
   functions: {},
+  blocks: {},
   diagnostics: []
 }
 ```
@@ -25,6 +26,10 @@ Cada função declara quantidade de parâmetros/locais, slots estáveis e instru
 | `PUSH_CONST` | empilha uma constante |
 | `LOAD_LOCAL` | empilha o valor de um slot local |
 | `STORE_LOCAL` | remove e armazena o topo em um slot |
+| `LOAD_CAPTURE`, `STORE_CAPTURE` | lê/escreve uma célula capturada por referência |
+| `MAKE_BLOCK` | cria uma closure a partir da tabela `blocks` e do frame atual |
+| `CALL_BLOCK` | consome bloco e `argc` argumentos e entra em um frame de `Eval` |
+| `DUP` | duplica o topo para retornar o valor de uma atribuição |
 | `ADD` | soma números ou concatena quando algum operando não é numérico |
 | `SUB`, `MUL`, `DIV` | operações numéricas |
 | `EQ`, `NE` | igualdade e diferença estritas do recorte atual |
@@ -42,6 +47,8 @@ Os destinos de salto são índices absolutos e validados antes de alterar o cont
 O compiler reduz `While` aos mesmos saltos: avalia a condição antes do corpo, desvia para a saída quando falsa e retorna ao início da expressão após cada iteração. Chamadas na condição também são reavaliadas. Não reserva temporários nem acrescenta opcodes; AST/ISA/VM permanecem `0.1`. Laços infinitos, inclusive de corpo vazio, estão sujeitos ao limite global de passos.
 
 ## Runtime permitido
+
+Desde 0.27.0, [blocos de código](language-code-blocks.md) compartilham frames e orçamentos com funções. `Eval` é compilado como chamada de bloco, sem avaliar JavaScript ou entrar recursivamente no interpretador por um handler nativo. Capturas preservam células locais e parâmetros mesmo após o retorno do frame criador. Blocos pertencem à execução que os criou; valores forjados ou de outra execução recebem `LC_VM_NOT_BLOCK`. Definições/capturas inconsistentes recebem `LC_VM_INVALID_BLOCK`/`LC_VM_INVALID_CAPTURE`; `LC0306` diagnostica `Eval()` sem argumentos.
 
 `advpl-core-runtime.js` registra explicitamente serviços. A fonte nunca é avaliada como JavaScript. O conjunto inicial contém:
 
@@ -61,7 +68,7 @@ Uma chamada ausente gera `LC_RUNTIME_UNKNOWN_CALL`. Integrações podem fornecer
 - `LC_VM_INVALID_JUMP`: destino de salto inválido;
 - `LC_VM_UNKNOWN_FUNCTION`: função referenciada ausente no bytecode;
 - `LC_RUNTIME_CALL_DEPTH`: profundidade máxima de frames excedida;
-- `LC0301`–`LC0305`: falhas de compilação.
+- `LC0301`–`LC0306`: falhas de compilação.
 
 O limite padrão é 10.000 passos e a profundidade padrão é 128 frames; ambos podem ser reduzidos pelo host. A VM devolve resultado e diagnósticos; não lança erros de fonte para fora do contrato.
 

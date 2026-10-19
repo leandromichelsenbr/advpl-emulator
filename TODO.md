@@ -34,6 +34,8 @@ Este documento orienta a evolução do AdvPL Emulator. O projeto passa a ser des
 - [x] Implementar atribuições `:=`/`+=` e chamadas entre funções AdvPL com frames isolados e limite de profundidade (0.24.0).
 - [x] Implementar `For`/`To`/`Step`/`Next`, incluindo passo padrão/negativo, laços aninhados, temporários isolados e proteção de `Step 0` pelo limite de instruções (0.25.0).
 - [x] Implementar `While`/`EndDo`, incluindo aninhamento com `If`/`For` e comparação de efeitos com `For` equivalente no executor leve, que não executa `While` (0.26.0).
+- [x] Implementar blocos de código com parâmetros, sequência de expressões, `Eval`, captura léxica por referência, frames limitados e fixture sintética (0.27.0).
+- [ ] Definir suspensão/retomada da VM preservando frames, capturas e orçamento global antes de integrar callbacks ao renderer.
 - [x] Classificar cada recurso como `supported`, `partial`, `approximated`, `recognized` ou `unsupported`.
 
 - [ ] Criar uma matriz de fidelidade para cada componente: fonte, captura, HTML de referência, propriedades observadas e diferenças pendentes.

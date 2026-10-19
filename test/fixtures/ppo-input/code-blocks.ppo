@@ -1,0 +1,10 @@
+// Fixture PPO sintética do emulador; não gerada pelo toolchain TOTVS.
+User Function BlockDemo()
+Local total := 0
+Local i
+Local sum := {|n| total += n, total}
+For i := 1 To 3
+ConOut(cValToChar(Eval(sum, i)))
+Next
+MsgInfo(cValToChar(total), "Resultado")
+Return total

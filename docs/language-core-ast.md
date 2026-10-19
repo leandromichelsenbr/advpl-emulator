@@ -39,13 +39,15 @@ Cada posição contém `file`, `line`, `column` e `offset`. Linhas e colunas com
 | `UnaryExpression` | sinais unários `+` e `-` |
 | `IfStatement` | condição, bloco consequente e bloco alternativo opcional |
 | `AssignmentStatement` | atribuição a local/parâmetro com `:=` ou `+=` |
+| `AssignmentExpression` | atribuição `:=`/`+=` com retorno do valor armazenado |
+| `CodeBlockExpression` | parâmetros e sequência não vazia de expressões |
 | `WhileStatement` | condição e corpo, com teste antes de cada iteração |
 | `ForStatement` | variável de controle, início, limite, passo e corpo |
 | `ParenthesizedExpression` | expressão explicitamente agrupada |
 | `Identifier` | nome preservado como escrito |
 | `Literal` | texto, número e `Nil` |
 
-O parser cobre inicialmente `If`/`Else`/`EndIf`, `For`/`To`/`Step`/`Next`, `While`/`EndDo`, blocos aninhados, comparações e atribuições `:=`/`+=` a símbolos vinculados. `Step` omitido é representado por literal sintético `1`; `Next` aceita opcionalmente o nome da variável e diagnostica divergência. Ainda não cobre `ElseIf`, arrays, code blocks, métodos, outros destinos de atribuição, operadores completos ou construções visuais.
+O parser cobre inicialmente `If`/`Else`/`EndIf`, `For`/`To`/`Step`/`Next`, `While`/`EndDo`, blocos aninhados, comparações e atribuições `:=`/`+=` a símbolos vinculados. `Step` omitido é representado por literal sintético `1`; `Next` aceita opcionalmente o nome da variável e diagnostica divergência. Desde 0.27.0, inclui [blocos de código com parâmetros, expressões e capturas](language-code-blocks.md). Ainda não cobre `ElseIf`, arrays, métodos, outros destinos de atribuição, operadores completos ou construções visuais.
 
 `WhileStatement` contém `test` e `body`; `EndDo` ausente recebe `LC0101`. Locais e atribuições no corpo seguem a vinculação da função, inclusive em blocos aninhados.
 
@@ -55,9 +57,11 @@ O binder devolve uma tabela de funções e, para cada função, símbolos de par
 
 ## Relação com contratos existentes
 
+Parâmetros de bloco possuem escopo léxico próprio e podem sombrear locais externos. O binder percorre as expressões do bloco, verifica atribuições no escopo correspondente e diagnostica parâmetros duplicados com `LC0205`. O compiler resolve leituras e descreve capturas locais/transitivas. `LC0109` identifica destino inválido de atribuição em expressão.
+
 - AST descreve o programa.
 - Bytecode/ISA `0.1` descreve a primeira fatia experimental de execução; veja [ISA, compiler e VM](language-core-isa.md).
 - Modelo intermediário `0.1` descreve a saída visual e eventos.
 - AST do TDS continua encapsulada pelo adaptador opcional e não é exposta como este contrato.
 
-O executor leve continua sendo o caminho de produção. As versões `0.22.0` a `0.26.0` entregam compiler/VM e equivalência para console, condição, atribuição, função auxiliar, `For` e efeitos de `While`. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.
+O executor leve continua sendo o caminho de produção. As versões `0.22.0` a `0.27.0` entregam compiler/VM e equivalência para console, condição, atribuição, função auxiliar, `For`, efeitos de `While` e blocos de código comparados com lógica direta. A migração só avançará capacidade por capacidade, com equivalência comprovada e sem retirar prematuramente o fallback atual.
